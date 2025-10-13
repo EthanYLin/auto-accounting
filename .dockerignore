@@ -1,0 +1,40 @@
+# Docker忽略文件
+
+# Git
+.git
+.gitignore
+README.md
+
+# 依赖
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js
+.next/
+out/
+
+# 环境变量
+.env*.local
+.env
+
+# 缓存
+.eslintcache
+
+# IDE
+.vscode
+.idea
+
+# OS生成的文件
+.DS_Store
+Thumbs.db
+
+# 其他
+*.log
+coverage/
+.nyc_output
+
+# Docker
+Dockerfile
+.dockerignore

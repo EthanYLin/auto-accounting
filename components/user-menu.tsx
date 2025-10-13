@@ -1,0 +1,56 @@
+'use client'
+
+import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from "@heroui/dropdown";
+import { Avatar } from "@heroui/avatar";
+import { signOut } from "@/app/actions/auth";
+import { useRouter } from "next/navigation";
+
+interface UserMenuProps {
+  user: {
+    email?: string;
+  };
+}
+
+export function UserMenu({ user }: UserMenuProps) {
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  const handleChangePassword = () => {
+    router.push('/auth/change-password');
+  };
+
+  return (
+    <Dropdown placement="bottom-end">
+      <DropdownTrigger>
+        <Avatar
+          as="button"
+          className="transition-transform"
+          size="sm"
+          name={user.email?.[0].toUpperCase()}
+          showFallback
+        />
+      </DropdownTrigger>
+      <DropdownMenu aria-label="用户菜单" variant="flat">
+        <DropdownItem key="profile" className="h-14 gap-2" textValue="用户信息">
+          <p className="font-semibold">登录为</p>
+          <p className="font-semibold">{user.email}</p>
+        </DropdownItem>
+        <DropdownItem key="change-password" onClick={handleChangePassword}>
+          修改密码
+        </DropdownItem>
+        <DropdownItem key="logout" color="danger" onClick={handleSignOut}>
+          登出
+        </DropdownItem>
+      </DropdownMenu>
+    </Dropdown>
+  );
+}
+
