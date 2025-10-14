@@ -1,6 +1,7 @@
 'use client'
 
 import { JSX, SVGProps, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardHeader, CardBody, CardFooter } from '@heroui/card'
 import { Input } from '@heroui/input'
 import { Button } from '@heroui/button'
@@ -9,6 +10,7 @@ import { Divider } from '@heroui/divider'
 import { signIn } from '@/app/actions/auth'
 
 export default function LoginPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -23,6 +25,10 @@ export default function LoginPage() {
       const result = await signIn(email, password)
       if (result?.error) {
         setError(result.error)
+        setLoading(false)
+      } else if (result?.success) {
+        // 登录成功，跳转到首页
+        router.push('/')
       }
     } catch (err) {
       console.error('登录错误:', err)
@@ -35,7 +41,6 @@ export default function LoginPage() {
       } else {
         setError('登录失败，请重试')
       }
-    } finally {
       setLoading(false)
     }
   }

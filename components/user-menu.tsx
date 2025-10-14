@@ -20,7 +20,10 @@ export function UserMenu({ user }: UserMenuProps) {
   const router = useRouter();
 
   const handleSignOut = async () => {
-    await signOut();
+    const result = await signOut();
+    if (result?.success) {
+      router.push('/auth/login');
+    }
   };
 
   const handleChangePassword = () => {

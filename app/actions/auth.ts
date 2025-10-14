@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
 export async function signIn(email: string, password: string) {
@@ -22,6 +21,9 @@ export async function signIn(email: string, password: string) {
     if (error) {
       return { error: error.message }
     }
+
+    revalidatePath('/', 'layout')
+    return { success: true }
   } catch (err) {
     console.error('signIn 错误:', err)
     if (err instanceof Error) {
@@ -29,10 +31,6 @@ export async function signIn(email: string, password: string) {
     }
     return { error: '登录服务异常，请稍后重试' }
   }
-
-  // redirect() 不应该被 try-catch 包裹
-  revalidatePath('/', 'layout')
-  redirect('/')
 }
 
 export async function signUp(email: string, password: string) {
@@ -76,6 +74,9 @@ export async function signOut() {
     if (error) {
       return { error: error.message }
     }
+
+    revalidatePath('/', 'layout')
+    return { success: true }
   } catch (err) {
     console.error('signOut 错误:', err)
     if (err instanceof Error) {
@@ -83,10 +84,6 @@ export async function signOut() {
     }
     return { error: '登出服务异常，请稍后重试' }
   }
-
-  // redirect() 不应该被 try-catch 包裹
-  revalidatePath('/', 'layout')
-  redirect('/auth/login')
 }
 
 export async function resetPassword(email: string) {
