@@ -42,7 +42,16 @@ export default function RegisterPage() {
         setSuccess(true)
       }
     } catch (err) {
-      setError('注册失败，请重试')
+      console.error('注册错误:', err)
+      if (err instanceof Error) {
+        if (err.message.includes('fetch') || err.message.includes('network')) {
+          setError('网络连接失败，请检查网络后重试')
+        } else {
+          setError(`注册失败: ${err.message}`)
+        }
+      } else {
+        setError('注册失败，请重试')
+      }
     } finally {
       setLoading(false)
     }
@@ -59,21 +68,12 @@ export default function RegisterPage() {
           <CardBody className="px-6 py-6">
             <div className="flex flex-col gap-4">
               <div className="text-sm text-success bg-success-50 dark:bg-success-900/20 px-4 py-3 rounded-lg">
-                <p className="font-semibold mb-2">注册成功！</p>
                 <p>我们已经向您的邮箱发送了一封验证邮件。</p>
                 <p className="mt-2">请查收邮件并点击验证链接完成注册。</p>
               </div>
-              <p className="text-sm text-default-500">
-                验证邮箱后，您就可以登录使用了。
+              <p className="text-sm text-default-500 text-center">
+                您可以关闭此页面，查收邮件完成注册。
               </p>
-              <Button
-                as={Link}
-                href="/auth/login"
-                color="primary"
-                className="w-full"
-              >
-                前往登录
-              </Button>
             </div>
           </CardBody>
         </Card>
@@ -94,7 +94,8 @@ export default function RegisterPage() {
             <Input
               type="email"
               label="邮箱"
-              placeholder="请输入您的邮箱"
+              variant="bordered"
+              labelPlacement="outside-top"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               isRequired
@@ -103,7 +104,8 @@ export default function RegisterPage() {
             <Input
               type="password"
               label="密码"
-              placeholder="至少 6 个字符"
+              variant="bordered"
+              labelPlacement="outside-top"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               isRequired
@@ -113,7 +115,8 @@ export default function RegisterPage() {
             <Input
               type="password"
               label="确认密码"
-              placeholder="请再次输入密码"
+              variant="bordered"
+              labelPlacement="outside-top"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               isRequired

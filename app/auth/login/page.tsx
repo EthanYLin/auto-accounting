@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { JSX, SVGProps, useState } from 'react'
 import { Card, CardHeader, CardBody, CardFooter } from '@heroui/card'
 import { Input } from '@heroui/input'
 import { Button } from '@heroui/button'
@@ -25,7 +25,16 @@ export default function LoginPage() {
         setError(result.error)
       }
     } catch (err) {
-      setError('登录失败，请重试')
+      console.error('登录错误:', err)
+      if (err instanceof Error) {
+        if (err.message.includes('fetch') || err.message.includes('network')) {
+          setError('网络连接失败，请检查网络后重试')
+        } else {
+          setError(`登录失败: ${err.message}`)
+        }
+      } else {
+        setError('登录失败，请重试')
+      }
     } finally {
       setLoading(false)
     }
@@ -44,7 +53,8 @@ export default function LoginPage() {
             <Input
               type="email"
               label="邮箱"
-              variant="underlined"
+              variant="bordered"
+              labelPlacement="outside-top"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               isRequired
@@ -53,7 +63,8 @@ export default function LoginPage() {
             <Input
               type="password"
               label="密码"
-              variant="underlined"
+              variant="bordered"
+              labelPlacement="outside-top"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               isRequired

@@ -47,7 +47,7 @@ export function UserMenu({ user }: UserMenuProps) {
           修改密码
         </DropdownItem>
         <DropdownItem key="logout" color="danger" onClick={handleSignOut}>
-          登出
+          退出登录
         </DropdownItem>
       </DropdownMenu>
     </Dropdown>

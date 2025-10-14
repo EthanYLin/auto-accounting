@@ -28,7 +28,16 @@ export default function ForgotPasswordPage() {
         setSuccess(true)
       }
     } catch (err) {
-      setError('发送重置邮件失败，请重试')
+      console.error('重置密码错误:', err)
+      if (err instanceof Error) {
+        if (err.message.includes('fetch') || err.message.includes('network')) {
+          setError('网络连接失败，请检查网络后重试')
+        } else {
+          setError(`发送重置邮件失败: ${err.message}`)
+        }
+      } else {
+        setError('发送重置邮件失败，请重试')
+      }
     } finally {
       setLoading(false)
     }
@@ -45,7 +54,6 @@ export default function ForgotPasswordPage() {
           <CardBody className="px-6 py-6">
             <div className="flex flex-col gap-4">
               <div className="text-sm text-success bg-success-50 dark:bg-success-900/20 px-4 py-3 rounded-lg">
-                <p className="font-semibold mb-2">邮件已发送！</p>
                 <p>我们已经向您的邮箱发送了密码重置链接。</p>
                 <p className="mt-2">请查收邮件并点击链接重置密码。</p>
               </div>
@@ -82,7 +90,8 @@ export default function ForgotPasswordPage() {
             <Input
               type="email"
               label="邮箱"
-              placeholder="请输入您的邮箱"
+              variant="bordered"
+              labelPlacement="outside-top"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               isRequired

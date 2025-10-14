@@ -7,9 +7,10 @@ import { Input } from '@heroui/input'
 import { Button } from '@heroui/button'
 import { Link } from '@heroui/link'
 import { Divider } from '@heroui/divider'
-import { updatePassword } from '@/app/actions/auth'
+import { changePassword } from '@/app/actions/auth'
 
 export default function ChangePasswordPage() {
+  const [oldPassword, setOldPassword] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
@@ -36,7 +37,7 @@ export default function ChangePasswordPage() {
     setLoading(true)
 
     try {
-      const result = await updatePassword(password)
+      const result = await changePassword(oldPassword, password)
       if (result?.error) {
         setError(result.error)
       } else if (result?.success) {
@@ -47,7 +48,16 @@ export default function ChangePasswordPage() {
         }, 3000)
       }
     } catch (err) {
-      setError('修改密码失败，请重试')
+      console.error('修改密码错误:', err)
+      if (err instanceof Error) {
+        if (err.message.includes('fetch') || err.message.includes('network')) {
+          setError('网络连接失败，请检查网络后重试')
+        } else {
+          setError(`修改密码失败: ${err.message}`)
+        }
+      } else {
+        setError('修改密码失败，请重试')
+      }
     } finally {
       setLoading(false)
     }
@@ -95,8 +105,19 @@ export default function ChangePasswordPage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
               type="password"
+              label="当前密码"
+              variant="bordered"
+              labelPlacement="outside-top"
+              value={oldPassword}
+              onChange={(e) => setOldPassword(e.target.value)}
+              isRequired
+              autoComplete="current-password"
+            />
+            <Input
+              type="password"
               label="新密码"
-              placeholder="至少 6 个字符"
+              variant="bordered"
+              labelPlacement="outside-top"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               isRequired
@@ -106,7 +127,8 @@ export default function ChangePasswordPage() {
             <Input
               type="password"
               label="确认新密码"
-              placeholder="请再次输入密码"
+              variant="bordered"
+              labelPlacement="outside-top"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               isRequired

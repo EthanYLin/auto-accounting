@@ -42,7 +42,16 @@ export default function ResetPasswordPage() {
         router.push('/auth/login?message=密码重置成功，请使用新密码登录')
       }
     } catch (err) {
-      setError('重置密码失败，请重试')
+      console.error('重置密码错误:', err)
+      if (err instanceof Error) {
+        if (err.message.includes('fetch') || err.message.includes('network')) {
+          setError('网络连接失败，请检查网络后重试')
+        } else {
+          setError(`重置密码失败: ${err.message}`)
+        }
+      } else {
+        setError('重置密码失败，请重试')
+      }
     } finally {
       setLoading(false)
     }
@@ -61,7 +70,8 @@ export default function ResetPasswordPage() {
             <Input
               type="password"
               label="新密码"
-              placeholder="至少 6 个字符"
+              variant="bordered"
+              labelPlacement="outside-top"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               isRequired
@@ -71,7 +81,8 @@ export default function ResetPasswordPage() {
             <Input
               type="password"
               label="确认新密码"
-              placeholder="请再次输入密码"
+              variant="bordered"
+              labelPlacement="outside-top"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               isRequired
