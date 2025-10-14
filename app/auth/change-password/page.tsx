@@ -73,7 +73,7 @@ export default function ChangePasswordPage() {
           <Divider />
           <CardBody className="px-6 py-6">
             <div className="flex flex-col gap-4">
-              <div className="text-sm text-success bg-success-50 dark:bg-success-900/20 px-4 py-3 rounded-lg">
+              <div className="text-sm text-success-700 dark:text-success-400 bg-success-100 dark:bg-success-900/30 px-4 py-3 rounded-lg">
                 <p className="font-semibold mb-2">密码已更新！</p>
                 <p>您的密码已成功修改。</p>
                 <p className="mt-2">3 秒后将自动返回首页...</p>

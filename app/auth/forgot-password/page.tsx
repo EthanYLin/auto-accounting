@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
           <Divider />
           <CardBody className="px-6 py-6">
             <div className="flex flex-col gap-4">
-              <div className="text-sm text-success bg-success-50 dark:bg-success-900/20 px-4 py-3 rounded-lg">
+            <div className="text-sm text-success-700 dark:text-success-400 bg-success-100 dark:bg-success-900/30 px-4 py-3 rounded-lg">
                 <p>我们已经向您的邮箱发送了密码重置链接。</p>
                 <p className="mt-2">请查收邮件并点击链接重置密码。</p>
               </div>

@@ -15,7 +15,7 @@ export default function ConfirmSuccessPage() {
         <Divider />
         <CardBody className="px-6 py-6">
           <div className="flex flex-col gap-4">
-            <div className="text-sm text-success bg-success-50 dark:bg-success-900/20 px-4 py-3 rounded-lg">
+            <div className="text-sm text-success-700 dark:text-success-400 bg-success-100 dark:bg-success-900/30 px-4 py-3 rounded-lg">
               <p className="font-semibold mb-2">您的邮箱已成功确认！</p>
               <p>欢迎加入，您现在可以开始使用所有功能了。</p>
             </div>
