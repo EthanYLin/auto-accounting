@@ -43,7 +43,6 @@ export function UserMenu({ user }: UserMenuProps) {
       </DropdownTrigger>
       <DropdownMenu aria-label="用户菜单" variant="flat">
         <DropdownItem key="profile" className="h-14 gap-2" textValue="用户信息">
-          <p className="font-semibold">登录为</p>
           <p className="font-semibold">{user.email}</p>
         </DropdownItem>
         <DropdownItem key="change-password" onClick={handleChangePassword}>
