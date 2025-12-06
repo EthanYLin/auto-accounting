@@ -91,7 +91,6 @@ npm run dev
 - `/auth/register` - 注册页面
 - `/auth/forgot-password` - 忘记密码页面
 - `/auth/reset-password` - 重置密码页面
-- `/auth/change-password` - 修改密码页面（需要登录）
 
 ### 访问控制
 

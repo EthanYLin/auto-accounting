@@ -1,31 +1,66 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardHeader, CardBody, CardFooter } from '@heroui/card'
 import { Input } from '@heroui/input'
 import { Button } from '@heroui/button'
 import { Link } from '@heroui/link'
 import { Divider } from '@heroui/divider'
-import { resetPassword } from '@/app/actions/auth'
+import { createClient } from '@/lib/supabase/client'
 
 export default function ForgotPasswordPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [step, setStep] = useState<'request' | 'sent'>('request')
+  const [info, setInfo] = useState('')
+  const [cooldown, setCooldown] = useState(0)
+
+  useEffect(() => {
+    const presetEmail = searchParams.get('email')
+    if (presetEmail) {
+      setEmail(presetEmail)
+    }
+  }, [searchParams])
+
+  const loginHref = email ? `/auth/login?email=${encodeURIComponent(email)}` : '/auth/login'
+
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const timer = setInterval(() => {
+      setCooldown((prev) => (prev > 0 ? prev - 1 : 0))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [cooldown])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setSuccess(false)
+    setInfo('')
     setLoading(true)
 
     try {
-      const result = await resetPassword(email)
-      if (result?.error) {
-        setError(result.error)
-      } else if (result?.success) {
-        setSuccess(true)
+      const supabase = createClient()
+      const redirectTo =
+        process.env.NEXT_PUBLIC_APP_URL
+          ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password`
+          : `${window.location.origin}/auth/reset-password`
+
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      })
+
+      if (resetError) {
+        setError(resetError.message)
+      } else {
+        setStep('sent')
+        setCooldown(60)
+        setInfo('我们已向您的邮箱发送重置链接，请查看邮箱并点击重置链接。')
       }
     } catch (err) {
       console.error('重置密码错误:', err)
@@ -48,21 +83,21 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-md">
         <Card className="w-full">
           <CardHeader className="flex flex-col gap-1 items-start px-6 pt-6">
-            <h1 className="text-2xl font-bold">重置密码邮件已发送</h1>
+            <h1 className="text-2xl font-bold">邮件已发送</h1>
           </CardHeader>
           <Divider />
           <CardBody className="px-6 py-6">
             <div className="flex flex-col gap-4">
             <div className="text-sm text-success-700 dark:text-success-400 bg-success-100 dark:bg-success-900/30 px-4 py-3 rounded-lg">
-                <p>我们已经向您的邮箱发送了密码重置链接。</p>
-                <p className="mt-2">请查收邮件并点击链接重置密码。</p>
+                <p>请在邮件中点击重置密码链接，在打开的页面设置新密码。</p>
+                <p className="mt-2">如果未收到，请检查垃圾邮件，或稍后重新发送。</p>
               </div>
               <p className="text-sm text-default-500">
-                如果您没有收到邮件，请检查垃圾邮件文件夹。
+                如果没有自动跳转，请点击下方按钮。
               </p>
               <Button
                 as={Link}
-                href="/auth/login"
+                href={loginHref}
                 color="primary"
                 className="w-full"
               >
@@ -81,7 +116,7 @@ export default function ForgotPasswordPage() {
         <CardHeader className="flex flex-col gap-1 items-start px-6 pt-6">
           <h1 className="text-2xl font-bold">忘记密码</h1>
           <p className="text-sm text-default-500">
-            输入您的邮箱地址，我们将发送密码重置链接
+            输入邮箱，我们会发送重置密码链接到您的邮箱
           </p>
         </CardHeader>
         <Divider />
@@ -96,6 +131,7 @@ export default function ForgotPasswordPage() {
               onChange={(e) => setEmail(e.target.value)}
               isRequired
               autoComplete="email"
+              isDisabled={step === 'sent'}
             />
 
             {error && (
@@ -103,22 +139,34 @@ export default function ForgotPasswordPage() {
                 {error}
               </div>
             )}
+            {info && (
+              <div className="text-sm text-success-700 dark:text-success-400 bg-success-100 dark:bg-success-900/30 px-3 py-2 rounded-lg">
+                {info}
+              </div>
+            )}
 
             <Button
               type="submit"
-              color="primary"
+              variant={step === 'request' ? 'solid' : 'flat'}
+              color={step === 'request' ? 'primary' : 'default'}
               isLoading={loading}
               className="w-full"
+              isDisabled={step === 'sent' && cooldown > 0}
             >
-              发送重置邮件
+              {step === 'request'
+                ? '发送重置邮件'
+                : cooldown > 0
+                  ? `重发邮件（${cooldown}s）`
+                  : '重发邮件'}
             </Button>
+
           </form>
         </CardBody>
         <Divider />
         <CardFooter className="px-6 py-4">
           <p className="text-sm text-default-500">
             记起密码了？{' '}
-            <Link href="/auth/login" size="sm">
+            <Link href={loginHref} size="sm">
               返回登录
             </Link>
           </p>

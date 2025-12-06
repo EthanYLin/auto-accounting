@@ -1,6 +1,6 @@
 'use client'
 
-import { JSX, SVGProps, useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardHeader, CardBody, CardFooter } from '@heroui/card'
 import { Input } from '@heroui/input'
@@ -8,31 +8,19 @@ import { Button } from '@heroui/button'
 import { Link } from '@heroui/link'
 import { Divider } from '@heroui/divider'
 import { signIn } from '@/app/actions/auth'
-import { useAppData } from '@/contexts/app-data-context'
 
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { loadData } = useAppData()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // 处理 PKCE 流程的 code 参数
   useEffect(() => {
-    const code = searchParams.get('code')
-    const redirect = searchParams.get('redirect')
-    
-    if (code && redirect) {
-      // 如果有 code 和 redirect 参数，说明是从 Supabase 重定向回来的
-      // 重定向到 confirm 路由进行处理
-      const confirmUrl = new URL('/auth/confirm', window.location.origin)
-      confirmUrl.searchParams.set('code', code)
-      if (redirect) {
-        confirmUrl.searchParams.set('redirect', redirect)
-      }
-      window.location.href = confirmUrl.toString()
+    const presetEmail = searchParams.get('email')
+    if (presetEmail) {
+      setEmail(presetEmail)
     }
   }, [searchParams])
 
@@ -45,10 +33,7 @@ export default function LoginPage() {
       const result = await signIn(email, password)
       if (result?.error) {
         setError(result.error)
-        setLoading(false)
       } else if (result?.success) {
-        // 登录成功，先跳转到首页
-        // 数据加载会在首页自动进行
         router.push('/')
         router.refresh()
       }
@@ -63,6 +48,7 @@ export default function LoginPage() {
       } else {
         setError('登录失败，请重试')
       }
+    } finally {
       setLoading(false)
     }
   }
@@ -105,7 +91,14 @@ export default function LoginPage() {
             )}
 
             <div className="flex justify-end">
-              <Link href="/auth/forgot-password" size="sm">
+              <Link
+                href={
+                  email
+                    ? `/auth/forgot-password?email=${encodeURIComponent(email)}`
+                    : '/auth/forgot-password'
+                }
+                size="sm"
+              >
                 忘记密码？
               </Link>
             </div>

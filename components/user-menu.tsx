@@ -14,12 +14,16 @@ import { useAppData } from "@/contexts/app-data-context";
 interface UserMenuProps {
   user: {
     email?: string;
+    user_metadata?: {
+      nickname?: string;
+    };
   };
 }
 
 export function UserMenu({ user }: UserMenuProps) {
   const router = useRouter();
   const { clearData } = useAppData();
+  const displayName = user.user_metadata?.nickname || user.email || '';
 
   const handleSignOut = async () => {
     const result = await signOut();
@@ -30,10 +34,6 @@ export function UserMenu({ user }: UserMenuProps) {
     }
   };
 
-  const handleChangePassword = () => {
-    router.push('/auth/change-password');
-  };
-
   return (
     <Dropdown placement="bottom-end">
       <DropdownTrigger>
@@ -41,17 +41,15 @@ export function UserMenu({ user }: UserMenuProps) {
           as="button"
           className="transition-transform"
           size="sm"
-          name={user.email?.[0].toUpperCase()}
+          name={displayName[0]?.toUpperCase()}
           showFallback
           aria-label="用户菜单"
         />
       </DropdownTrigger>
       <DropdownMenu aria-label="用户菜单" variant="flat">
         <DropdownItem key="profile" className="h-14 gap-2" textValue="用户信息">
-          <p className="font-semibold">{user.email}</p>
-        </DropdownItem>
-        <DropdownItem key="change-password" onClick={handleChangePassword}>
-          修改密码
+          <p className="font-semibold">{displayName || '未设置昵称'}</p>
+          {user.email && <p className="text-small text-default-500">{user.email}</p>}
         </DropdownItem>
         <DropdownItem key="logout" color="danger" onClick={handleSignOut}>
           退出登录
