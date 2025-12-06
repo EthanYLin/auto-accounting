@@ -7,6 +7,7 @@ import { HeroUIProvider } from "@heroui/system";
 import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { I18nProvider } from "@react-aria/i18n";
+import { AppDataProvider } from "@/contexts/app-data-context";
 
 export interface ProvidersProps {
   children: React.ReactNode;
@@ -27,7 +28,11 @@ export function Providers({ children, themeProps }: ProvidersProps) {
   return (
     <HeroUIProvider navigate={router.push}>
       <I18nProvider locale="zh-CN">
-        <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>
+        <NextThemesProvider {...themeProps}>
+          <AppDataProvider>
+            {children}
+          </AppDataProvider>
+        </NextThemesProvider>
       </I18nProvider>
     </HeroUIProvider>
   );

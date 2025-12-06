@@ -1,6 +1,6 @@
 import { type EmailOtpType } from '@supabase/supabase-js'
 import { type NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServerClient } from '@supabase/ssr'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
   redirectTo.searchParams.delete('error_code')
   redirectTo.searchParams.delete('error_description')
   redirectTo.searchParams.delete('next')
+  redirectTo.searchParams.delete('redirect')
 
   // 如果 URL 中已经包含错误信息（如链接过期）
   if (error) {
@@ -32,12 +33,37 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(redirectTo)
   }
 
-  const supabase = await createClient()
+  // 创建响应对象以便设置 cookies
+  let response = NextResponse.next({
+    request,
+  })
+
+  // 创建 Supabase 客户端，并确保 cookies 被设置到响应中
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          response = NextResponse.next({
+            request,
+          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
 
   // 处理 PKCE 流程（使用 code 参数）
   if (code) {
     try {
-      const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
       
       if (exchangeError) {
         console.error('exchangeCodeForSession 错误:', exchangeError)
@@ -50,11 +76,30 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(redirectTo)
       }
 
-      if (data?.session) {
-        // 成功，跳转到确认成功页面
+      // 检查是否是密码恢复流程
+      // 从 URL 的 next 参数或 redirect 参数中获取目标路径
+      const next = searchParams.get('next')
+      const redirect = searchParams.get('redirect')
+      
+      // 如果有明确的重定向路径，使用它
+      if (next && next.includes('reset-password')) {
+        redirectTo.pathname = '/auth/reset-password'
+      } else if (redirect && redirect.includes('reset-password')) {
+        redirectTo.pathname = '/auth/reset-password'
+      } else {
+        // 默认情况下，跳转到确认成功页面
         redirectTo.pathname = '/auth/confirm/success'
-        return NextResponse.redirect(redirectTo)
       }
+      
+      // 创建新的重定向响应，并复制所有 cookies
+      const redirectResponse = NextResponse.redirect(redirectTo)
+      
+      // 将 response 中的 cookies 复制到 redirectResponse
+      response.cookies.getAll().forEach(cookie => {
+        redirectResponse.cookies.set(cookie.name, cookie.value, cookie)
+      })
+      
+      return redirectResponse
     } catch (err) {
       console.error('处理确认链接错误:', err)
       redirectTo.pathname = '/auth/confirm/error'
@@ -82,7 +127,16 @@ export async function GET(request: NextRequest) {
         // 其他类型，跳转到首页
         redirectTo.pathname = '/'
       }
-      return NextResponse.redirect(redirectTo)
+      
+      // 创建新的重定向响应，并复制所有 cookies
+      const redirectResponse = NextResponse.redirect(redirectTo)
+      
+      // 将 response 中的 cookies 复制到 redirectResponse
+      response.cookies.getAll().forEach(cookie => {
+        redirectResponse.cookies.set(cookie.name, cookie.value, cookie)
+      })
+      
+      return redirectResponse
     }
     
     console.error('verifyOtp 错误:', verifyError)

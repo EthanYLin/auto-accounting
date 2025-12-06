@@ -4,14 +4,14 @@ import React, { useState, useCallback } from 'react';
 import { Alert } from '@heroui/alert';
 
 import { FileUpload } from '@/components/file-upload';
-import { AllTransactions } from '@/types/transaction';
 import type { ImportResult } from '@/lib/wechat-import/types';
+import type { Transaction } from '@/types';
 
 interface AlipayImportProps {
-  allTransactions: AllTransactions;
+  onImportSuccess: (transactions: Transaction[]) => void;
 }
 
-export function AlipayImport({ allTransactions }: AlipayImportProps) {
+export function AlipayImport({ onImportSuccess }: AlipayImportProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -31,14 +31,16 @@ export function AlipayImport({ allTransactions }: AlipayImportProps) {
       // 这里暂时用模拟数据
       await new Promise(resolve => setTimeout(resolve, 2000)); // 模拟处理时间
       
+      const transactions: Transaction[] = [];
       setResult({ importedCount: 0 });
+      onImportSuccess(transactions);
       
     } catch (err) {
       setError(err instanceof Error ? err.message : '解析CSV文件失败');
     } finally {
       setIsProcessing(false);
     }
-  }, [allTransactions]);
+  }, [onImportSuccess]);
 
   return (
     <div className="space-y-6">

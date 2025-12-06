@@ -12,19 +12,15 @@ import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from 
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { DatePicker } from "@heroui/date-picker";
 import { now, getLocalTimeZone } from "@internationalized/date";
-import { Account } from "@/types/account";
-import { TransactionType } from "@/types/transaction-type";
-import { TransactionStatus } from "@/types/transaction-status";
-import { BudgetType } from "@/types/budget-type";
-import { CATEGORY_TREE, getMainCategories, getSubCategories, type CategoryPath, type TxType } from "@/types/category";
+import type { TransactionType, TransactionStatus, CategoryPath } from "@/types";
 
 // 交易记录类型定义
 interface Transaction {
   id: number;
   amount: number;
-  account: Account;
+  account: string; // 账户名称
   category: {
-    type: TxType;
+    type: TransactionType;
     main: string;
     sub: string;
   };
@@ -33,7 +29,7 @@ interface Transaction {
   name: string;
   merchant: string;
   transactionType: TransactionType;
-  budgetPlan: BudgetType | null;
+  budgetPlan: string | null; // 预算类型名称
   parentId?: number;
   childIds?: number[];
   splits?: TransactionSplit[];
@@ -44,7 +40,7 @@ interface TransactionSplit {
   id: string;
   amount: number;
   category: {
-    type: TxType;
+    type: TransactionType;
     main: string;
     sub: string;
   };
@@ -62,14 +58,14 @@ interface ProgressStats {
 
 // 模拟数据
 const generateMockTransactions = (): Transaction[] => {
-  const statuses = [
-    TransactionStatus.PENDING,
-    TransactionStatus.LATER_ON, 
-    TransactionStatus.COMPLETED,
-    TransactionStatus.CANCELLED
+  const statuses: TransactionStatus[] = [
+    "待处理",
+    "稍后处理", 
+    "已完成",
+    "取消"
   ];
   
-  const accounts = Object.values(Account);
+  const accounts = ["支付宝", "微信支付", "招商银行", "中国银行"];
   const merchants = ["星巴克", "麦当劳", "超市", "地铁", "滴滴出行", "京东", "淘宝", "美团"];
   const names = ["早餐", "午餐", "晚餐", "零食", "交通费", "购物", "娱乐", "学习"];
 
@@ -78,16 +74,16 @@ const generateMockTransactions = (): Transaction[] => {
     amount: Math.floor(Math.random() * 500) + 10,
     account: accounts[Math.floor(Math.random() * accounts.length)],
     category: {
-      type: "EXPENSE" as TxType,
-      main: "FOOD" as any,
-      sub: "LUNCH" as any
+      type: "支出" as TransactionType,
+      main: "饮食",
+      sub: "午餐"
     },
     datetime: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
     status: statuses[Math.floor(Math.random() * statuses.length)],
     name: names[Math.floor(Math.random() * names.length)],
     merchant: merchants[Math.floor(Math.random() * merchants.length)],
-    transactionType: TransactionType.EXPENSE,
-    budgetPlan: Math.random() > 0.5 ? BudgetType.BASIC : BudgetType.ENTERTAINMENT,
+    transactionType: "支出",
+    budgetPlan: Math.random() > 0.5 ? "基本开支" : "娱乐开支",
     childIds: Math.random() > 0.8 ? [i + 51, i + 52] : undefined
   }));
 };
@@ -114,16 +110,16 @@ const AccountingPage = () => {
   // 计算进度统计
   const progressStats: ProgressStats = transactions.reduce((stats, transaction) => {
     switch (transaction.status) {
-      case TransactionStatus.PENDING:
+      case "待处理":
         stats.pending++;
         break;
-      case TransactionStatus.LATER_ON:
+      case "稍后处理":
         stats.later++;
         break;
-      case TransactionStatus.COMPLETED:
+      case "已完成":
         stats.completed++;
         break;
-      case TransactionStatus.CANCELLED:
+      case "取消":
         stats.cancelled++;
         break;
     }
@@ -220,6 +216,7 @@ const AccountingPage = () => {
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">记账管理</h1>
             <Input
+              aria-label="搜索交易"
               placeholder="搜索交易..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -245,6 +242,7 @@ const AccountingPage = () => {
                 isIconOnly
                 variant="light"
                 size="sm"
+                aria-label={isLeftSidebarCollapsed ? "展开侧边栏" : "收起侧边栏"}
                 onClick={() => setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed)}
               >
                 {isLeftSidebarCollapsed ? "→" : "←"}
@@ -255,8 +253,8 @@ const AccountingPage = () => {
             <div className="grid grid-cols-2 gap-2">
               <Card 
                 isPressable
-                className={`${selectedStatusFilters.has(TransactionStatus.PENDING) ? "ring-2 ring-blue-500" : ""}`}
-                onClick={() => toggleStatusFilter(TransactionStatus.PENDING)}
+                className={`${selectedStatusFilters.has("待处理") ? "ring-2 ring-blue-500" : ""}`}
+                onClick={() => toggleStatusFilter("待处理")}
               >
                 <CardBody className="p-2 text-center">
                   <div className="text-xs text-gray-600 dark:text-gray-400">未完成</div>
@@ -266,8 +264,8 @@ const AccountingPage = () => {
 
               <Card 
                 isPressable
-                className={`${selectedStatusFilters.has(TransactionStatus.LATER_ON) ? "ring-2 ring-orange-500" : ""}`}
-                onClick={() => toggleStatusFilter(TransactionStatus.LATER_ON)}
+                className={`${selectedStatusFilters.has("稍后处理") ? "ring-2 ring-orange-500" : ""}`}
+                onClick={() => toggleStatusFilter("稍后处理")}
               >
                 <CardBody className="p-2 text-center">
                   <div className="text-xs text-gray-600 dark:text-gray-400">稍后处理</div>
@@ -277,8 +275,8 @@ const AccountingPage = () => {
 
               <Card 
                 isPressable
-                className={`${selectedStatusFilters.has(TransactionStatus.COMPLETED) ? "ring-2 ring-green-500" : ""}`}
-                onClick={() => toggleStatusFilter(TransactionStatus.COMPLETED)}
+                className={`${selectedStatusFilters.has("已完成") ? "ring-2 ring-green-500" : ""}`}
+                onClick={() => toggleStatusFilter("已完成")}
               >
                 <CardBody className="p-2 text-center">
                   <div className="text-xs text-gray-600 dark:text-gray-400">已完成</div>
@@ -288,8 +286,8 @@ const AccountingPage = () => {
 
               <Card 
                 isPressable
-                className={`${selectedStatusFilters.has(TransactionStatus.CANCELLED) ? "ring-2 ring-red-500" : ""}`}
-                onClick={() => toggleStatusFilter(TransactionStatus.CANCELLED)}
+                className={`${selectedStatusFilters.has("取消") ? "ring-2 ring-red-500" : ""}`}
+                onClick={() => toggleStatusFilter("取消")}
               >
                 <CardBody className="p-2 text-center">
                   <div className="text-xs text-gray-600 dark:text-gray-400">已取消</div>
@@ -301,6 +299,7 @@ const AccountingPage = () => {
             {/* 搜索框 */}
             <div className="mt-3">
               <Input
+                aria-label="搜索交易"
                 placeholder="搜索..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -340,9 +339,9 @@ const AccountingPage = () => {
                       </div>
                       <div className="text-right">
                         <div className={`font-mono text-sm font-bold ${
-                          transaction.transactionType === TransactionType.INCOME ? "text-green-600" : "text-red-600"
+                          transaction.transactionType === "收入" ? "text-green-600" : "text-red-600"
                         }`}>
-                          {transaction.transactionType === TransactionType.INCOME ? "+" : "-"}¥{transaction.amount}
+                          {transaction.transactionType === "收入" ? "+" : "-"}¥{transaction.amount}
                         </div>
                       </div>
                     </div>
@@ -353,9 +352,9 @@ const AccountingPage = () => {
                         <Chip 
                           size="sm"
                           color={
-                            transaction.status === TransactionStatus.COMPLETED ? "success" :
-                            transaction.status === TransactionStatus.CANCELLED ? "danger" :
-                            transaction.status === TransactionStatus.LATER_ON ? "warning" : "primary"
+                            transaction.status === "已完成" ? "success" :
+                            transaction.status === "取消" ? "danger" :
+                            transaction.status === "稍后处理" ? "warning" : "primary"
                           }
                           className="text-xs"
                         >
@@ -398,6 +397,7 @@ const AccountingPage = () => {
                 
                 <div className="flex items-center gap-2">
                   <Input
+                    aria-label="跳转到交易编号"
                     size="sm"
                     className="w-16"
                     value={currentTransactionId.toString()}
@@ -423,9 +423,9 @@ const AccountingPage = () => {
 
                 <div className="flex items-center gap-2">
                   <Button size="sm" color="primary" onClick={handleSave}>保存</Button>
-                  <Button size="sm" color="success" onClick={() => handleStatusAction(TransactionStatus.COMPLETED)}>保存并完成</Button>
-                  <Button size="sm" variant="flat" onClick={() => handleStatusAction(TransactionStatus.CANCELLED)}>保存并取消</Button>
-                  <Button size="sm" color="warning" onClick={() => handleStatusAction(TransactionStatus.LATER_ON)}>保存并稍后处理</Button>
+                  <Button size="sm" color="success" onClick={() => handleStatusAction("已完成")}>保存并完成</Button>
+                  <Button size="sm" variant="flat" onClick={() => handleStatusAction("取消")}>保存并取消</Button>
+                  <Button size="sm" color="warning" onClick={() => handleStatusAction("稍后处理")}>保存并稍后处理</Button>
                 </div>
               </div>
             </div>

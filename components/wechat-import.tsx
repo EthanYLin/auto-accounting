@@ -5,15 +5,15 @@ import { Alert } from '@heroui/alert';
 import * as XLSX from 'xlsx';
 
 import { FileUpload } from '@/components/file-upload';
-import { AllTransactions } from '@/types/transaction';
 import { importFromWeChatExcel } from '@/lib/wechat-import';
 import type { ExcelData, ImportResult } from '@/lib/wechat-import/types';
+import type { Transaction } from '@/types';
 
 interface WeChatImportProps {
-  allTransactions: AllTransactions;
+  onImportSuccess: (transactions: Transaction[]) => void;
 }
 
-export function WeChatImport({ allTransactions }: WeChatImportProps) {
+export function WeChatImport({ onImportSuccess }: WeChatImportProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -62,15 +62,16 @@ export function WeChatImport({ allTransactions }: WeChatImportProps) {
       };
 
       // 解析完成后自动开始导入
-      const importResult = await importFromWeChatExcel(parsedData, allTransactions);
-      setResult(importResult);
+      const transactions = await importFromWeChatExcel(parsedData);
+      setResult({ importedCount: transactions.length });
+      onImportSuccess(transactions);
       
     } catch (err) {
       setError(err instanceof Error ? err.message : '解析Excel文件失败');
     } finally {
       setIsProcessing(false);
     }
-  }, [allTransactions]);
+  }, [onImportSuccess]);
 
   return (
     <div className="space-y-6">

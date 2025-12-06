@@ -11,6 +11,7 @@ export async function middleware(request: NextRequest) {
     '/auth/login',
     '/auth/register',
     '/auth/forgot-password',
+    '/auth/reset-password',
     '/auth/confirm',
     '/api/health',
   ]
@@ -22,7 +23,7 @@ export async function middleware(request: NextRequest) {
   if (user && (pathname === '/auth/login' || pathname === '/auth/register')) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
-    return supabaseResponse
+    return Response.redirect(url)
   }
 
   // 未登录用户访问受保护路由，重定向到登录页

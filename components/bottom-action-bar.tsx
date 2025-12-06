@@ -59,6 +59,7 @@ export function BottomActionBar({
               isDisabled={currentId <= 1}
               onPress={onPrevious}
               className="text-gray-600 dark:text-gray-400"
+              aria-label="上一条"
             >
               <ChevronLeftIcon className="w-4 h-4" />
             </Button>
@@ -71,6 +72,7 @@ export function BottomActionBar({
                 className="w-12 sm:w-16"
                 size="sm"
                 variant="bordered"
+                aria-label="当前记录编号"
                 classNames={{
                   input: "text-center text-sm",
                   inputWrapper: "h-8 min-h-8"
@@ -89,6 +91,7 @@ export function BottomActionBar({
               isDisabled={currentId >= totalCount}
               onPress={onNext}
               className="text-gray-600 dark:text-gray-400"
+              aria-label="下一条"
             >
               <ChevronRightIcon className="w-4 h-4" />
             </Button>

@@ -112,17 +112,34 @@ export async function updatePassword(password: string) {
   try {
     const supabase = await createClient()
 
+    // 首先检查是否有有效的 session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    
+    if (sessionError) {
+      console.error('获取 session 错误:', sessionError)
+      return { error: `无法获取会话: ${sessionError.message}` }
+    }
+
+    if (!session) {
+      console.error('没有找到有效的 session')
+      return { error: '会话已过期，请重新从邮件链接访问重置密码页面' }
+    }
+
+    console.log('Session found, updating password...')
+
     const { error } = await supabase.auth.updateUser({
       password,
     })
 
     if (error) {
+      console.error('更新密码错误:', error)
       return { error: error.message }
     }
 
+    console.log('密码更新成功')
     return { success: true }
   } catch (err) {
-    console.error('updatePassword 错误:', err)
+    console.error('updatePassword 异常:', err)
     if (err instanceof Error) {
       return { error: `更新密码异常: ${err.message}` }
     }

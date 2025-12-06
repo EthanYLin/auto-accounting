@@ -9,6 +9,7 @@ import {
 import { Avatar } from "@heroui/avatar";
 import { signOut } from "@/app/actions/auth";
 import { useRouter } from "next/navigation";
+import { useAppData } from "@/contexts/app-data-context";
 
 interface UserMenuProps {
   user: {
@@ -18,10 +19,13 @@ interface UserMenuProps {
 
 export function UserMenu({ user }: UserMenuProps) {
   const router = useRouter();
+  const { clearData } = useAppData();
 
   const handleSignOut = async () => {
     const result = await signOut();
     if (result?.success) {
+      // 清空缓存的数据
+      clearData();
       router.push('/auth/login');
     }
   };
@@ -39,6 +43,7 @@ export function UserMenu({ user }: UserMenuProps) {
           size="sm"
           name={user.email?.[0].toUpperCase()}
           showFallback
+          aria-label="用户菜单"
         />
       </DropdownTrigger>
       <DropdownMenu aria-label="用户菜单" variant="flat">

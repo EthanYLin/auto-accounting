@@ -1,18 +1,16 @@
-import { AllTransactions } from "@/types/transaction";
+import type { Transaction } from "@/types";
 import type { ExcelData, ImportResult } from "./types";
 
 /**
  * 从微信账单Excel数据导入交易记录
  * 
  * @param excelData Excel解析后的数据
- * @param allTransactions AllTransactions类的实例
- * @returns 导入结果，包含成功导入的交易数量
+ * @returns 导入结果，包含成功导入的交易记录数组和数量
  * @throws Error 当数据格式不正确或导入失败时抛出异常
  */
 export async function importFromWeChatExcel(
-  excelData: ExcelData,
-  allTransactions: AllTransactions
-): Promise<ImportResult> {
+  excelData: ExcelData
+): Promise<ImportResult & { transactions: Transaction[] }> {
   try {
     // 验证输入数据
     if (!excelData || !excelData.headers || !excelData.rows) {
@@ -25,6 +23,7 @@ export async function importFromWeChatExcel(
       throw new Error("Excel文件没有数据行");
     }
 
+    const transactions: Transaction[] = [];
     let importedCount = 0;
 
     // TODO: 在这里实现具体的导入逻辑
@@ -32,7 +31,7 @@ export async function importFromWeChatExcel(
     // 2. 解析每行数据为交易记录
     // 3. 验证数据格式
     // 4. 检查重复记录（如果启用）
-    // 5. 创建Transaction实例并添加到allTransactions
+    // 5. 创建 Transaction 对象并添加到数组
     // 6. 统计成功导入的数量
 
     // 临时实现：这里只是一个占位符
@@ -46,7 +45,7 @@ export async function importFromWeChatExcel(
 
       // TODO: 实现具体的行数据解析逻辑
       // const transaction = parseRowToTransaction(row, excelData.headers);
-      // allTransactions.add(transaction);
+      // transactions.push(transaction);
       // importedCount++;
     }
 
@@ -57,6 +56,7 @@ export async function importFromWeChatExcel(
 
     return {
       importedCount,
+      transactions,
     };
 
   } catch (error) {

@@ -3,13 +3,13 @@
 import React, { useState } from 'react';
 import { Tabs, Tab } from '@heroui/tabs';
 
-import { AllTransactions } from '@/types/transaction';
 import { WeChatImport } from '@/components/wechat-import';
 import { AlipayImport } from '@/components/alipay-import';
+import type { Transaction } from '@/types';
 
 export default function ExcelUploadPage() {
-  // 创建AllTransactions实例
-  const [allTransactions] = useState(() => new AllTransactions());
+  // 存储导入的交易记录
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -26,7 +26,7 @@ export default function ExcelUploadPage() {
             </div>
           }
         >
-          <WeChatImport allTransactions={allTransactions} />
+          <WeChatImport onImportSuccess={(importedTransactions) => setTransactions(prev => [...prev, ...importedTransactions])} />
         </Tab>
 
         <Tab 
@@ -38,7 +38,7 @@ export default function ExcelUploadPage() {
             </div>
           }
         >
-          <AlipayImport allTransactions={allTransactions} />
+          <AlipayImport onImportSuccess={(importedTransactions) => setTransactions(prev => [...prev, ...importedTransactions])} />
         </Tab>
 
         <Tab 
