@@ -1,77 +1,50 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Next.js + HeroUI",
-  description: "Make beautiful websites regardless of your design experience.",
+  name: "自动记账",
+  description: "让记账、导入导出与配置管理更简单。",
   navItems: [
     {
-      label: "Home",
+      label: "首页",
       href: "/",
     },
     {
-      label: "记账管理",
+      label: "导入",
+      href: "/upload",
+    },
+    {
+      label: "导出",
+      href: "/export",
+    },
+    {
+      label: "账单",
       href: "/accounting",
     },
     {
-      label: "Excel导入",
-      href: "/excel-upload",
-    },
-    {
-      label: "Docs",
-      href: "/docs",
-    },
-    {
-      label: "Pricing",
-      href: "/pricing",
-    },
-    {
-      label: "Blog",
-      href: "/blog",
-    },
-    {
-      label: "About",
-      href: "/about",
+      label: "配置",
+      href: "/settings",
     },
   ],
   navMenuItems: [
     {
-      label: "Profile",
-      href: "/profile",
+      label: "首页",
+      href: "/",
     },
     {
-      label: "Dashboard",
-      href: "/dashboard",
+      label: "导入",
+      href: "/upload",
     },
     {
-      label: "Projects",
-      href: "/projects",
+      label: "导出",
+      href: "/export",
     },
     {
-      label: "Team",
-      href: "/team",
+      label: "账单",
+      href: "/accounting",
     },
     {
-      label: "Calendar",
-      href: "/calendar",
-    },
-    {
-      label: "Settings",
+      label: "配置",
       href: "/settings",
     },
-    {
-      label: "Help & Feedback",
-      href: "/help-feedback",
-    },
-    {
-      label: "Logout",
-      href: "/logout",
-    },
-  ],
-  links: {
-    github: "https://github.com/heroui-inc/heroui",
-    twitter: "https://twitter.com/hero_ui",
-    docs: "https://heroui.com",
-    discord: "https://discord.gg/9b6yyZKmH4",
-    sponsor: "https://patreon.com/jrgarciadev",
-  },
+  ]
 };
