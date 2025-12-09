@@ -34,16 +34,19 @@ export type Database = {
       }
       budget_type: {
         Row: {
+          icon: string | null
           id: number
           name: string
           user_id: string
         }
         Insert: {
+          icon?: string | null
           id?: number
           name: string
           user_id: string
         }
         Update: {
+          icon?: string | null
           id?: number
           name?: string
           user_id?: string

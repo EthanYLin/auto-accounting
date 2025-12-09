@@ -7,6 +7,7 @@ import {
   type CategoryState,
 } from "@/types/category";
 import type { TransactionType } from "@/types";
+import { TRANSACTION_TYPES } from "@/constants/transaction";
 
 // 类别选择器组件
 interface CategorySelectorProps {
@@ -29,9 +30,7 @@ export function CategorySelector({ onTxTypeChange }: CategorySelectorProps = {})
 
   // TODO: 从数据库获取交易类型选项
   const txTypeOptions = useMemo((): GenericOption[] => {
-    // 使用 database.types.ts 中定义的交易类型
-    const txTypes: TransactionType[] = ["支出", "收入", "转出", "转入", "应收款项", "应付款项"];
-    return txTypes.map((txType) => ({
+    return TRANSACTION_TYPES.map((txType) => ({
       key: txType,
       label: txType,
       icon: txType === "支出" ? "💸" : txType === "收入" ? "💰" : "🔄",
