@@ -28,6 +28,8 @@ import type {
   TransactionType,
 } from "@/types";
 import { TRANSACTION_TYPES } from "@/constants/transaction";
+import { FourChainSelector } from "@/components/four-chain-selector";
+import type { FourChainSelection } from "@/types/four-chain-selector";
 import {
   createAccount,
   createBudgetType,
@@ -76,6 +78,9 @@ export default function SettingsPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+
+  // FourChainSelector测试状态
+  const [chainSelection, setChainSelection] = useState<FourChainSelection>(null);
 
   // 账户
   const [accountName, setAccountName] = useState("");
@@ -971,7 +976,53 @@ export default function SettingsPage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* FourChainSelector 测试组件 */}
+      <Card>
+        <CardHeader>
+          <h3 className="text-lg font-semibold">FourChainSelector 组件测试</h3>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* ListBox模式测试 */}
+            <div>
+              <h4 className="text-md font-medium mb-4">ListBox 模式（桌面端）</h4>
+              <FourChainSelector
+                mode="listbox"
+                onSelectionChange={setChainSelection}
+              />
+            </div>
+
+            {/* Select模式测试 */}
+            <div>
+              <h4 className="text-md font-medium mb-4">Select 模式（移动端）</h4>
+              <FourChainSelector
+                mode="select"
+                onSelectionChange={setChainSelection}
+              />
+            </div>
+          </div>
+
+          {/* 显示选择结果 */}
+          {chainSelection && (
+            <Card className="mt-6">
+              <CardHeader>
+                <h4 className="text-md font-medium">选择结果</h4>
+              </CardHeader>
+              <CardBody>
+                <div className="space-y-2">
+                  <p><strong>交易类型：</strong>{chainSelection.txType}</p>
+                  <p><strong>主类别：</strong>{chainSelection.mainCategory.label}</p>
+                  <p><strong>子类别：</strong>{chainSelection.subCategory.label}</p>
+                  {chainSelection.budgetType && (
+                    <p><strong>预算计划：</strong>{chainSelection.budgetType.name}</p>
+                  )}
+                </div>
+              </CardBody>
+            </Card>
+          )}
+        </CardBody>
+      </Card>
     </div>
   );
 }
-

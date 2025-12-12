@@ -28,6 +28,8 @@ export function TxFieldInputs({ selectedTxType, formData, onChange }: TxFieldInp
     return (
         <div className="w-full">
             <div className="grid gap-4 h-32" style={{ gridTemplateColumns: "3fr 7fr" }}>
+                 
+                 { /* 左侧：金额输入 */}
                  <div className="row-span-2" style={{ position: 'relative' }}>
                      <AmountInput
                         value={formData.amount}
