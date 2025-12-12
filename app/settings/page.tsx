@@ -92,9 +92,9 @@ export default function SettingsPage() {
   const [mainForm, setMainForm] = useState<MainCategoryForm>({
     label: "",
     transaction_type: TRANSACTION_TYPES[0],
-    icon: "📂",
-    back_color: "#EEF2FF",
-    fore_color: "#111827",
+    icon: "",
+    back_color: "",
+    fore_color: "",
   });
   const mainModal = useDisclosure();
 
@@ -103,11 +103,24 @@ export default function SettingsPage() {
     label: "",
     main_category_id: "",
     budget_type_id: null,
-    icon: "📌",
-    back_color: "#F8FAFC",
-    fore_color: "#0F172A",
+    icon: "",
+    back_color: "",
+    fore_color: "",
   });
   const subModal = useDisclosure();
+
+  // 子类别筛选
+  const [subFilterType, setSubFilterType] = useState<TransactionType | "">(TRANSACTION_TYPES[0]);
+  const [subFilterMainId, setSubFilterMainId] = useState<number | "">("");
+
+  // 删除确认
+  type DeleteTarget =
+    | { type: "account"; data: Account }
+    | { type: "budget"; data: BudgetType }
+    | { type: "main"; data: MainCategory }
+    | { type: "sub"; data: SubCategory };
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const deleteModal = useDisclosure();
 
   // 初始化或刷新数据
   useEffect(() => {
@@ -129,6 +142,22 @@ export default function SettingsPage() {
     [budgetTypes],
   );
 
+  // 根据交易类型筛选主类别
+  const filteredMainCategories = useMemo(
+    () => subFilterType
+      ? mainCategories.filter((m) => m.transaction_type === subFilterType)
+      : mainCategories,
+    [mainCategories, subFilterType],
+  );
+
+  // 根据主类别筛选子类别
+  const filteredSubCategories = useMemo(
+    () => subFilterMainId
+      ? subCategories.filter((s) => s.main_category_id === subFilterMainId)
+      : subCategories,
+    [subCategories, subFilterMainId],
+  );
+
   const resetFeedback = () => {
     setActionError(null);
     setActionSuccess(null);
@@ -137,6 +166,7 @@ export default function SettingsPage() {
   const runAction = async (
     fn: () => Promise<{ success: boolean; error?: string }>,
     successMsg: string,
+    onSuccess?: () => void,
   ) => {
     resetFeedback();
     setActionLoading(true);
@@ -149,7 +179,8 @@ export default function SettingsPage() {
     }
 
     setActionSuccess(successMsg);
-    await loadData();
+    onSuccess?.(); // 立即执行成功回调（如关闭弹窗）
+    await loadData(); // 然后在后台刷新数据
   };
 
   // === 账户 ===
@@ -177,12 +208,13 @@ export default function SettingsPage() {
           ? updateAccount(editingAccount.id, accountName.trim())
           : createAccount(accountName.trim()),
       editingAccount ? "账户已更新" : "账户已创建",
+      () => accountModal.onClose(), // 成功后立即关闭弹窗
     );
-    accountModal.onClose();
   };
 
-  const handleDeleteAccount = async (account: Account) => {
-    await runAction(() => deleteAccount(account.id), "账户已删除");
+  const handleDeleteAccount = (account: Account) => {
+    setDeleteTarget({ type: "account", data: account });
+    deleteModal.onOpen();
   };
 
   // === 预算计划 ===
@@ -212,12 +244,13 @@ export default function SettingsPage() {
           ? updateBudgetType(editingBudget.id, budgetName.trim(), budgetIcon.trim() || undefined)
           : createBudgetType(budgetName.trim(), budgetIcon.trim() || undefined),
       editingBudget ? "预算计划已更新" : "预算计划已创建",
+      () => budgetModal.onClose(), // 成功后立即关闭弹窗
     );
-    budgetModal.onClose();
   };
 
-  const handleDeleteBudget = async (budget: BudgetType) => {
-    await runAction(() => deleteBudgetType(budget.id), "预算计划已删除");
+  const handleDeleteBudget = (budget: BudgetType) => {
+    setDeleteTarget({ type: "budget", data: budget });
+    deleteModal.onOpen();
   };
 
   // === 主类别 ===
@@ -236,9 +269,9 @@ export default function SettingsPage() {
       setMainForm({
         label: "",
         transaction_type: TRANSACTION_TYPES[0],
-        icon: "📂",
-        back_color: "#EEF2FF",
-        fore_color: "#111827",
+        icon: "",
+        back_color: "",
+        fore_color: "",
       });
     }
     mainModal.onOpen();
@@ -264,12 +297,13 @@ export default function SettingsPage() {
           ? updateMainCategory(mainForm.id, payload)
           : createMainCategory(payload),
       mainForm.id ? "主类别已更新" : "主类别已创建",
+      () => mainModal.onClose(), // 成功后立即关闭弹窗
     );
-    mainModal.onClose();
   };
 
-  const handleDeleteMain = async (item: MainCategory) => {
-    await runAction(() => deleteMainCategory(item.id), "主类别已删除");
+  const handleDeleteMain = (item: MainCategory) => {
+    setDeleteTarget({ type: "main", data: item });
+    deleteModal.onOpen();
   };
 
   // === 子类别 ===
@@ -290,9 +324,9 @@ export default function SettingsPage() {
         label: "",
         main_category_id: "",
         budget_type_id: null,
-        icon: "📌",
-        back_color: "#F8FAFC",
-        fore_color: "#0F172A",
+        icon: "",
+        back_color: "",
+        fore_color: "",
       });
     }
     subModal.onOpen();
@@ -316,8 +350,8 @@ export default function SettingsPage() {
         : subForm.main_category_id,
       budget_type_id: subForm.budget_type_id,
       icon: subForm.icon || "📌",
-      back_color: subForm.back_color || "#F8FAFC",
-      fore_color: subForm.fore_color || "#0F172A",
+      back_color: subForm.back_color || "bg-gray-100 dark:bg-gray-800",
+      fore_color: subForm.fore_color || "text-gray-800 dark:text-gray-200",
     };
 
     await runAction(
@@ -326,12 +360,46 @@ export default function SettingsPage() {
           ? updateSubCategory(subForm.id, payload)
           : createSubCategory(payload),
       subForm.id ? "子类别已更新" : "子类别已创建",
+      () => subModal.onClose(), // 成功后立即关闭弹窗
     );
-    subModal.onClose();
   };
 
-  const handleDeleteSub = async (item: SubCategory) => {
-    await runAction(() => deleteSubCategory(item.id), "子类别已删除");
+  const handleDeleteSub = (item: SubCategory) => {
+    setDeleteTarget({ type: "sub", data: item });
+    deleteModal.onOpen();
+  };
+
+  // 确认删除
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+
+    const { type, data } = deleteTarget;
+    let actionFn: () => Promise<{ success: boolean; error?: string }>;
+    let successMsg: string;
+
+    switch (type) {
+      case "account":
+        actionFn = () => deleteAccount(data.id);
+        successMsg = "账户已删除";
+        break;
+      case "budget":
+        actionFn = () => deleteBudgetType(data.id);
+        successMsg = "预算计划已删除";
+        break;
+      case "main":
+        actionFn = () => deleteMainCategory(data.id);
+        successMsg = "主类别已删除";
+        break;
+      case "sub":
+        actionFn = () => deleteSubCategory(data.id);
+        successMsg = "子类别已删除";
+        break;
+    }
+
+    await runAction(actionFn, successMsg, () => {
+      deleteModal.onClose();
+      setDeleteTarget(null);
+    });
   };
 
   const isBusy = isLoading || actionLoading;
@@ -341,27 +409,18 @@ export default function SettingsPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">配置中心</h1>
-          <p className="text-sm text-default-500 mt-1">
-            维护账户、主/子类别与预算计划，支撑记账录入。
-          </p>
-          <div className="flex flex-wrap gap-2 mt-3">
-            <Chip variant="flat">账户 {accounts.length}</Chip>
-            <Chip variant="flat">主类别 {mainCategories.length}</Chip>
-            <Chip variant="flat">子类别 {subCategories.length}</Chip>
-            <Chip variant="flat">预算计划 {budgetTypes.length}</Chip>
-          </div>
         </div>
         <div className="flex items-center gap-2">
           {loadError && <Chip color="danger" variant="flat">{loadError}</Chip>}
           <Button
             variant="flat"
             isLoading={isBusy}
-            onClick={() => {
+            onPress={() => {
               resetFeedback();
               void loadData();
             }}
           >
-            重新加载
+            刷新
           </Button>
         </div>
       </div>
@@ -384,7 +443,6 @@ export default function SettingsPage() {
             <CardHeader className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold">账户列表</h3>
-                <p className="text-sm text-default-500">用于交易记录的资金来源/去向</p>
               </div>
               <Button color="primary" onPress={() => openAccountModal()}>
                 新增账户
@@ -445,7 +503,6 @@ export default function SettingsPage() {
             <CardHeader className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold">预算计划</h3>
-                <p className="text-sm text-default-500">为分类关联预算约束</p>
               </div>
               <Button color="primary" onPress={() => openBudgetModal()}>
                 新增预算计划
@@ -508,7 +565,6 @@ export default function SettingsPage() {
             <CardHeader className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold">主类别</h3>
-                <p className="text-sm text-default-500">一级分类，绑定交易类型</p>
               </div>
               <Button color="primary" onPress={() => openMainModal()}>
                 新增主类别
@@ -531,7 +587,8 @@ export default function SettingsPage() {
                     <TableColumn>名称</TableColumn>
                     <TableColumn>交易类型</TableColumn>
                     <TableColumn>图标</TableColumn>
-                    <TableColumn>颜色</TableColumn>
+                    <TableColumn>背景色</TableColumn>
+                    <TableColumn>前景色</TableColumn>
                     <TableColumn align="end">操作</TableColumn>
                   </TableHeader>
                   <TableBody items={mainCategories}>
@@ -542,16 +599,10 @@ export default function SettingsPage() {
                         <TableCell>{item.transaction_type}</TableCell>
                         <TableCell>{item.icon}</TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="h-4 w-4 rounded"
-                              style={{ backgroundColor: item.back_color }}
-                            />
-                            <span
-                              className="h-4 w-4 rounded border"
-                              style={{ backgroundColor: item.fore_color }}
-                            />
-                          </div>
+                          <span className="text-xs font-mono">{item.back_color}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs font-mono">{item.fore_color}</span>
                         </TableCell>
                         <TableCell>
                           <div className="flex justify-end gap-2">
@@ -583,16 +634,45 @@ export default function SettingsPage() {
 
         <Tab key="sub-category" title="子类别">
           <Card>
-            <CardHeader className="flex items-center justify-between">
-              <div>
+            <CardHeader className="flex flex-col gap-4">
+              <div className="flex w-full items-center justify-between">
                 <h3 className="text-lg font-semibold">子类别</h3>
-                <p className="text-sm text-default-500">
-                  二级分类，可选绑定预算计划
-                </p>
+                <Button color="primary" onPress={() => openSubModal()}>
+                  新增子类别
+                </Button>
               </div>
-              <Button color="primary" onPress={() => openSubModal()}>
-                新增子类别
-              </Button>
+              <div className="flex w-full gap-4">
+                <Select
+                  label="交易类型"
+                  placeholder="全部"
+                  className="max-w-xs"
+                  selectedKeys={subFilterType ? [subFilterType] : []}
+                  onSelectionChange={(keys) => {
+                    const key = Array.from(keys)[0] as TransactionType | undefined;
+                    setSubFilterType(key || "");
+                    setSubFilterMainId(""); // 切换交易类型时重置主类别筛选
+                  }}
+                >
+                  {TRANSACTION_TYPES.map((type) => (
+                    <SelectItem key={type}>{type}</SelectItem>
+                  ))}
+                </Select>
+                <Select
+                  label="主类别"
+                  placeholder="请先选择交易类型"
+                  className="max-w-xs"
+                  isDisabled={!subFilterType}
+                  selectedKeys={subFilterMainId ? [String(subFilterMainId)] : []}
+                  onSelectionChange={(keys) => {
+                    const key = Array.from(keys)[0];
+                    setSubFilterMainId(key ? Number(key) : "");
+                  }}
+                >
+                  {filteredMainCategories.map((item) => (
+                    <SelectItem key={item.id}>{item.label}</SelectItem>
+                  ))}
+                </Select>
+              </div>
             </CardHeader>
             <Divider />
             <CardBody>
@@ -600,9 +680,13 @@ export default function SettingsPage() {
                 <div className="py-8 flex justify-center">
                   <Spinner label="加载中..." />
                 </div>
-              ) : subCategories.length === 0 ? (
+              ) : !subFilterMainId ? (
                 <div className="py-8 text-center text-default-500">
-                  暂无子类别，点击“新增子类别”开始添加。
+                  请选择交易类型和主类别以查看子类别。
+                </div>
+              ) : filteredSubCategories.length === 0 ? (
+                <div className="py-8 text-center text-default-500">
+                  该主类别下暂无子类别，点击"新增子类别"开始添加。
                 </div>
               ) : (
                 <Table aria-label="子类别列表" removeWrapper>
@@ -612,10 +696,11 @@ export default function SettingsPage() {
                     <TableColumn>所属主类别</TableColumn>
                     <TableColumn>预算计划</TableColumn>
                     <TableColumn>图标</TableColumn>
-                    <TableColumn>颜色</TableColumn>
+                    <TableColumn>背景色</TableColumn>
+                    <TableColumn>前景色</TableColumn>
                     <TableColumn align="end">操作</TableColumn>
                   </TableHeader>
-                  <TableBody items={subCategories}>
+                  <TableBody items={filteredSubCategories}>
                     {(item) => (
                       <TableRow key={item.id}>
                         <TableCell>#{item.id}</TableCell>
@@ -631,16 +716,10 @@ export default function SettingsPage() {
                         </TableCell>
                         <TableCell>{item.icon}</TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="h-4 w-4 rounded"
-                              style={{ backgroundColor: item.back_color }}
-                            />
-                            <span
-                              className="h-4 w-4 rounded border"
-                              style={{ backgroundColor: item.fore_color }}
-                            />
-                          </div>
+                          <span className="text-xs font-mono">{item.back_color}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs font-mono">{item.fore_color}</span>
                         </TableCell>
                         <TableCell>
                           <div className="flex justify-end gap-2">
@@ -701,13 +780,13 @@ export default function SettingsPage() {
           <ModalBody>
             <Input
               label="预算计划名称"
-              placeholder="如 月度生活费"
+              placeholder="如 基本开支"
               value={budgetName}
               onChange={(e) => setBudgetName(e.target.value)}
             />
             <Input
               label="预算计划图标"
-              placeholder="可输入 Emoji 或短文本"
+              placeholder="输入 Emoji"
               value={budgetIcon}
               onChange={(e) => setBudgetIcon(e.target.value)}
             />
@@ -730,7 +809,7 @@ export default function SettingsPage() {
           <ModalBody>
             <Input
               label="名称"
-              placeholder="如 餐饮"
+              placeholder="如 饮食"
               value={mainForm.label}
               onChange={(e) => setMainForm((prev) => ({ ...prev, label: e.target.value }))}
             />
@@ -750,28 +829,21 @@ export default function SettingsPage() {
             </Select>
             <Input
               label="图标"
-              placeholder="可输入 Emoji 或短文本"
+              placeholder="输入 Emoji"
               value={mainForm.icon}
               onChange={(e) => setMainForm((prev) => ({ ...prev, icon: e.target.value }))}
             />
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                type="color"
-                label="背景色"
-                value={mainForm.back_color}
-                onChange={(e) => setMainForm((prev) => ({ ...prev, back_color: e.target.value }))}
-              />
-              <Input
-                type="color"
-                label="前景色"
-                value={mainForm.fore_color}
-                onChange={(e) => setMainForm((prev) => ({ ...prev, fore_color: e.target.value }))}
-              />
-            </div>
-            <Textarea
-              isReadOnly
-              label="说明"
-              value="主类别与交易类型绑定，便于后续录入时过滤；色彩用于 UI 展示。"
+            <Input
+              label="背景色"
+              placeholder="如 bg-yellow-100"
+              value={mainForm.back_color}
+              onChange={(e) => setMainForm((prev) => ({ ...prev, back_color: e.target.value }))}
+            />
+            <Input
+              label="前景色"
+              placeholder="如 text-yellow-800"
+              value={mainForm.fore_color}
+              onChange={(e) => setMainForm((prev) => ({ ...prev, fore_color: e.target.value }))}
             />
           </ModalBody>
           <ModalFooter>
@@ -811,7 +883,7 @@ export default function SettingsPage() {
               }}
             >
               {mainCategories.map((item) => (
-                <SelectItem key={item.id}>
+                <SelectItem key={item.id} textValue={`${item.label}（${item.transaction_type}）`}>
                   {item.label}（{item.transaction_type}）
                 </SelectItem>
               ))}
@@ -836,28 +908,21 @@ export default function SettingsPage() {
             </Select>
             <Input
               label="图标"
-              placeholder="可输入 Emoji 或短文本"
+              placeholder="输入 Emoji"
               value={subForm.icon}
               onChange={(e) => setSubForm((prev) => ({ ...prev, icon: e.target.value }))}
             />
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                type="color"
-                label="背景色"
-                value={subForm.back_color}
-                onChange={(e) => setSubForm((prev) => ({ ...prev, back_color: e.target.value }))}
-              />
-              <Input
-                type="color"
-                label="前景色"
-                value={subForm.fore_color}
-                onChange={(e) => setSubForm((prev) => ({ ...prev, fore_color: e.target.value }))}
-              />
-            </div>
-            <Textarea
-              isReadOnly
-              label="说明"
-              value="子类别继承主类别的交易类型，可选择关联预算计划以便后续控制支出。"
+            <Input
+              label="背景色"
+              placeholder="如 bg-blue-100"
+              value={subForm.back_color}
+              onChange={(e) => setSubForm((prev) => ({ ...prev, back_color: e.target.value }))}
+            />
+            <Input
+              label="前景色"
+              placeholder="如 text-blue-800"
+              value={subForm.fore_color}
+              onChange={(e) => setSubForm((prev) => ({ ...prev, fore_color: e.target.value }))}
             />
           </ModalBody>
           <ModalFooter>
@@ -866,6 +931,42 @@ export default function SettingsPage() {
             </Button>
             <Button color="primary" isLoading={actionLoading} onPress={handleSaveSub}>
               保存
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* 删除确认弹窗 */}
+      <Modal isOpen={deleteModal.isOpen} onClose={deleteModal.onClose} size="sm">
+        <ModalContent>
+          <ModalHeader>确认删除</ModalHeader>
+          <ModalBody>
+            {deleteTarget && (
+              <div className="space-y-2">
+                <p className="text-sm">
+                  确定要删除{" "}
+                  {deleteTarget.type === "account" && "账户"}
+                  {deleteTarget.type === "budget" && "预算计划"}
+                  {deleteTarget.type === "main" && "主类别"}
+                  {deleteTarget.type === "sub" && "子类别"}
+                  {" "}
+                  <span className="font-bold">
+                    {deleteTarget.type === "account" && deleteTarget.data.name}
+                    {deleteTarget.type === "budget" && deleteTarget.data.name}
+                    {deleteTarget.type === "main" && deleteTarget.data.label}
+                    {deleteTarget.type === "sub" && deleteTarget.data.label}
+                  </span>
+                  {" "}吗？
+                </p>
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={deleteModal.onClose}>
+              取消
+            </Button>
+            <Button color="danger" isLoading={actionLoading} onPress={confirmDelete}>
+              确认删除
             </Button>
           </ModalFooter>
         </ModalContent>

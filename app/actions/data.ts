@@ -74,7 +74,7 @@ export async function getAccounts(): Promise<{ success: boolean; data?: Account[
       .from('account')
       .select('*')
       .eq('user_id', user.id)
-      .order('name');
+    .order('id', { ascending: true });
 
     if (error) {
       console.error('获取账户失败:', error);
@@ -118,8 +118,7 @@ export async function getMainCategories(): Promise<{ success: boolean; data?: Ma
       .from('main_category')
       .select('*')
       .eq('user_id', user.id)
-      .order('transaction_type')
-      .order('label');
+    .order('id', { ascending: true });
 
     if (error) {
       console.error('获取主类别失败:', error);
@@ -163,8 +162,7 @@ export async function getSubCategories(): Promise<{ success: boolean; data?: Sub
       .from('sub_category')
       .select('*')
       .eq('user_id', user.id)
-      .order('main_category_id')
-      .order('label');
+    .order('id', { ascending: true });
 
     if (error) {
       console.error('获取子类别失败:', error);
@@ -208,7 +206,7 @@ export async function getBudgetTypes(): Promise<{ success: boolean; data?: Budge
       .from('budget_type')
       .select('*')
       .eq('user_id', user.id)
-      .order('name');
+    .order('id', { ascending: true });
 
     if (error) {
       console.error('获取预算计划失败:', error);
