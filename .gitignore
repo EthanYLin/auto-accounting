@@ -38,3 +38,9 @@ pnpm-lock.yaml
 yarn.lock
 package-lock.json
 bun.lockb
+
+# Supabase
+supabase/.branches
+supabase/.temp
+supabase/.ref
+supabase/config.local.toml

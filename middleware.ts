@@ -11,9 +11,7 @@ export async function middleware(request: NextRequest) {
     '/auth/login',
     '/auth/register',
     '/auth/forgot-password',
-    '/auth/reset-password',
-    '/auth/confirm',
-    '/api/health',
+    '/auth/reset-password'
   ]
 
   // 检查是否是公开路径

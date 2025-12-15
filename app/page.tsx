@@ -8,7 +8,7 @@ import { Button } from "@heroui/button";
 import { BottomActionBar } from "@/components/bottom-action-bar";
 import { useAppData } from "@/contexts/app-data-context";
 import type { TxFieldInputsData } from "@/components/tx-field-inputs";
-import type { FourChainSelection } from "@/types/four-chain-selector";
+import type { FourChainSelection } from "@/models/four-chain-selector";
 
 // 使用 dynamic import 替代 NoSSR
 const FourChainSelector = dynamic(

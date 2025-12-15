@@ -3,12 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Checkbox, CheckboxGroup } from "@heroui/checkbox";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
-import { Input, Textarea } from "@heroui/input";
+import { Input } from "@heroui/input";
 import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure } from "@heroui/modal";
-import { Radio, RadioGroup } from "@heroui/radio";
 import { Select, SelectItem } from "@heroui/select";
 import { Spinner } from "@heroui/spinner";
 import {
@@ -28,10 +26,8 @@ import type {
   MainCategory,
   SubCategory,
   TransactionType,
-} from "@/types";
-import { TRANSACTION_TYPES } from "@/constants/transaction-type";
-import { FourChainSelector } from "@/components/four-chain-selector";
-import type { FourChainSelection } from "@/types/four-chain-selector";
+} from "@/models";
+import { TRANSACTION_TYPES } from "@/models/transaction-type";
 import {
   createAccount,
   createBudgetType,
@@ -80,13 +76,6 @@ export default function SettingsPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-
-  // FourChainSelector测试状态
-  const [chainSelection, setChainSelection] = useState<FourChainSelection>(null);
-  const [selectorMode, setSelectorMode] = useState<"listbox" | "select">("listbox");
-  const [allowedTxTypes, setAllowedTxTypes] = useState<TransactionType[]>(
-    TRANSACTION_TYPES.map(item => item.type)
-  );
 
   // 账户
   const [accountName, setAccountName] = useState("");
@@ -982,69 +971,6 @@ export default function SettingsPage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-
-      {/* FourChainSelector 测试组件 */}
-      <Card>
-        <CardHeader>
-          <h3 className="text-lg font-semibold">FourChainSelector 组件测试</h3>
-        </CardHeader>
-        <CardBody className="space-y-6">
-          {/* 控制面板 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* 模式选择 */}
-            <RadioGroup
-              label="选择器模式"
-              value={selectorMode}
-              onValueChange={(value) => setSelectorMode(value as "listbox" | "select")}
-            >
-              <Radio value="listbox">ListBox 模式（桌面端推荐）</Radio>
-              <Radio value="select">Select 模式（移动端推荐）</Radio>
-            </RadioGroup>
-
-            {/* 交易类型选择 */}
-            <CheckboxGroup
-              label="允许的交易类型"
-              value={allowedTxTypes}
-              onValueChange={(values) => setAllowedTxTypes(values as TransactionType[])}
-            >
-              {TRANSACTION_TYPES.map((type) => (
-                <Checkbox key={type.type} value={type.type}>
-                  {type.icon} {type.type}
-                </Checkbox>
-              ))}
-            </CheckboxGroup>
-
-            {/* 显示选择结果 */}
-            {chainSelection && (
-              <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                <h4 className="text-md font-medium mb-2">选择结果</h4>
-                <div className="space-y-1 text-sm">
-                  <p><strong>交易类型：</strong>{chainSelection.txType}</p>
-                  <p><strong>主类别：</strong>{chainSelection.mainCategory.label}</p>
-                  <p><strong>子类别：</strong>{chainSelection.subCategory.label}</p>
-                  {chainSelection.budgetType && (
-                    <p><strong>预算计划：</strong>{chainSelection.budgetType.name}</p>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <Divider />
-
-          {/* 选择器组件 - 全宽 */}
-          <div className="w-full">
-            <h4 className="text-md font-medium mb-4">
-              {selectorMode === "listbox" ? "ListBox 模式" : "Select 模式"}
-            </h4>
-            <FourChainSelector
-              mode={selectorMode}
-              allowedTxTypes={allowedTxTypes.length > 0 ? allowedTxTypes : undefined}
-              onSelectionChange={setChainSelection}
-            />
-          </div>
-        </CardBody>
-      </Card>
     </div>
   );
 }

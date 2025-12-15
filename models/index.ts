@@ -50,10 +50,3 @@ export type TransactionWithRelations = Transaction & {
   sub_category_data?: SubCategory;
   budget_type_data?: BudgetType;
 };
-
-// 分类路径类型
-export type CategoryPath = {
-  type: TransactionType;
-  main: string;
-  sub: string;
-};

@@ -3,9 +3,9 @@
 import { useReducer, useMemo, useEffect } from "react";
 import { Listbox, ListboxItem } from "@heroui/listbox";
 import { Select, SelectItem } from "@heroui/select";
-import { fourChainReducer, type FourChainState, type FourChainSelection } from "@/types/four-chain-selector";
-import type { TransactionType } from "@/types";
-import { TRANSACTION_TYPES } from "@/constants/transaction-type";
+import { fourChainReducer, type FourChainState, type FourChainSelection } from "@/models/four-chain-selector";
+import type { TransactionType } from "@/models";
+import { TRANSACTION_TYPES } from "@/models/transaction-type";
 import { useAppData } from "@/contexts/app-data-context";
 
 // 图标组件

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@heroui/input";
-import type { TransactionType } from "@/types";
+import type { TransactionType } from "@/models";
 
 interface AmountInputProps {
     value: string;

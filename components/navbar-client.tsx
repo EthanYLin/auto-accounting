@@ -17,7 +17,7 @@ import { Button } from "@heroui/button";
 import { link as linkStyles } from "@heroui/theme";
 import type { User } from "@supabase/supabase-js";
 
-import { siteConfig } from "@/config/site";
+import { siteConfig } from "@/models/site-config";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { UserMenu } from "@/components/user-menu";
 
