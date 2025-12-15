@@ -1,5 +1,5 @@
 import { SVGProps } from "react";
-import type { Database, Tables, TablesInsert, TablesUpdate, Enums } from "@/database.types";
+import type { Database, Tables, TablesInsert, TablesUpdate, Enums } from "@/types/database.types";
 
 export type IconSvgProps = SVGProps<SVGSVGElement> & {
   size?: number;

@@ -4,9 +4,9 @@ import clsx from "clsx";
 
 import { Providers } from "./providers";
 
-import { siteConfig } from "@/models/site-config";
-import { Navbar } from "@/components/navbar";
-import { DataLoader } from "@/components/data-loader";
+import { siteConfig } from "@/constants/site";
+import { Navbar } from "@/components/navbar/navbar";
+import { DataLoader } from "@/components/context/data-loader";
 
 // Font variables for Tailwind CSS (defined in globals.css)
 const fontSans = { variable: "--font-sans" };

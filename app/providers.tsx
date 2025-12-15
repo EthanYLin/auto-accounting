@@ -7,7 +7,7 @@ import { HeroUIProvider } from "@heroui/system";
 import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { I18nProvider } from "@react-aria/i18n";
-import { AppDataProvider } from "@/contexts/app-data-context";
+import { AppDataProvider } from "@/components/context/app-data-context";
 
 export interface ProvidersProps {
   children: React.ReactNode;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { useAppData } from '@/contexts/app-data-context';
+import { useAppData } from '@/components/context/app-data-context';
 import { getUser } from '@/app/actions/auth';
 
 /**

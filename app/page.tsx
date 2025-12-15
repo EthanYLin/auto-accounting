@@ -5,14 +5,14 @@ import dynamic from "next/dynamic";
 import { Skeleton } from "@heroui/skeleton";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Button } from "@heroui/button";
-import { BottomActionBar } from "@/components/bottom-action-bar";
-import { useAppData } from "@/contexts/app-data-context";
-import type { TxFieldInputsData } from "@/components/tx-field-inputs";
-import type { FourChainSelection } from "@/models/four-chain-selector";
+import { BottomActionBar } from "@/components/homepage/bottom-action-bar";
+import { useAppData } from "@/components/context/app-data-context";
+import type { TxFieldInputsData } from "@/components/homepage/tx-field-inputs";
+import type { FourChainSelection } from "@/components/homepage/four-chain-selector";
 
 // 使用 dynamic import 替代 NoSSR
 const FourChainSelector = dynamic(
-  () => import("@/components/four-chain-selector").then(mod => ({ default: mod.FourChainSelector })),
+  () => import("@/components/homepage/four-chain-selector").then(mod => ({ default: mod.FourChainSelector })),
   {
     ssr: false,
     loading: () => (
@@ -32,7 +32,7 @@ const FourChainSelector = dynamic(
 
 // 交易输入组件
 const TxFieldInputs = dynamic(
-  () => import("@/components/tx-field-inputs").then(mod => ({ default: mod.TxFieldInputs })),
+  () => import("@/components/homepage/tx-field-inputs").then(mod => ({ default: mod.TxFieldInputs })),
   {
     ssr: false,
     loading: () => (

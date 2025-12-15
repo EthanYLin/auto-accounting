@@ -4,7 +4,7 @@ import React, { useState, useCallback } from 'react';
 import { Alert } from '@heroui/alert';
 import * as XLSX from 'xlsx';
 
-import { FileUpload } from '@/components/file-upload';
+import { FileUpload } from '@/app/upload/file-upload';
 import { importFromWeChatExcel } from '@/lib/wechat-import';
 import type { ExcelData, ImportResult } from '@/lib/wechat-import/types';
 import type { Transaction } from '@/types';
@@ -63,8 +63,8 @@ export function WeChatImport({ onImportSuccess }: WeChatImportProps) {
 
       // 解析完成后自动开始导入
       const transactions = await importFromWeChatExcel(parsedData);
-      setResult({ importedCount: transactions.length });
-      onImportSuccess(transactions);
+      setResult({ importedCount: transactions.transactions.length });
+      onImportSuccess(transactions.transactions as Transaction[]);
       
     } catch (err) {
       setError(err instanceof Error ? err.message : '解析Excel文件失败');

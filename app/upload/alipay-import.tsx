@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { Alert } from '@heroui/alert';
 
-import { FileUpload } from '@/components/file-upload';
+import { FileUpload } from '@/app/upload/file-upload';
 import type { ImportResult } from '@/lib/wechat-import/types';
 import type { Transaction } from '@/types';
 

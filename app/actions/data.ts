@@ -13,7 +13,7 @@ import type {
   SubCategory,
   SubCategoryInsert,
   SubCategoryUpdate,
-} from '@/models';
+} from '@/types';
 
 type ActionResult<T> = { success: boolean; data?: T; error?: string };
 

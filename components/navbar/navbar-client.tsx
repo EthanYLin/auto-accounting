@@ -17,9 +17,9 @@ import { Button } from "@heroui/button";
 import { link as linkStyles } from "@heroui/theme";
 import type { User } from "@supabase/supabase-js";
 
-import { siteConfig } from "@/models/site-config";
-import { ThemeSwitch } from "@/components/theme-switch";
-import { UserMenu } from "@/components/user-menu";
+import { siteConfig } from "@/constants/site";
+import { ThemeSwitch } from "@/components/navbar/theme-switch";
+import { UserMenu } from "@/components/navbar/user-menu";
 
 interface NavbarClientProps {
   user: User | null;

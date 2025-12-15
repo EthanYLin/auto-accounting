@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import { Tabs, Tab } from '@heroui/tabs';
 
-import { WeChatImport } from '@/components/wechat-import';
-import { AlipayImport } from '@/components/alipay-import';
+import { WeChatImport } from '@/app/upload/wechat-import';
+import { AlipayImport } from '@/app/upload/alipay-import';
 import type { Transaction } from '@/types';
 
 export default function ExcelUploadPage() {

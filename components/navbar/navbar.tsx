@@ -1,5 +1,5 @@
 import { getUser } from "@/app/actions/auth";
-import { NavbarClient } from "@/components/navbar-client";
+import { NavbarClient } from "@/components/navbar/navbar-client";
 
 export const Navbar = async () => {
   const user = await getUser();

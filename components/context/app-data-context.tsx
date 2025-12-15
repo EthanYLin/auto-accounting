@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import type { Account, MainCategory, SubCategory, BudgetType } from '@/models';
+import type { Account, MainCategory, SubCategory, BudgetType } from '@/types';
 import { getAccounts, getMainCategories, getSubCategories, getBudgetTypes } from '@/app/actions/data';
 
 interface AppData {

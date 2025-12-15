@@ -9,7 +9,7 @@ import {
 import { Avatar } from "@heroui/avatar";
 import { signOut } from "@/app/actions/auth";
 import { useRouter } from "next/navigation";
-import { useAppData } from "@/contexts/app-data-context";
+import { useAppData } from "@/components/context/app-data-context";
 
 interface UserMenuProps {
   user: {

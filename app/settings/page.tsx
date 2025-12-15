@@ -19,15 +19,15 @@ import {
 } from "@heroui/table";
 import { Tab, Tabs } from "@heroui/tabs";
 
-import { useAppData } from "@/contexts/app-data-context";
+import { useAppData } from "@/components/context/app-data-context";
 import type {
   Account,
   BudgetType,
   MainCategory,
   SubCategory,
   TransactionType,
-} from "@/models";
-import { TRANSACTION_TYPES } from "@/models/transaction-type";
+} from "@/types";
+import { TRANSACTION_TYPES } from "@/constants/transaction-type";
 import {
   createAccount,
   createBudgetType,

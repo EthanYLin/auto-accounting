@@ -1,4 +1,4 @@
-import type { TransactionType } from "@/models";
+import type { TransactionType } from "@/types";
 
 export interface TransactionTypeOption {
   type: TransactionType;
