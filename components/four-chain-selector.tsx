@@ -232,7 +232,7 @@ export function FourChainSelector({
 
     // ListBox模式
     return (
-      <div className="flex-1 min-w-[200px]">
+      <div className="flex-1 min-w-[192px]">
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{title}</p>
         <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-800 shadow-sm">
           <Listbox

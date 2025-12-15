@@ -7,12 +7,12 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@herou
 import { Button } from "@heroui/button";
 import { BottomActionBar } from "@/components/bottom-action-bar";
 import { useAppData } from "@/contexts/app-data-context";
-import type { TransactionType } from "@/types";
 import type { TxFieldInputsData } from "@/components/tx-field-inputs";
+import type { FourChainSelection } from "@/types/four-chain-selector";
 
 // 使用 dynamic import 替代 NoSSR
-const CategorySelector = dynamic(
-  () => import("@/components/category-selector").then(mod => ({ default: mod.CategorySelector })),
+const FourChainSelector = dynamic(
+  () => import("@/components/four-chain-selector").then(mod => ({ default: mod.FourChainSelector })),
   {
     ssr: false,
     loading: () => (
@@ -44,11 +44,12 @@ const TxFieldInputs = dynamic(
 );
 
 export default function Home() {
-  const { accounts, mainCategories, subCategories, budgetTypes, error, isLoading } = useAppData();
-  const [selectedTxType, setSelectedTxType] = useState<TransactionType | undefined>();
+  const { error } = useAppData();
+  const [chainSelection, setChainSelection] = useState<FourChainSelection>(null);
   const [currentId, setCurrentId] = useState(1);
   const totalCount = 25; // 假数据：总共25条记录
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [selectorMode, setSelectorMode] = useState<"listbox" | "select">("select");
 
   // 表单数据状态
   const [formData, setFormData] = useState<TxFieldInputsData>({
@@ -58,6 +59,20 @@ export default function Home() {
     name: "",
     merchant: ""
   });
+
+  // 检测屏幕尺寸并设置选择器模式
+  useEffect(() => {
+    const handleResize = () => {
+      setSelectorMode(window.innerWidth >= 950 ? "listbox" : "select");
+    };
+
+    // 初始化
+    handleResize();
+
+    // 监听窗口大小变化
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // 监听错误状态，显示错误弹窗
   useEffect(() => {
@@ -117,7 +132,7 @@ export default function Home() {
           {/* 交易输入组件 */}
           <div className="mb-8">
             <TxFieldInputs 
-              selectedTxType={selectedTxType} 
+              selectedTxType={chainSelection?.txType} 
               formData={formData}
               onChange={handleFormChange}
             />
@@ -126,185 +141,30 @@ export default function Home() {
           {/* 分隔线 */}
           <div className="border-t border-gray-200 dark:border-gray-600 my-8"></div>
 
-          {/* 类别选择器组件 */}
+          {/* 四联选择器组件 */}
           <div>
-            <CategorySelector onTxTypeChange={setSelectedTxType} />
+            <FourChainSelector 
+              mode={selectorMode}
+              onSelectionChange={setChainSelection}
+            />
           </div>
 
+          {/* 调试信息 */}
           <div className="mt-4 p-4 bg-gray-50 rounded text-xs text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-            <div><b>TxFieldInputs 数据：</b></div>
+            <div><b>表单数据：</b></div>
             <pre className="whitespace-pre-wrap break-all">
-              {JSON.stringify(formData, null, 2)}
+              {JSON.stringify({
+                formData,
+                chainSelection: chainSelection ? {
+                  txType: chainSelection.txType,
+                  mainCategory: chainSelection.mainCategory?.label,
+                  subCategory: chainSelection.subCategory?.label,
+                  budgetType: chainSelection.budgetType?.name,
+                } : null
+              }, null, 2)}
             </pre>
           </div>
 
-        </div>
-
-        {/* 数据库数据显示区域 */}
-        <div className="w-full max-w-6xl mt-8 space-y-4">
-          {/* 账户数据 */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600">
-            <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">
-              账户列表 ({accounts.length})
-            </h3>
-            {isLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-full rounded" />
-                <Skeleton className="h-8 w-full rounded" />
-              </div>
-            ) : accounts.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="text-left py-2 px-4">ID</th>
-                      <th className="text-left py-2 px-4">账户名称</th>
-                      <th className="text-left py-2 px-4">用户ID</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {accounts.map((account) => (
-                      <tr key={account.id} className="border-b border-gray-100 dark:border-gray-700">
-                        <td className="py-2 px-4">{account.id}</td>
-                        <td className="py-2 px-4 font-medium">{account.name}</td>
-                        <td className="py-2 px-4 text-xs text-gray-500">{account.user_id.slice(0, 8)}...</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-gray-500 dark:text-gray-400">暂无账户数据</p>
-            )}
-          </div>
-
-          {/* 主类别数据 */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600">
-            <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">
-              主类别列表 ({mainCategories.length})
-            </h3>
-            {isLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-full rounded" />
-                <Skeleton className="h-8 w-full rounded" />
-              </div>
-            ) : mainCategories.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="text-left py-2 px-4">ID</th>
-                      <th className="text-left py-2 px-4">图标</th>
-                      <th className="text-left py-2 px-4">名称</th>
-                      <th className="text-left py-2 px-4">交易类型</th>
-                      <th className="text-left py-2 px-4">颜色</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mainCategories.map((category) => (
-                      <tr key={category.id} className="border-b border-gray-100 dark:border-gray-700">
-                        <td className="py-2 px-4">{category.id}</td>
-                        <td className="py-2 px-4 text-lg">{category.icon}</td>
-                        <td className="py-2 px-4 font-medium">{category.label}</td>
-                        <td className="py-2 px-4">
-                          <span className="px-2 py-1 rounded text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                            {category.transaction_type}
-                          </span>
-                        </td>
-                        <td className="py-2 px-4">
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-6 h-6 rounded border border-gray-300"
-                              style={{ backgroundColor: category.back_color }}
-                            />
-                            <span className="text-xs text-gray-500">{category.back_color}</span>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-gray-500 dark:text-gray-400">暂无主类别数据</p>
-            )}
-          </div>
-
-          {/* 子类别数据 */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600">
-            <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">
-              子类别列表 ({subCategories.length})
-            </h3>
-            {isLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-full rounded" />
-                <Skeleton className="h-8 w-full rounded" />
-              </div>
-            ) : subCategories.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="text-left py-2 px-4">ID</th>
-                      <th className="text-left py-2 px-4">图标</th>
-                      <th className="text-left py-2 px-4">名称</th>
-                      <th className="text-left py-2 px-4">主类别ID</th>
-                      <th className="text-left py-2 px-4">预算计划ID</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {subCategories.map((category) => (
-                      <tr key={category.id} className="border-b border-gray-100 dark:border-gray-700">
-                        <td className="py-2 px-4">{category.id}</td>
-                        <td className="py-2 px-4 text-lg">{category.icon}</td>
-                        <td className="py-2 px-4 font-medium">{category.label}</td>
-                        <td className="py-2 px-4">{category.main_category_id}</td>
-                        <td className="py-2 px-4">{category.budget_type_id || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-gray-500 dark:text-gray-400">暂无子类别数据</p>
-            )}
-          </div>
-
-          {/* 预算计划数据 */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600 mb-24">
-            <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">
-              预算计划列表 ({budgetTypes.length})
-            </h3>
-            {isLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-full rounded" />
-                <Skeleton className="h-8 w-full rounded" />
-              </div>
-            ) : budgetTypes.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="text-left py-2 px-4">ID</th>
-                      <th className="text-left py-2 px-4">名称</th>
-                      <th className="text-left py-2 px-4">用户ID</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {budgetTypes.map((budget) => (
-                      <tr key={budget.id} className="border-b border-gray-100 dark:border-gray-700">
-                        <td className="py-2 px-4">{budget.id}</td>
-                        <td className="py-2 px-4 font-medium">{budget.name}</td>
-                        <td className="py-2 px-4 text-xs text-gray-500">{budget.user_id.slice(0, 8)}...</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-gray-500 dark:text-gray-400">暂无预算计划数据</p>
-            )}
-          </div>
         </div>
 
       </section>
