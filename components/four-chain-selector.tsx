@@ -5,7 +5,7 @@ import { Listbox, ListboxItem } from "@heroui/listbox";
 import { Select, SelectItem } from "@heroui/select";
 import { fourChainReducer, type FourChainState, type FourChainSelection } from "@/types/four-chain-selector";
 import type { TransactionType } from "@/types";
-import { TRANSACTION_TYPES } from "@/constants/transaction";
+import { TRANSACTION_TYPES } from "@/constants/transaction-type";
 import { useAppData } from "@/contexts/app-data-context";
 
 // 图标组件
@@ -53,15 +53,19 @@ export function FourChainSelector({
 
   // 交易类型选项
   const txTypeOptions = useMemo((): ChainOption[] => {
-    const types = allowedTxTypes || TRANSACTION_TYPES;
-    return types.map((txType) => ({
-      key: txType,
-      label: txType,
-      icon: txType === "支出" ? "💸" : txType === "收入" ? "💰" : "🔄",
-      backColor: "bg-gray-100 dark:bg-gray-800",
-      foreColor: "text-gray-800 dark:text-gray-200",
-      textValue: txType
-    }));
+    const types = allowedTxTypes || TRANSACTION_TYPES.map(item => item.type);
+    return types.map((txType) => {
+      const typeOption = TRANSACTION_TYPES.find(item => item.type === txType);
+      return {
+        key: txType,
+        label: txType,
+        icon: typeOption?.icon || "🔄",
+        backColor: typeOption?.back_color || "bg-gray-100 dark:bg-gray-800",
+        foreColor: typeOption?.fore_color || "text-gray-800 dark:text-gray-200",
+        color: typeOption?.back_color || "default",
+        textValue: txType
+      };
+    });
   }, [allowedTxTypes]);
 
   // 主类别选项（按交易类型过滤）
@@ -76,7 +80,7 @@ export function FourChainSelector({
         icon: item.icon,
         backColor: item.back_color,
         foreColor: item.fore_color,
-        textValue: `${item.label}-${item.id}`,
+        textValue: item.label,
       }));
   }, [state.txType, mainCategories]);
 
@@ -93,7 +97,7 @@ export function FourChainSelector({
         icon: item.icon,
         backColor: item.back_color,
         foreColor: item.fore_color,
-        textValue: `${item.label}-${item.id}`,
+        textValue: item.label,
       }));
   }, [state.main, subCategories]);
 
@@ -122,18 +126,19 @@ export function FourChainSelector({
     }
   }, [state.main, state.sub, subCategoryOptions]);
 
-  // 选择子类别后自动选择预算计划
+  // 选择子类别后自动选择预算计划（仅在子类别改变时触发一次）
   useEffect(() => {
     if (!state.sub) return;
 
     const matchedSub = subCategories.find((item) => item.id === Number(state.sub));
     if (matchedSub?.budget_type_id) {
       const budgetId = String(matchedSub.budget_type_id);
-      if (budgetId !== state.budget) {
-        dispatch({ type: "SET_BUDGET", budget: budgetId });
-      }
+      dispatch({ type: "SET_BUDGET", budget: budgetId });
+    } else {
+      // 如果子类别没有绑定预算，清空预算选择
+      dispatch({ type: "SET_BUDGET", budget: undefined });
     }
-  }, [state.sub, state.budget, subCategories]);
+  }, [state.sub, subCategories]); // 移除 state.budget 依赖，只在子类别改变时触发
 
   // 构建完整选择结果
   const fullSelection = useMemo((): FourChainSelection => {
@@ -191,7 +196,7 @@ export function FourChainSelector({
   ) => {
     if (mode === "select") {
       return (
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-[150px]">
           <Select
             label={title}
             placeholder={placeholder || `选择${title}`}
@@ -276,7 +281,7 @@ export function FourChainSelector({
   return (
     <div className={`w-full space-y-4 ${className}`}>
       {/* 四联选择器 - 横向排列 */}
-      <div className={`flex ${mode === 'select' ? 'flex-col' : 'flex-wrap'} gap-4`}>
+      <div className={`${mode === 'select' ? 'grid grid-cols-2 md:grid-cols-4' : 'flex flex-wrap'} gap-4`}>
         {/* 交易类型选择 */}
         {renderSelector(
           "交易类型",
@@ -314,20 +319,6 @@ export function FourChainSelector({
         )}
       </div>
 
-      {/* 显示完整选择结果 */}
-      {fullSelection && (
-        <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-          <p className="text-sm font-semibold">已选择：</p>
-          <p className="text-sm mt-1">
-            {fullSelection.txType} → {fullSelection.mainCategory.label} → {fullSelection.subCategory.label}
-          </p>
-          {fullSelection.budgetType && (
-            <p className="text-sm mt-1 text-gray-600 dark:text-gray-400">
-              预算计划：{fullSelection.budgetType.name}
-            </p>
-          )}
-        </div>
-      )}
     </div>
   );
 }

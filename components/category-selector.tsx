@@ -4,7 +4,7 @@ import { useReducer, useMemo, useEffect } from "react";
 import { GenericListbox, type GenericOption } from "@/components/generic-listbox";
 import { categoryReducer } from "@/types/category";
 import type { TransactionType } from "@/types";
-import { TRANSACTION_TYPES } from "@/constants/transaction";
+import { TRANSACTION_TYPES } from "@/constants/transaction-type";
 import { useAppData } from "@/contexts/app-data-context";
 
 // 类别选择器组件
@@ -21,7 +21,7 @@ export function CategorySelector({ onTxTypeChange }: CategorySelectorProps = {})
   // 自动选择交易类型（初始化时挑选第一个可用枚举）
   useEffect(() => {
     if (!state.txType && TRANSACTION_TYPES.length > 0) {
-      dispatch({ type: "SET_TX", tx: TRANSACTION_TYPES[0] });
+      dispatch({ type: "SET_TX", tx: TRANSACTION_TYPES[0].type });
     }
   }, [state.txType]);
 
@@ -32,13 +32,13 @@ export function CategorySelector({ onTxTypeChange }: CategorySelectorProps = {})
 
   // 交易类型选项
   const txTypeOptions = useMemo((): GenericOption[] => {
-    return TRANSACTION_TYPES.map((txType) => ({
-      key: txType,
-      label: txType,
-      icon: txType === "支出" ? "💸" : txType === "收入" ? "💰" : "🔄",
+    return TRANSACTION_TYPES.map((txTypeOption) => ({
+      key: txTypeOption.type,
+      label: txTypeOption.type,
+      icon: txTypeOption.icon,
       backColor: "bg-gray-100 dark:bg-gray-800",
       foreColor: "text-gray-800 dark:text-gray-200",
-      textValue: txType
+      textValue: txTypeOption.type
     }));
   }, []);
 
