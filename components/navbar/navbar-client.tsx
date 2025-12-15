@@ -55,7 +55,7 @@ export function NavbarClient({ user }: NavbarClientProps) {
             自动记账
           </NextLink>
         </NavbarBrand>
-        <div className="hidden lg:flex gap-4">
+        <div className="hidden sm:flex gap-4">
           {siteConfig.navItems.map((item) => (
             <NavbarItem key={item.href} isActive={isItemActive(item.href)}>
               <NextLink

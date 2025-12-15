@@ -16,15 +16,8 @@ const FourChainSelector = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full max-w-6xl">
-        <div className="flex gap-4 justify-center mb-6 flex-wrap">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="w-48">
-              <Skeleton className="h-4 w-16 rounded mb-2" /> {/* 标签 */}
-              <Skeleton className="h-64 w-full rounded-lg" /> {/* 选择框*/}
-            </div>
-          ))}
-        </div>
+      <div className="w-full max-w-6xl mb-6">
+        <Skeleton className="h-64 w-full rounded-lg" />
       </div>
     )
   }
