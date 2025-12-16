@@ -49,7 +49,7 @@ export default function RootLayout({
           <DataLoader />
           <div className="relative flex flex-col h-screen">
             <Navbar />
-            <main className="w-full flex-grow">
+            <main className="w-full flex-grow flex flex-col min-h-0">
               {children}
             </main>
           </div>
