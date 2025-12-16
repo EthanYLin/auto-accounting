@@ -44,7 +44,7 @@ export function NavbarClient({ user }: NavbarClientProps) {
   return (
     <HeroUINavbar
       isBordered
-      maxWidth="xl"
+      maxWidth="full"
       position="sticky"
       isMenuOpen={isMenuOpen}
       onMenuOpenChange={setIsMenuOpen}

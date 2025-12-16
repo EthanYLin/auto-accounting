@@ -1,13 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
+import { Checkbox } from "@heroui/checkbox";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
-interface BottomActionBarProps {
+interface ActionBarProps {
   currentId?: number;
   totalCount?: number;
+  autoSwitch?: boolean;
+  onAutoSwitchChange?: (value: boolean) => void;
   onPrevious?: () => void;
   onNext?: () => void;
   onIdChange?: (id: number) => void;
@@ -17,9 +20,11 @@ interface BottomActionBarProps {
   onSave?: () => void;
 }
 
-export function BottomActionBar({
+export function ActionBar({
   currentId = 1,
   totalCount = 10,
+  autoSwitch = false,
+  onAutoSwitchChange,
   onPrevious,
   onNext,
   onIdChange,
@@ -27,8 +32,13 @@ export function BottomActionBar({
   onLater,
   onCancel,
   onSave
-}: BottomActionBarProps) {
+}: ActionBarProps) {
   const [inputId, setInputId] = useState(currentId.toString());
+
+  // 同步 currentId 变化到 inputId
+  useEffect(() => {
+    setInputId(currentId.toString());
+  }, [currentId]);
 
   const handleIdInputChange = (value: string) => {
     setInputId(value);
@@ -46,19 +56,18 @@ export function BottomActionBar({
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-lg">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3">
-        <div className="flex items-center justify-between gap-2 sm:gap-4">
+    <div className="sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+      <div className="px-4 py-3">
+        <div className="flex items-center justify-between gap-4">
           
           {/* 左侧：导航控件 */}
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="flex items-center gap-2">
             <Button
               isIconOnly
               variant="ghost"
               size="sm"
               isDisabled={currentId <= 1}
               onPress={onPrevious}
-              className="text-gray-600 dark:text-gray-400"
               aria-label="上一条"
             >
               <ChevronLeftIcon className="w-4 h-4" />
@@ -69,7 +78,7 @@ export function BottomActionBar({
                 value={inputId}
                 onValueChange={handleIdInputChange}
                 onBlur={handleIdInputBlur}
-                className="w-12 sm:w-16"
+                className="w-16"
                 size="sm"
                 variant="bordered"
                 aria-label="当前记录编号"
@@ -79,7 +88,7 @@ export function BottomActionBar({
                 }}
               />
               <span className="text-gray-500 dark:text-gray-400 mx-1">/</span>
-              <span className="text-gray-700 dark:text-gray-300 font-medium min-w-[2ch]">
+              <span className="text-gray-700 dark:text-gray-300 font-medium">
                 {totalCount}
               </span>
             </div>
@@ -90,52 +99,57 @@ export function BottomActionBar({
               size="sm"
               isDisabled={currentId >= totalCount}
               onPress={onNext}
-              className="text-gray-600 dark:text-gray-400"
               aria-label="下一条"
             >
               <ChevronRightIcon className="w-4 h-4" />
             </Button>
+
+            <div className="ml-4">
+              <Checkbox
+                size="sm"
+                isSelected={autoSwitch}
+                onValueChange={onAutoSwitchChange}
+              >
+                <span className="text-sm text-gray-600 dark:text-gray-400">自动切换</span>
+              </Checkbox>
+            </div>
           </div>
 
           {/* 右侧：操作按钮 */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            {/* 在小屏幕上隐藏取消按钮 */}
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
-              onPress={onCancel}
-              className="hidden sm:flex text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
-            >
-              取消
-            </Button>
-            
-            <Button
-              variant="flat"
-              size="sm"
               onPress={onSave}
-              className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 px-2 sm:px-3"
             >
-              <span className="hidden sm:inline">保存</span>
-              <span className="sm:hidden">存</span>
+              保存
             </Button>
             
             <Button
               variant="flat"
               size="sm"
-              onPress={onLater}
-              className="bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 px-2 sm:px-3"
+              color="success"
+              onPress={onComplete}
             >
-              <span className="hidden sm:inline">稍后处理</span>
-              <span className="sm:hidden">稍后</span>
+              保存并完成
             </Button>
             
             <Button
-              variant="solid"
+              variant="flat"
               size="sm"
-              onPress={onComplete}
-              className="bg-green-600 dark:bg-green-500 text-white hover:bg-green-700 dark:hover:bg-green-600 font-medium px-2 sm:px-3"
+              color="warning"
+              onPress={onLater}
             >
-              完成
+              保存并取消
+            </Button>
+            
+            <Button
+              variant="flat"
+              size="sm"
+              color="default"
+              onPress={onCancel}
+            >
+              保存并稍后处理
             </Button>
           </div>
         </div>
@@ -143,3 +157,4 @@ export function BottomActionBar({
     </div>
   );
 }
+

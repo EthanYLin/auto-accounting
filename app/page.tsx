@@ -1,11 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@heroui/skeleton";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Button } from "@heroui/button";
-import { BottomActionBar } from "@/components/homepage/bottom-action-bar";
+import { Input } from "@heroui/input";
+import { Card, CardBody } from "@heroui/card";
+import { Chip } from "@heroui/chip";
+import { Divider } from "@heroui/divider";
+import { Accordion, AccordionItem } from "@heroui/accordion";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { ActionBar } from "@/components/homepage/action-bar";
 import { useAppData } from "@/components/context/app-data-context";
 import type { TxFieldInputsData } from "@/components/homepage/tx-field-inputs";
 import type { FourChainSelection } from "@/components/homepage/four-chain-selector";
@@ -16,7 +22,7 @@ const FourChainSelector = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full max-w-6xl mb-6">
+      <div className="w-full mb-6">
         <Skeleton className="h-64 w-full rounded-lg" />
       </div>
     )
@@ -29,7 +35,7 @@ const TxFieldInputs = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full max-w-6xl">
+      <div className="w-full">
         <Skeleton className="h-32 w-full rounded-lg" />
       </div>
     )
@@ -43,6 +49,15 @@ export default function Home() {
   const totalCount = 25; // 假数据：总共25条记录
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [selectorMode, setSelectorMode] = useState<"listbox" | "select">("select");
+  
+  // 搜索框状态
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // 自动切换状态
+  const [autoSwitch, setAutoSwitch] = useState(false);
+  
+  // 四联选择器容器的引用
+  const selectorContainerRef = useRef<HTMLDivElement>(null);
 
   // 表单数据状态
   const [formData, setFormData] = useState<TxFieldInputsData>({
@@ -52,19 +67,44 @@ export default function Home() {
     name: "",
     merchant: ""
   });
+  
+  // Mock 数据 - 状态统计
+  const mockStats = {
+    pending: 8,
+    needsProcessing: 9,
+    completed: 20,
+    autoProcessed: 20,
+    cancelled: 20,
+    autoProcessingPassed: 20
+  };
 
-  // 检测屏幕尺寸并设置选择器模式
+  // 动态检测容器宽度并设置选择器模式
   useEffect(() => {
-    const handleResize = () => {
-      setSelectorMode(window.innerWidth >= 950 ? "listbox" : "select");
+    const container = selectorContainerRef.current;
+    if (!container) return;
+
+    // 四个 listbox 每个最小 192px，加上间距约 48px，总共约 816px
+    // 为了安全起见，设置阈值为 850px
+    const MIN_WIDTH_FOR_LISTBOX = 850;
+
+    const updateSelectorMode = () => {
+      const containerWidth = container.offsetWidth;
+      setSelectorMode(containerWidth >= MIN_WIDTH_FOR_LISTBOX ? "listbox" : "select");
     };
 
-    // 初始化
-    handleResize();
+    // 使用 ResizeObserver 监听容器大小变化
+    const resizeObserver = new ResizeObserver(() => {
+      updateSelectorMode();
+    });
 
-    // 监听窗口大小变化
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    resizeObserver.observe(container);
+    
+    // 初始化
+    updateSelectorMode();
+
+    return () => {
+      resizeObserver.disconnect();
+    };
   }, []);
 
   // 监听错误状态，显示错误弹窗
@@ -82,7 +122,7 @@ export default function Home() {
     }));
   };
 
-  // 底部操作栏事件处理函数
+  // 操作栏事件处理函数
   const handlePrevious = () => {
     if (currentId > 1) {
       setCurrentId(currentId - 1);
@@ -117,50 +157,179 @@ export default function Home() {
 
   return (
     <>
-      <section className="flex flex-col items-center justify-center gap-8 py-8 md:py-10 pb-20">
+      <div className="flex h-screen overflow-hidden">
         
-        {/* 大的圆角矩形容器包裹两个组件 */}
-        <div className="w-full max-w-6xl bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600">
+        {/* 左侧 Sidebar */}
+        <aside className="w-80 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col overflow-hidden">
           
-          {/* 交易输入组件 */}
-          <div className="mb-8">
-            <TxFieldInputs 
-              selectedTxType={chainSelection?.txType} 
-              formData={formData}
-              onChange={handleFormChange}
+          {/* 搜索框 */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <Input
+              placeholder="搜索名称, 金额..."
+              value={searchQuery}
+              onValueChange={setSearchQuery}
+              startContent={<MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />}
+              variant="bordered"
+              size="sm"
             />
           </div>
 
-          {/* 分隔线 */}
-          <div className="border-t border-gray-200 dark:border-gray-600 my-8"></div>
+          {/* 状态看板 */}
+          <div className="p-4 space-y-3 border-b border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-2 gap-2">
+              <Card shadow="sm" className="border border-gray-200 dark:border-gray-700">
+                <CardBody className="p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">未完成</span>
+                    <Chip size="sm" color="warning" variant="flat">{mockStats.pending}</Chip>
+                  </div>
+                </CardBody>
+              </Card>
+              
+              <Card shadow="sm" className="border border-gray-200 dark:border-gray-700">
+                <CardBody className="p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">稍后处理</span>
+                    <Chip size="sm" color="default" variant="flat">{mockStats.needsProcessing}</Chip>
+                  </div>
+                </CardBody>
+              </Card>
+            </div>
 
-          {/* 四联选择器组件 */}
-          <div>
-            <FourChainSelector 
-              mode={selectorMode}
-              onSelectionChange={setChainSelection}
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <Card shadow="sm" className="border border-gray-200 dark:border-gray-700">
+                <CardBody className="p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">已完成</span>
+                    <Chip size="sm" color="success" variant="flat">{mockStats.completed}</Chip>
+                  </div>
+                </CardBody>
+              </Card>
+              
+              <Card shadow="sm" className="border border-gray-200 dark:border-gray-700">
+                <CardBody className="p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 dark:text-gray-400 truncate">终自动处理复号</span>
+                    <Chip size="sm" color="primary" variant="flat">{mockStats.autoProcessed}</Chip>
+                  </div>
+                </CardBody>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Card shadow="sm" className="border border-gray-200 dark:border-gray-700">
+                <CardBody className="p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">已取消</span>
+                    <Chip size="sm" color="danger" variant="flat">{mockStats.cancelled}</Chip>
+                  </div>
+                </CardBody>
+              </Card>
+              
+              <Card shadow="sm" className="border border-gray-200 dark:border-gray-700">
+                <CardBody className="p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 dark:text-gray-400 truncate">终自动处理跑过</span>
+                    <Chip size="sm" color="secondary" variant="flat">{mockStats.autoProcessingPassed}</Chip>
+                  </div>
+                </CardBody>
+              </Card>
+            </div>
           </div>
 
-          {/* 调试信息 */}
-          <div className="mt-4 p-4 bg-gray-50 rounded text-xs text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-            <div><b>表单数据：</b></div>
-            <pre className="whitespace-pre-wrap break-all">
-              {JSON.stringify({
-                formData,
-                chainSelection: chainSelection ? {
-                  txType: chainSelection.txType,
-                  mainCategory: chainSelection.mainCategory?.label,
-                  subCategory: chainSelection.subCategory?.label,
-                  budgetType: chainSelection.budgetType?.name,
-                } : null
-              }, null, 2)}
-            </pre>
+          {/* 账单概览区 - 占据剩余空间 */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-4">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">账单概览区</h3>
+              {/* 留空，暂不设计 */}
+              <div className="text-xs text-gray-500 dark:text-gray-500">此区域暂时留空</div>
+            </div>
           </div>
+        </aside>
 
-        </div>
+        {/* 右侧主要区域 */}
+        <main className="flex-1 flex flex-col overflow-hidden">
+          
+          {/* ActionBar - Sticky 在顶部 */}
+          <ActionBar
+            currentId={currentId}
+            totalCount={totalCount}
+            autoSwitch={autoSwitch}
+            onAutoSwitchChange={setAutoSwitch}
+            onPrevious={handlePrevious}
+            onNext={handleNext}
+            onIdChange={handleIdChange}
+            onComplete={handleComplete}
+            onLater={handleLater}
+            onCancel={handleCancel}
+            onSave={handleSave}
+          />
 
-      </section>
+          {/* 主内容区域 - 可滚动 */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="w-full p-6">
+              
+              <Accordion 
+                variant="light"
+                selectionMode="multiple"
+                defaultExpandedKeys={["main"]}
+              >
+                {/* 账单附加区 */}
+                <AccordionItem 
+                  key="attachment"
+                  aria-label="账单附加区"
+                  title={<span className="text-sm font-semibold">账单附加区</span>}
+                >
+                  <div className="px-4 pb-4">
+                    <div className="text-xs text-gray-500 dark:text-gray-500">此区域暂时留空</div>
+                  </div>
+                </AccordionItem>
+
+                {/* 主要填写区 */}
+                <AccordionItem 
+                  key="main"
+                  aria-label="主要填写区"
+                  title={<span className="text-sm font-semibold">主要填写区</span>}
+                >
+                  <div className="px-4 pb-4">
+                    {/* 交易输入组件 */}
+                    <div className="mb-8">
+                      <TxFieldInputs 
+                        selectedTxType={chainSelection?.txType} 
+                        formData={formData}
+                        onChange={handleFormChange}
+                      />
+                    </div>
+
+                    {/* 分隔线 */}
+                    <Divider className="my-8" />
+
+                    {/* 四联选择器组件 */}
+                    <div ref={selectorContainerRef}>
+                      <FourChainSelector 
+                        mode={selectorMode}
+                        onSelectionChange={setChainSelection}
+                      />
+                    </div>
+                  </div>
+                </AccordionItem>
+
+                {/* 拆账区 */}
+                <AccordionItem 
+                  key="split"
+                  aria-label="拆账区"
+                  title={<span className="text-sm font-semibold">拆账区</span>}
+                >
+                  <div className="px-4 pb-4">
+                    <div className="text-xs text-gray-500 dark:text-gray-500">此区域暂时留空</div>
+                  </div>
+                </AccordionItem>
+              </Accordion>
+
+            </div>
+          </div>
+        </main>
+      </div>
 
       {/* 错误提示 Modal */}
       <Modal 
@@ -198,19 +367,6 @@ export default function Home() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-
-      {/* 底部操作栏 */}
-      <BottomActionBar
-        currentId={currentId}
-        totalCount={totalCount}
-        onPrevious={handlePrevious}
-        onNext={handleNext}
-        onIdChange={handleIdChange}
-        onComplete={handleComplete}
-        onLater={handleLater}
-        onCancel={handleCancel}
-        onSave={handleSave}
-      />
     </>
   );
 }
