@@ -9,12 +9,11 @@ import { Input } from "@heroui/input";
 import { Card, CardBody } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
-import { Accordion, AccordionItem } from "@heroui/accordion";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { ActionBar } from "@/components/homepage/action-bar";
 import { useAppData } from "@/components/context/app-data-context";
 import type { TxFieldInputsData } from "@/components/homepage/tx-field-inputs";
-import type { FourChainSelection } from "@/components/homepage/four-chain-selector";
+import type { FourChainSelection, FourChainState } from "@/components/homepage/four-chain-selector";
 
 // 使用 dynamic import 替代 NoSSR
 const FourChainSelector = dynamic(
@@ -45,6 +44,7 @@ const TxFieldInputs = dynamic(
 export default function Home() {
   const { error } = useAppData();
   const [chainSelection, setChainSelection] = useState<FourChainSelection>(null);
+  const [chainState, setChainState] = useState<FourChainState>({}); // 管理四联选择器的内部状态
   const [currentId, setCurrentId] = useState(1);
   const totalCount = 25; // 假数据：总共25条记录
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -56,8 +56,8 @@ export default function Home() {
   // 自动切换状态
   const [autoSwitch, setAutoSwitch] = useState(false);
   
-  // 四联选择器容器的引用
-  const selectorContainerRef = useRef<HTMLDivElement>(null);
+  // 主内容区域的引用（用于检测宽度）
+  const mainContentRef = useRef<HTMLDivElement>(null);
 
   // 表单数据状态
   const [formData, setFormData] = useState<TxFieldInputsData>({
@@ -80,12 +80,12 @@ export default function Home() {
 
   // 动态检测容器宽度并设置选择器模式
   useEffect(() => {
-    const container = selectorContainerRef.current;
+    const container = mainContentRef.current;
     if (!container) return;
 
     // 四个 listbox 每个最小 192px，加上间距约 48px，总共约 816px
     // 为了安全起见，设置阈值为 850px
-    const MIN_WIDTH_FOR_LISTBOX = 850;
+    const MIN_WIDTH_FOR_LISTBOX = 810;
 
     const updateSelectorMode = () => {
       const containerWidth = container.offsetWidth;
@@ -321,64 +321,48 @@ export default function Home() {
 
           {/* 主内容区域 */}
           <div className="flex-1 min-h-0 overflow-y-auto">
-            <div className="w-full p-6">
+            <div ref={mainContentRef} className="w-full p-6 space-y-6">
               
-              <Accordion 
-                variant="light"
-                selectionMode="multiple"
-                defaultExpandedKeys={["main"]}
-              >
-                {/* 账单附加区 */}
-                <AccordionItem 
-                  key="attachment"
-                  aria-label="账单附加区"
-                  title={<span className="text-sm font-semibold">账单附加区</span>}
-                >
-                  <div className="px-4 pb-4">
-                    <div className="text-xs text-gray-500 dark:text-gray-500">此区域暂时留空</div>
-                  </div>
-                </AccordionItem>
+              {/* 账单附加区 */}
+              <div>
+                <h2 className="text-sm font-semibold mb-4">账单附加区</h2>
+                <div className="text-xs text-gray-500 dark:text-gray-500">此区域暂时留空</div>
+              </div>
 
-                {/* 主要填写区 */}
-                <AccordionItem 
-                  key="main"
-                  aria-label="主要填写区"
-                  title={<span className="text-sm font-semibold">主要填写区</span>}
-                >
-                  <div className="px-4 pb-4">
-                    {/* 交易输入组件 */}
-                    <div className="mb-8">
-                      <TxFieldInputs 
-                        selectedTxType={chainSelection?.txType} 
-                        formData={formData}
-                        onChange={handleFormChange}
-                      />
-                    </div>
+              <Divider />
 
-                    {/* 分隔线 */}
-                    <Divider className="my-8" />
+              {/* 主要填写区 */}
+              <div>
+                <h2 className="text-sm font-semibold mb-4">主要填写区</h2>
+                
+                {/* 交易输入组件 */}
+                <div className="mb-8">
+                  <TxFieldInputs 
+                    selectedTxType={chainSelection?.txType} 
+                    formData={formData}
+                    onChange={handleFormChange}
+                  />
+                </div>
 
-                    {/* 四联选择器组件 */}
-                    <div ref={selectorContainerRef}>
-                      <FourChainSelector 
-                        mode={selectorMode}
-                        onSelectionChange={setChainSelection}
-                      />
-                    </div>
-                  </div>
-                </AccordionItem>
+                {/* 分隔线 */}
+                <Divider className="my-8" />
 
-                {/* 拆账区 */}
-                <AccordionItem 
-                  key="split"
-                  aria-label="拆账区"
-                  title={<span className="text-sm font-semibold">拆账区</span>}
-                >
-                  <div className="px-4 pb-4">
-                    <div className="text-xs text-gray-500 dark:text-gray-500">此区域暂时留空</div>
-                  </div>
-                </AccordionItem>
-              </Accordion>
+                {/* 四联选择器组件 */}
+                <FourChainSelector 
+                  mode={selectorMode}
+                  value={chainState}
+                  onStateChange={setChainState}
+                  onSelectionChange={setChainSelection}
+                />
+              </div>
+
+              <Divider />
+
+              {/* 拆账区 */}
+              <div>
+                <h2 className="text-sm font-semibold mb-4">拆账区</h2>
+                <div className="text-xs text-gray-500 dark:text-gray-500">此区域暂时留空</div>
+              </div>
 
             </div>
           </div>

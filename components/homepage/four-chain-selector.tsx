@@ -126,8 +126,11 @@ interface FourChainSelectorProps {
   allowedTxTypes?: TransactionType[];
   // 显示模式
   mode?: SelectorMode;
+  // 受控状态
+  value?: FourChainState;
   // 回调
   onSelectionChange?: (selection: FourChainSelection) => void;
+  onStateChange?: (state: FourChainState) => void;
   // 样式
   className?: string;
 }
@@ -135,13 +138,25 @@ interface FourChainSelectorProps {
 export function FourChainSelector({
   allowedTxTypes,
   mode = "listbox",
+  value,
   onSelectionChange,
+  onStateChange,
   className = ""
 }: FourChainSelectorProps = {}) {
   const { mainCategories, subCategories, budgetTypes } = useAppData();
 
-  // 使用 reducer 管理级联选择状态
-  const [state, dispatch] = useReducer(fourChainReducer, {});
+  // 使用 reducer 管理级联选择状态（仅在非受控模式下使用）
+  const [internalState, internalDispatch] = useReducer(fourChainReducer, {});
+  
+  // 如果是受控组件，使用外部传入的 value，否则使用内部状态
+  const state = value !== undefined ? value : internalState;
+  const dispatch = value !== undefined 
+    ? (action: FourChainAction) => {
+        // 受控模式：计算新状态并通过回调传递给父组件
+        const newState = fourChainReducer(state, action);
+        onStateChange?.(newState);
+      }
+    : internalDispatch;
 
   // 交易类型选项
   const txTypeOptions = useMemo((): ChainOption[] => {
@@ -324,7 +339,7 @@ export function FourChainSelector({
 
     // ListBox模式
     return (
-      <div className="flex-1 min-w-[192px]">
+      <div className="flex-1 min-w-[165px]">
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{title}</p>
         <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-800 shadow-sm">
           <Listbox
