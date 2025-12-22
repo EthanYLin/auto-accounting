@@ -181,7 +181,7 @@ export default function Home() {
                 <CardBody className="p-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-600 dark:text-gray-400">未完成</span>
-                    <Chip size="sm" color="warning" variant="flat">{mockStats.pending}</Chip>
+                    <Chip size="sm" color="primary" variant="flat">{mockStats.pending}</Chip>
                   </div>
                 </CardBody>
               </Card>
@@ -190,7 +190,7 @@ export default function Home() {
                 <CardBody className="p-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-600 dark:text-gray-400">稍后处理</span>
-                    <Chip size="sm" color="default" variant="flat">{mockStats.needsProcessing}</Chip>
+                    <Chip size="sm" color="warning" variant="flat">{mockStats.needsProcessing}</Chip>
                   </div>
                 </CardBody>
               </Card>
@@ -209,7 +209,7 @@ export default function Home() {
               <Card shadow="sm" className="border border-gray-200 dark:border-gray-700">
                 <CardBody className="p-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400 truncate">终自动处理复号</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-400 truncate">经自动处理填写</span>
                     <Chip size="sm" color="primary" variant="flat">{mockStats.autoProcessed}</Chip>
                   </div>
                 </CardBody>
@@ -221,7 +221,7 @@ export default function Home() {
                 <CardBody className="p-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-600 dark:text-gray-400">已取消</span>
-                    <Chip size="sm" color="danger" variant="flat">{mockStats.cancelled}</Chip>
+                    <Chip size="sm" color="default" variant="flat">{mockStats.cancelled}</Chip>
                   </div>
                 </CardBody>
               </Card>
@@ -229,8 +229,8 @@ export default function Home() {
               <Card shadow="sm" className="border border-gray-200 dark:border-gray-700">
                 <CardBody className="p-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400 truncate">终自动处理跑过</span>
-                    <Chip size="sm" color="secondary" variant="flat">{mockStats.autoProcessingPassed}</Chip>
+                    <span className="text-xs text-gray-600 dark:text-gray-400 truncate">经自动处理跳过</span>
+                    <Chip size="sm" color="danger" variant="flat">{mockStats.autoProcessingPassed}</Chip>
                   </div>
                 </CardBody>
               </Card>

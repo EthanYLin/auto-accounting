@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { I18nProvider } from "@react-aria/i18n";
 import { AppDataProvider } from "@/components/context/app-data-context";
+import { TransactionCacheProvider } from "@/components/context/transaction-cache-context";
 
 export interface ProvidersProps {
   children: React.ReactNode;
@@ -30,7 +31,9 @@ export function Providers({ children, themeProps }: ProvidersProps) {
       <I18nProvider locale="zh-CN">
         <NextThemesProvider {...themeProps}>
           <AppDataProvider>
-            {children}
+            <TransactionCacheProvider>
+              {children}
+            </TransactionCacheProvider>
           </AppDataProvider>
         </NextThemesProvider>
       </I18nProvider>

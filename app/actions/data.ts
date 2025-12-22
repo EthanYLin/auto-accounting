@@ -13,6 +13,9 @@ import type {
   SubCategory,
   SubCategoryInsert,
   SubCategoryUpdate,
+  Transaction,
+  TransactionInsert,
+  TransactionUpdate,
 } from '@/types';
 
 type ActionResult<T> = { success: boolean; data?: T; error?: string };
@@ -558,6 +561,217 @@ export async function deleteSubCategory(id: number): Promise<ActionResult<null>>
   } catch (error) {
     console.error('删除子类别异常:', error);
     return { success: false, error: error instanceof Error ? error.message : '删除子类别失败' };
+  }
+}
+
+/**
+ * 获取当前用户的所有交易记录（包含关联数据）
+ */
+export async function getTransactions(): Promise<{ success: boolean; data?: Transaction[]; error?: string }> {
+  try {
+    const supabase = await createClient();
+    
+    if (!supabase) {
+      console.error('Supabase 客户端创建失败');
+      return { success: false, error: 'Supabase 客户端创建失败' };
+    }
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError) {
+      console.error('获取用户信息失败:', userError);
+      return { success: false, error: '获取用户信息失败' };
+    }
+
+    if (!user) {
+      return { success: false, error: '未登录' };
+    }
+
+    const { data, error } = await supabase
+      .from('transaction')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('datetime', { ascending: false });
+
+    if (error) {
+      console.error('获取交易记录失败:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data || [] };
+  } catch (error) {
+    console.error('获取交易记录异常:', error);
+    if (error instanceof Error) {
+      return { success: false, error: `获取交易记录异常: ${error.message}` };
+    }
+    return { success: false, error: '获取交易记录失败' };
+  }
+}
+
+/**
+ * 批量更新交易记录
+ */
+export async function bulkUpdateTransactions(
+  updates: Array<{ id: number; data: Partial<TransactionUpdate> }>
+): Promise<ActionResult<Transaction[]>> {
+  try {
+    const auth = await getSupabaseWithUser();
+    if ('error' in auth) {
+      return { success: false, error: auth.error };
+    }
+
+    const { supabase, user } = auth;
+    const updatedTransactions: Transaction[] = [];
+
+    // 逐个更新
+    for (const { id, data } of updates) {
+      const { data: updated, error } = await supabase
+        .from('transaction')
+        .update(data)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error(`更新交易 ${id} 失败:`, error);
+        return { success: false, error: `更新交易 ${id} 失败: ${error.message}` };
+      }
+
+      if (updated) {
+        updatedTransactions.push(updated as Transaction);
+      }
+    }
+
+    return { success: true, data: updatedTransactions };
+  } catch (error) {
+    console.error('批量更新交易记录异常:', error);
+    return { success: false, error: error instanceof Error ? error.message : '批量更新交易记录失败' };
+  }
+}
+
+/**
+ * 批量删除交易记录
+ */
+export async function bulkDeleteTransactions(ids: number[]): Promise<ActionResult<null>> {
+  try {
+    const auth = await getSupabaseWithUser();
+    if ('error' in auth) {
+      return { success: false, error: auth.error };
+    }
+
+    const { supabase, user } = auth;
+    
+    const { error } = await supabase
+      .from('transaction')
+      .delete()
+      .in('id', ids)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('批量删除交易记录失败:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: null };
+  } catch (error) {
+    console.error('批量删除交易记录异常:', error);
+    return { success: false, error: error instanceof Error ? error.message : '批量删除交易记录失败' };
+  }
+}
+
+/**
+ * 创建交易记录
+ */
+export async function createTransaction(payload: Omit<TransactionInsert, 'user_id'>): Promise<ActionResult<Transaction>> {
+  try {
+    const auth = await getSupabaseWithUser();
+    if ('error' in auth) {
+      return { success: false, error: auth.error };
+    }
+
+    const { supabase, user } = auth;
+    const { data, error } = await supabase
+      .from('transaction')
+      .insert({ ...payload, user_id: user.id })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('创建交易记录失败:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data as Transaction };
+  } catch (error) {
+    console.error('创建交易记录异常:', error);
+    return { success: false, error: error instanceof Error ? error.message : '创建交易记录失败' };
+  }
+}
+
+/**
+ * 删除当前用户的所有交易记录
+ */
+export async function deleteAllTransactions(): Promise<ActionResult<null>> {
+  try {
+    const auth = await getSupabaseWithUser();
+    if ('error' in auth) {
+      return { success: false, error: auth.error };
+    }
+
+    const { supabase, user } = auth;
+    
+    const { error } = await supabase
+      .from('transaction')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('删除所有交易记录失败:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: null };
+  } catch (error) {
+    console.error('删除所有交易记录异常:', error);
+    return { success: false, error: error instanceof Error ? error.message : '删除所有交易记录失败' };
+  }
+}
+
+/**
+ * 批量插入交易记录
+ */
+export async function bulkInsertTransactions(
+  transactions: Array<Omit<TransactionInsert, 'user_id'>>
+): Promise<ActionResult<Transaction[]>> {
+  try {
+    const auth = await getSupabaseWithUser();
+    if ('error' in auth) {
+      return { success: false, error: auth.error };
+    }
+
+    const { supabase, user } = auth;
+    
+    // 为所有交易添加 user_id
+    const transactionsWithUserId = transactions.map(tx => ({
+      ...tx,
+      user_id: user.id,
+    }));
+
+    const { data, error } = await supabase
+      .from('transaction')
+      .insert(transactionsWithUserId)
+      .select();
+
+    if (error) {
+      console.error('批量插入交易记录失败:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: (data as Transaction[]) || [] };
+  } catch (error) {
+    console.error('批量插入交易记录异常:', error);
+    return { success: false, error: error instanceof Error ? error.message : '批量插入交易记录失败' };
   }
 }
 

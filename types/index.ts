@@ -45,8 +45,9 @@ export type TransactionType = Enums<'transaction_type'>;
 // ========== 辅助类型 ==========
 // 带关联数据的交易类型
 export type TransactionWithRelations = Transaction & {
-  account_data?: Account;
-  main_category_data?: MainCategory;
-  sub_category_data?: SubCategory;
-  budget_type_data?: BudgetType;
+  account?: Account;
+  main_category?: MainCategory;
+  sub_category?: SubCategory;
+  budget_type?: BudgetType;
+  parent?: TransactionWithRelations;
 };
