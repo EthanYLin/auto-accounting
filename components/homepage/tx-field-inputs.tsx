@@ -3,7 +3,7 @@
 import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { DatePicker } from "@heroui/date-picker";
-import type { TransactionType } from "@/types";
+import type { TransactionType, TransactionStatus } from "@/types";
 import type { DateValue } from "@internationalized/date";
 import { useAppData } from "@/components/context/app-data-context";
 import { AmountInput } from "./amount-input";
@@ -14,6 +14,7 @@ export interface TxFieldInputsData {
     date: DateValue | null;
     name: string;
     merchant: string;
+    status?: TransactionStatus;
 }
 
 interface TxFieldInputsProps {
@@ -73,7 +74,7 @@ export function TxFieldInputs({ selectedTxType, formData, onChange }: TxFieldInp
                     {/* 状态（只读） */}
                     <Input
                         label="状态"
-                        value="待处理"
+                        value={formData.status || ""}
                         isReadOnly
                         size="md"
                         variant="bordered"

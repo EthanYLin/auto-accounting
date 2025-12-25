@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import type { Transaction, TransactionWithRelations, TransactionInsert, TransactionSplit, TransactionSplitInsert } from '@/types';
-import { getTransactions, deleteAllTransactions, bulkInsertTransactions, bulkInsertTransactionSplits } from '@/app/actions/data';
+import { getTransactions, deleteAllTransactions, bulkInsertTransactions, bulkInsertTransactionSplits, createTransaction } from '@/app/actions/data';
 import { useAppData } from './app-data-context';
 
 interface TransactionCacheData {
@@ -14,6 +14,7 @@ interface TransactionCacheData {
 interface TransactionCacheContextValue extends TransactionCacheData {
   loadTransactions: () => Promise<void>;
   syncTransactions: () => Promise<void>;
+  createTransactionInCache: () => Promise<{ success: boolean; data?: TransactionWithRelations; error?: string }>;
   setTransactions: (transactions: TransactionWithRelations[]) => void;
   getTransactionById: (id: number) => TransactionWithRelations | undefined;
 }
@@ -193,7 +194,50 @@ export function TransactionCacheProvider({ children }: { children: React.ReactNo
   }, [data.transactions, enrichTransactionData]);
 
   /**
-   * 直接设置交易数据（用于测试）
+   * 创建一条空的交易并写入本地缓存
+   */
+  const createTransactionInCache = useCallback(async () => {
+    if (accounts.length === 0) {
+      return { success: false, error: '暂无账户，无法新建记录' } as const;
+    }
+
+    try {
+      const now = new Date().toISOString();
+      const result = await createTransaction({
+        account_id: accounts[0].id,
+        amount: 0,
+        datetime: now,
+        source: '手动新建',
+        status: '待处理'
+      });
+      
+      if (!result.success || !result.data) {
+        return { success: false, error: result.error || '新建记录失败' } as const;
+      }
+      const createdTx = result.data;
+      const newTransaction: TransactionWithRelations = {
+        ...createdTx,
+        account: accounts.find(a => a.id === createdTx.account_id),
+        children: [],
+        splits: [],
+      };
+      setData(prev => ({
+        ...prev,
+        transactions: [newTransaction, ...prev.transactions],
+      }));
+
+      return { success: true, data: newTransaction } as const;
+
+    } catch (error) {
+
+      console.error('新建交易记录异常:', error);
+      return { success: false, error: error instanceof Error ? error.message : '新建记录失败' } as const;
+
+    }
+  }, [accounts]);
+
+  /**
+   * 直接设置交易数据
    */
   const setTransactions = useCallback((transactions: TransactionWithRelations[]) => {
     setData(prev => ({
@@ -213,6 +257,7 @@ export function TransactionCacheProvider({ children }: { children: React.ReactNo
     ...data,
     loadTransactions,
     syncTransactions,
+    createTransactionInCache,
     setTransactions,
     getTransactionById,
   };

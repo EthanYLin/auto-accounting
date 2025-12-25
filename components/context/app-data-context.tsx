@@ -11,6 +11,7 @@ interface AppData {
   budgetTypes: BudgetType[];
   isLoading: boolean;
   error: string | null;
+  hasLoaded: boolean;
 }
 
 interface AppDataContextValue extends AppData {
@@ -29,6 +30,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     budgetTypes: [],
     isLoading: false,
     error: null,
+    hasLoaded: false,
   });
 
   /**
@@ -81,6 +83,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         budgetTypes: budgetTypesResult.data || [],
         isLoading: false,
         error: null,
+        hasLoaded: true,
       });
     } catch (error) {
       console.error('加载数据失败:', error);
@@ -103,6 +106,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       budgetTypes: [],
       isLoading: false,
       error: null,
+      hasLoaded: false,
     });
   }, []);
 

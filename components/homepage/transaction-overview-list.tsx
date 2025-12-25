@@ -2,13 +2,16 @@
 
 import React, { useMemo } from 'react';
 import { Spinner } from '@heroui/spinner';
+import { Button } from '@heroui/button';
+import { CloudArrowDownIcon } from '@heroicons/react/24/outline';
 import { TransactionListItem } from './transaction-list-item';
 import { useTransactionCache } from '@/components/context/transaction-cache-context';
+import { useAppData } from '@/components/context/app-data-context';
 import { filterTransactionsBySearch } from '@/lib/utils/transaction-search';
 import type { TransactionStatus, TransactionWithRelations } from '@/types';
 
 interface TransactionOverviewListProps {
-  currentId: number;
+  currentId?: number;
   onSelectTransaction: (id: number) => void;
   statusFilter?: TransactionStatus | 'all';
   searchQuery?: string;
@@ -20,7 +23,8 @@ export function TransactionOverviewList({
   statusFilter = 'all',
   searchQuery = '',
 }: TransactionOverviewListProps) {
-  const { transactions, isLoading, error } = useTransactionCache();
+  const { transactions, isLoading, error, loadTransactions } = useTransactionCache();
+  const { isLoading: appDataLoading, hasLoaded: hasLoadedAppData } = useAppData();
   
   // 将扁平结构组织为列表（根交易按时间排序，子交易跟在父交易后面）
   const flatTransactions = useMemo(() => {
@@ -94,8 +98,10 @@ export function TransactionOverviewList({
   // 加载状态
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Spinner size="sm" />
+      <div className="flex h-full w-full">
+        <div className="m-auto">
+          <Spinner size="sm" color="default" />
+        </div>
       </div>
     );
   }
@@ -103,8 +109,20 @@ export function TransactionOverviewList({
   // 空状态
   if (filteredTransactions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 text-center">
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">暂无交易记录</p>
+      <div className="flex h-full w-full">
+        <div className="m-auto flex flex-col items-center justify-center text-center gap-3">
+          <p className="text-sm text-gray-500 dark:text-gray-400">暂无交易记录</p>
+          <Button 
+            size="sm" 
+            color="default" 
+            variant="flat" 
+            onPress={loadTransactions} 
+            isDisabled={isLoading || appDataLoading || !hasLoadedAppData}
+            startContent={<CloudArrowDownIcon className="w-4 h-4" />}
+          >
+            从云端加载
+          </Button>
+        </div>
       </div>
     );
   }
@@ -117,7 +135,7 @@ export function TransactionOverviewList({
           <TransactionListItem
             key={transaction.id}
             transaction={transaction}
-            isSelected={transaction.id === currentId}
+            isSelected={currentId !== undefined && transaction.id === currentId}
             onClick={() => onSelectTransaction(transaction.id)}
           />
         );
