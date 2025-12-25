@@ -19,13 +19,8 @@ interface TransactionListSelectorProps {
   onConfirm: (ids: number[]) => void;  // 点击完成时的回调
 }
 
-// 扁平化交易列表（用于表格展示）
-interface FlatTransaction extends TransactionWithRelations {
-  isChild: boolean; // 是否为子账单
-}
-
 export function TransactionListSelector({ selectedIds, currentTransactionId, onConfirm }: TransactionListSelectorProps) {
-  const { transactions, getChildren } = useTransactionCache();
+  const { transactions } = useTransactionCache();
   const [searchQuery, setSearchQuery] = useState("");
   const [tempSelectedIds, setTempSelectedIds] = useState<number[]>(selectedIds);
   const [currentPage, setCurrentPage] = useState(1);
@@ -37,8 +32,8 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, onC
   }, [selectedIds]);
 
   // 将扁平结构组织为表格行（按时间排序，父记录后面跟着子记录）
-  const flatTransactions = useMemo((): FlatTransaction[] => {
-    const result: FlatTransaction[] = [];
+  const flatTransactions = useMemo((): TransactionWithRelations[] => {
+    const result: TransactionWithRelations[] = [];
     
     // 获取所有根记录（没有 parent_id 的记录）并按时间倒序排序
     const rootTransactions = transactions
@@ -51,20 +46,19 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, onC
     
     rootTransactions.forEach(parent => {
       // 添加父记录
-      result.push({ ...parent, isChild: false });
+      result.push(parent);
       
-      // 获取并添加子记录（保持原有顺序）
-      const children = getChildren(parent.id);
-      children.forEach(child => {
-        result.push({ ...child, isChild: true });
+      // 直接使用 children 属性（保持原有顺序）
+      parent.children.forEach(child => {
+        result.push(child);
       });
     });
     
     return result;
-  }, [transactions, getChildren]);
+  }, [transactions]);
 
   // 应用搜索过滤
-  const filteredTransactions = useMemo((): FlatTransaction[] => {
+  const filteredTransactions = useMemo((): TransactionWithRelations[] => {
     if (!searchQuery.trim()) {
       return flatTransactions;
     }
@@ -207,7 +201,8 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, onC
             {paginatedTransactions.map((tx) => {
               const isSelected = tempSelectedIds.includes(tx.id);
               const isCurrent = tx.id === currentTransactionId;
-              const cellClassName = tx.isChild 
+              const isChild = !!tx.parent_id;
+              const cellClassName = isChild 
                 ? 'text-xs text-gray-500 dark:text-gray-400' 
                 : isCurrent 
                 ? 'font-bold text-success-600 dark:text-success-400'
@@ -224,7 +219,7 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, onC
                 >
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {tx.isChild && (
+                      {isChild && (
                         <div className="flex items-center h-full">
                           <svg width="20" height="24" className="text-gray-300 dark:text-gray-600">
                             <path
@@ -266,7 +261,7 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, onC
                   </TableCell>
                   <TableCell>
                     <div className={cellClassName}>
-                      {!tx.isChild && tx.status && (
+                      {!isChild && tx.status && (
                         <Chip
                           size="sm"
                           color={TRANSACTION_STATUS_COLORS[tx.status]}

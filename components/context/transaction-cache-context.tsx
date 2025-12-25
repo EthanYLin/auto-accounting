@@ -16,7 +16,6 @@ interface TransactionCacheContextValue extends TransactionCacheData {
   syncTransactions: () => Promise<void>;
   setTransactions: (transactions: TransactionWithRelations[]) => void;
   getTransactionById: (id: number) => TransactionWithRelations | undefined;
-  getChildren: (parentId: number) => TransactionWithRelations[];
 }
 
 const TransactionCacheContext = createContext<TransactionCacheContextValue | undefined>(undefined);
@@ -48,16 +47,19 @@ export function TransactionCacheProvider({ children }: { children: React.ReactNo
         sub_category: subCategory,
         budget_type: budgetType,
         parent: undefined, // 初始化为 undefined，稍后更新
+        children: [], // 初始化为空数组，稍后更新
         splits: splits.length > 0 ? splits : [],
       };
     });
 
-    // 第二遍：为有 parent_id 的记录添加 parent 引用
+    // 第二遍：为有 parent_id 的记录添加 parent 引用，并维护 children 关系
     enrichedTransactions.forEach(tx => {
       if (tx.parent_id) {
         const parent = enrichedTransactions.find(p => p.id === tx.parent_id);
         if (parent) {
           tx.parent = parent;
+          // 将当前交易添加到父交易的 children 数组中
+          parent.children.push(tx);
         }
       }
     });
@@ -207,20 +209,12 @@ export function TransactionCacheProvider({ children }: { children: React.ReactNo
     return data.transactions.find(tx => tx.id === id);
   }, [data.transactions]);
 
-  /**
-   * 获取指定父记录的所有子记录
-   */
-  const getChildren = useCallback((parentId: number): TransactionWithRelations[] => {
-    return data.transactions.filter(tx => tx.parent_id === parentId);
-  }, [data.transactions]);
-
   const value: TransactionCacheContextValue = {
     ...data,
     loadTransactions,
     syncTransactions,
     setTransactions,
     getTransactionById,
-    getChildren,
   };
 
   return <TransactionCacheContext.Provider value={value}>{children}</TransactionCacheContext.Provider>;

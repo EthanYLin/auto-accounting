@@ -44,12 +44,10 @@ function formatDateTime(datetime: string | null): string {
 export function TransactionListItem({
   transaction,
   isSelected = false,
-  childrenCount = 0,
   onClick,
 }: {
   transaction: TransactionWithRelations;
   isSelected?: boolean;
-  childrenCount?: number;
   onClick?: () => void;
 }) {
   // 获取图标和颜色（优先级：子类别 > 主类别 > 交易类型 > 默认）
@@ -113,6 +111,7 @@ export function TransactionListItem({
     TRANSACTION_TYPES.find(t => t.type === transaction.transaction_type)?.fore_color || 'text-gray-600 dark:text-gray-400' :
     'text-gray-600 dark:text-gray-400';
   const splitsCount = transaction.splits?.length || 0;
+  const childrenCount = transaction.children.length;
 
   return (
     <div

@@ -67,14 +67,11 @@ export function TransactionOverviewList({
   return (
     <div className="w-full">
       {filteredTransactions.map((transaction) => {
-        const childrenCount = transactions.filter(tx => tx.parent_id === transaction.id).length;
-        
         return (
           <TransactionListItem
             key={transaction.id}
             transaction={transaction}
             isSelected={transaction.id === currentId}
-            childrenCount={childrenCount}
             onClick={() => onSelectTransaction(transaction.id)}
           />
         );

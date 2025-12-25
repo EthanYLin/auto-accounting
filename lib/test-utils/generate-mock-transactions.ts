@@ -145,6 +145,7 @@ export function generateMockTransactions(
       remark: Math.random() > 0.7 ? '测试备注' : null,
       source: 'mock',
       title: null,
+      children: [],
     };
 
     transactions.push(transaction);
@@ -199,6 +200,7 @@ export function generateMockTransactions(
           remark: null,
           source: 'mock',
           title: null,
+          children: [],
         };
 
         // 直接添加到扁平数组，不再维护 children
