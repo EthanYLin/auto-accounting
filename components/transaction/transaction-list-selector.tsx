@@ -66,9 +66,25 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, onC
     // 按空格分割关键字
     const keywords = searchQuery.trim().split(/\s+/).filter(k => k.length > 0);
 
-    // 过滤：必须匹配所有关键字
+    // 找出所有匹配的交易ID集合
+    const matchedIds = new Set<number>();
+    
+    flatTransactions.forEach(tx => {
+      const isMatch = keywords.every(keyword => matchesTransactionKeyword(tx, keyword));
+      if (isMatch) {
+        matchedIds.add(tx.id);
+        // 如果是父记录，添加所有子记录的ID
+        if (!tx.parent_id && tx.children.length > 0) {
+          tx.children.forEach(child => matchedIds.add(child.id));
+        }
+      }
+    });
+    
+    // 过滤：交易本身匹配 或 其父记录匹配
     return flatTransactions.filter(tx => {
-      return keywords.every(keyword => matchesTransactionKeyword(tx, keyword));
+      if (matchedIds.has(tx.id)) return true;
+      if (tx.parent_id && matchedIds.has(tx.parent_id)) return true;
+      return false;
     });
   }, [flatTransactions, searchQuery]);
 

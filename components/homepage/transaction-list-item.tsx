@@ -87,8 +87,8 @@ export function TransactionListItem({
 
   // 获取第一行左侧显示的文本
   const getDisplayName = () => {
-    if (transaction.name) return short(transaction.name, 10);
-    if (transaction.title) return short(transaction.title, 10);
+    if (transaction.name) return short(transaction.name, 8);
+    if (transaction.title) return short(transaction.title, 8);
     const mainLabel = transaction.main_category?.label || '';
     const subLabel = transaction.sub_category?.label || '';
     if (mainLabel && subLabel) return short(`${mainLabel}-${subLabel}`, 8);
@@ -112,18 +112,33 @@ export function TransactionListItem({
     'text-gray-600 dark:text-gray-400';
   const splitsCount = transaction.splits?.length || 0;
   const childrenCount = transaction.children.length;
+  const isChild = !!transaction.parent_id;
 
   return (
     <div
       className={`
-        px-4 py-3 cursor-pointer transition-colors border-b border-gray-200 dark:border-gray-700
+        ${isChild ? 'pl-8 pr-4 py-2' : 'px-4 py-3'} cursor-pointer transition-colors border-b border-gray-200 dark:border-gray-700
         ${isSelected ? 'bg-primary-50 dark:bg-primary-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}
       `}
       onClick={onClick}
     >
       <div className="flex items-center gap-3">
+        {/* 子记录的引导线 */}
+        {isChild && (
+          <div className="flex items-center h-full flex-shrink-0">
+            <svg width="20" height="24" className="text-gray-300 dark:text-gray-600">
+              <path
+                d="M 4 0 L 4 12 L 20 12"
+                stroke="currentColor"
+                strokeWidth="1"
+                fill="none"
+              />
+            </svg>
+          </div>
+        )}
+        
         {/* 左侧圆形图标 */}
-        <div className={`w-10 h-10 rounded-full ${backColor} ${foreColor} flex items-center justify-center text-lg flex-shrink-0`}>
+        <div className={`${isChild ? 'w-8 h-8 text-base' : 'w-10 h-10 text-lg'} rounded-full ${backColor} ${foreColor} flex items-center justify-center flex-shrink-0`}>
           {icon}
         </div>
 
@@ -131,16 +146,16 @@ export function TransactionListItem({
         <div className="flex-1 min-w-0">
           {/* 第一行：名称和金额 */}
           <div className="flex items-baseline justify-between mb-1">
-            <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+            <span className={`${isChild ? 'text-xs' : 'text-sm'} ${isChild ? 'font-normal' : 'font-medium'} text-gray-900 dark:text-gray-100 truncate`}>
               {getDisplayName()}
             </span>
-            <span className={`text-sm font-bold ml-2 flex-shrink-0 ${amountColor}`}>
+            <span className={`${isChild ? 'text-xs' : 'text-sm'} ${isChild ? 'font-normal' : 'font-bold'} ml-2 flex-shrink-0 ${amountColor}`}>
               {formatAmount(transaction.amount, sign)}
             </span>
           </div>
 
           {/* 第二行：日期时间和账户 */}
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+          <div className={`flex items-center justify-between ${isChild ? 'text-[10px]' : 'text-xs'} text-gray-500 dark:text-gray-400 mb-1`}>
             <span className="truncate">
               {formatDateTime(transaction.datetime)}
               {transaction.merchant && ` - ${short(transaction.merchant, 8)}`}
@@ -152,8 +167,8 @@ export function TransactionListItem({
 
           {/* 第三行：ID、特殊标记和状态 */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs">
-              <span className="font-semibold text-gray-600 dark:text-gray-400">
+            <div className={`flex items-center gap-1.5 ${isChild ? 'text-[10px]' : 'text-xs'}`}>
+              <span className={`${isChild ? 'font-normal' : 'font-semibold'} text-gray-600 dark:text-gray-400`}>
                 #{transaction.id}
               </span>
               
@@ -180,8 +195,8 @@ export function TransactionListItem({
               )}
             </div>
 
-            {/* 状态 Chip */}
-            {transaction.status && (
+            {/* 状态 Chip - 子记录不显示 */}
+            {!isChild && transaction.status && (
               <Chip
                 size="sm"
                 color={TRANSACTION_STATUS_COLORS[transaction.status]}
