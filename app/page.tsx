@@ -1,19 +1,21 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@heroui/skeleton";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
-import { Card, CardBody } from "@heroui/card";
-import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { ActionBar } from "@/components/homepage/action-bar";
 import { useAppData } from "@/components/context/app-data-context";
+import { useTransactionCache } from "@/components/context/transaction-cache-context";
 import type { TxFieldInputsData } from "@/components/homepage/tx-field-inputs";
 import type { FourChainSelection, FourChainState } from "@/components/homepage/four-chain-selector";
+import { TransactionOverviewList } from "@/components/homepage/transaction-overview-list";
+import { StatusFilterDropdown } from "@/components/homepage/status-filter-dropdown";
+import type { TransactionStatus } from "@/types";
 
 // 使用 dynamic import 替代 NoSSR
 const FourChainSelector = dynamic(
@@ -43,6 +45,7 @@ const TxFieldInputs = dynamic(
 
 export default function Home() {
   const { error } = useAppData();
+  const { transactions, loadTransactions, isLoading } = useTransactionCache();
   const [chainSelection, setChainSelection] = useState<FourChainSelection>(null);
   const [chainState, setChainState] = useState<FourChainState>({}); // 管理四联选择器的内部状态
   const [currentId, setCurrentId] = useState(1);
@@ -52,6 +55,9 @@ export default function Home() {
   
   // 搜索框状态
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // 状态过滤
+  const [statusFilter, setStatusFilter] = useState<TransactionStatus | 'all'>("all");
   
   // 自动切换状态
   const [autoSwitch, setAutoSwitch] = useState(false);
@@ -68,15 +74,24 @@ export default function Home() {
     merchant: ""
   });
   
-  // Mock 数据 - 状态统计
-  const mockStats = {
-    pending: 8,
-    needsProcessing: 9,
-    completed: 20,
-    autoProcessed: 20,
-    cancelled: 20,
-    autoProcessingPassed: 20
-  };
+  // 计算真实的状态统计
+  // 直接统计每个 status 的数量，返回 key 和 count
+  const statusStats = useMemo(() => {
+    const counts: Record<TransactionStatus, number> = {} as Record<TransactionStatus, number>;
+    transactions.forEach(tx => {
+      if (tx.status) {
+        counts[tx.status] = (counts[tx.status] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [transactions]);
+
+  // 组件挂载时，如果交易数据为空，自动加载一次
+  useEffect(() => {
+    if (transactions.length === 0 && !isLoading) {
+      loadTransactions();
+    }
+  }, []); // 只在挂载时执行一次
 
   // 动态检测容器宽度并设置选择器模式
   useEffect(() => {
@@ -162,142 +177,34 @@ export default function Home() {
         {/* 左侧 Sidebar */}
         <aside className="w-80 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col h-full min-h-0">
           
-          {/* 搜索框 */}
+          {/* 搜索框和状态过滤 */}
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <Input
-              placeholder="搜索名称, 金额..."
-              value={searchQuery}
-              onValueChange={setSearchQuery}
-              startContent={<MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />}
-              variant="bordered"
-              size="sm"
-            />
-          </div>
-
-          {/* 状态看板 */}
-          <div className="p-4 space-y-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <div className="grid grid-cols-2 gap-2">
-              <Card shadow="sm" className="border border-gray-200 dark:border-gray-700">
-                <CardBody className="p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400">未完成</span>
-                    <Chip size="sm" color="primary" variant="flat">{mockStats.pending}</Chip>
-                  </div>
-                </CardBody>
-              </Card>
-              
-              <Card shadow="sm" className="border border-gray-200 dark:border-gray-700">
-                <CardBody className="p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400">稍后处理</span>
-                    <Chip size="sm" color="warning" variant="flat">{mockStats.needsProcessing}</Chip>
-                  </div>
-                </CardBody>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <Card shadow="sm" className="border border-gray-200 dark:border-gray-700">
-                <CardBody className="p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400">已完成</span>
-                    <Chip size="sm" color="success" variant="flat">{mockStats.completed}</Chip>
-                  </div>
-                </CardBody>
-              </Card>
-              
-              <Card shadow="sm" className="border border-gray-200 dark:border-gray-700">
-                <CardBody className="p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400 truncate">经自动处理填写</span>
-                    <Chip size="sm" color="primary" variant="flat">{mockStats.autoProcessed}</Chip>
-                  </div>
-                </CardBody>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <Card shadow="sm" className="border border-gray-200 dark:border-gray-700">
-                <CardBody className="p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400">已取消</span>
-                    <Chip size="sm" color="default" variant="flat">{mockStats.cancelled}</Chip>
-                  </div>
-                </CardBody>
-              </Card>
-              
-              <Card shadow="sm" className="border border-gray-200 dark:border-gray-700">
-                <CardBody className="p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400 truncate">经自动处理跳过</span>
-                    <Chip size="sm" color="danger" variant="flat">{mockStats.autoProcessingPassed}</Chip>
-                  </div>
-                </CardBody>
-              </Card>
+            <div className="flex gap-2 items-center">
+              <Input
+                placeholder="搜索名称, 金额..."
+                value={searchQuery}
+                onValueChange={setSearchQuery}
+                startContent={<MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />}
+                variant="bordered"
+                size="sm"
+                className="flex-1"
+              />
+              <StatusFilterDropdown
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                stats={statusStats}
+              />
             </div>
           </div>
 
           {/* 账单概览区 - 占据剩余空间 */}
           <div className="flex-1 min-h-0 overflow-y-auto">
-            <div className="p-4">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">账单概览区</h3>
-              {/* 示例文字用于测试滚动 */}
-              <div className="text-xs text-gray-600 dark:text-gray-400 space-y-4">
-                <p>
-                  这是一段用于测试滚动效果的示例文字。当内容足够长时，这个区域应该可以独立滚动，
-                  而不会影响到其他区域的布局。账单概览区将展示所有待处理和已处理的账单记录。
-                </p>
-                <p>
-                  每一条账单记录都包含了详细的交易信息，包括交易时间、交易金额、交易对方、
-                  交易类型等关键数据。用户可以通过点击账单记录来快速切换到对应的编辑界面。
-                </p>
-                <p>
-                  系统支持多种支付方式的账单导入，包括支付宝、微信支付、银行卡等。
-                  导入的账单会自动进行分类和标记，帮助用户更好地管理个人或企业的财务记录。
-                </p>
-                <p>
-                  账单状态分为多种类型：未完成状态表示账单还未被处理；稍后处理状态表示用户
-                  暂时跳过了该账单；已完成状态表示账单已经被正确分类和记账；终自动处理复号
-                  和终自动处理跑过状态表示系统自动处理的结果。
-                </p>
-                <p>
-                  用户可以使用搜索功能快速定位特定的账单记录，支持按名称、金额、日期等多个
-                  维度进行搜索。搜索结果会实时更新，帮助用户快速找到需要的信息。
-                </p>
-                <p>
-                  在账单编辑界面，用户可以修改账单的各项属性，包括交易类型、经济业务、会计科目、
-                  交易对手等。系统提供了智能推荐功能，根据历史记录和交易特征自动推荐合适的分类。
-                </p>
-                <p>
-                  账单数据支持批量操作，用户可以一次性处理多条相似的账单记录。系统还提供了
-                  撤销和重做功能，避免误操作带来的数据错误。
-                </p>
-                <p>
-                  所有的账单数据都会实时同步到云端，确保数据的安全性和可靠性。用户可以在
-                  不同设备上访问同一账户，实现跨平台的无缝使用体验。
-                </p>
-                <p>
-                  系统还提供了丰富的数据统计和分析功能，帮助用户了解收支情况、消费习惯等。
-                  这些统计数据可以导出为Excel或PDF格式，方便用户进行进一步的分析和报告。
-                </p>
-                <p>
-                  为了保护用户隐私，所有的敏感数据都经过加密处理。系统采用了业界领先的
-                  安全技术，确保用户的财务信息不会被泄露或滥用。
-                </p>
-                <p>
-                  账单概览区的设计遵循了简洁直观的原则，让用户能够快速浏览和定位所需信息。
-                  通过合理的信息层级和视觉设计，提升了整体的使用体验。
-                </p>
-                <p>
-                  未来我们还将持续优化和改进功能，添加更多实用的特性，如智能分类、
-                  自动对账、预算管理等，让记账变得更加简单高效。
-                </p>
-                <p>
-                  感谢您使用自动记账系统！如果您在使用过程中遇到任何问题或有任何建议，
-                  欢迎随时联系我们。我们会认真听取每一位用户的反馈，不断改进产品。
-                </p>
-              </div>
-            </div>
+            <TransactionOverviewList 
+              currentId={currentId}
+              onSelectTransaction={setCurrentId}
+              statusFilter={statusFilter}
+              searchQuery={searchQuery}
+            />
           </div>
         </aside>
 
@@ -325,7 +232,7 @@ export default function Home() {
               
               {/* 账单附加区 */}
               <div>
-                <h2 className="text-sm font-semibold mb-4">账单附加区</h2>
+                <h2 className="text-sm font-semibold mb-4">合并账单</h2>
                 <div className="text-xs text-gray-500 dark:text-gray-500">此区域暂时留空</div>
               </div>
 
@@ -333,7 +240,7 @@ export default function Home() {
 
               {/* 主要填写区 */}
               <div>
-                <h2 className="text-sm font-semibold mb-4">主要填写区</h2>
+                <h2 className="text-sm font-semibold mb-4">账单信息</h2>
                 
                 {/* 交易输入组件 */}
                 <div className="mb-8">

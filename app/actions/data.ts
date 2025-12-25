@@ -16,6 +16,8 @@ import type {
   Transaction,
   TransactionInsert,
   TransactionUpdate,
+  TransactionSplit,
+  TransactionSplitInsert,
 } from '@/types';
 
 type ActionResult<T> = { success: boolean; data?: T; error?: string };
@@ -565,9 +567,14 @@ export async function deleteSubCategory(id: number): Promise<ActionResult<null>>
 }
 
 /**
- * 获取当前用户的所有交易记录（包含关联数据）
+ * 获取当前用户的所有交易记录和拆账记录
  */
-export async function getTransactions(): Promise<{ success: boolean; data?: Transaction[]; error?: string }> {
+export async function getTransactions(): Promise<{ 
+  success: boolean; 
+  data?: Transaction[]; 
+  splits?: TransactionSplit[];
+  error?: string 
+}> {
   try {
     const supabase = await createClient();
     
@@ -587,18 +594,34 @@ export async function getTransactions(): Promise<{ success: boolean; data?: Tran
       return { success: false, error: '未登录' };
     }
 
-    const { data, error } = await supabase
-      .from('transaction')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('datetime', { ascending: false });
+    // 并行查询交易记录和拆账记录
+    const [transactionsResult, splitsResult] = await Promise.all([
+      supabase
+        .from('transaction')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('datetime', { ascending: false }),
+      supabase
+        .from('transaction_split')
+        .select('*')
+        .eq('user_id', user.id)
+    ]);
 
-    if (error) {
-      console.error('获取交易记录失败:', error);
-      return { success: false, error: error.message };
+    if (transactionsResult.error) {
+      console.error('获取交易记录失败:', transactionsResult.error);
+      return { success: false, error: transactionsResult.error.message };
     }
 
-    return { success: true, data: data || [] };
+    if (splitsResult.error) {
+      console.error('获取拆账记录失败:', splitsResult.error);
+      return { success: false, error: splitsResult.error.message };
+    }
+
+    return { 
+      success: true, 
+      data: transactionsResult.data || [], 
+      splits: splitsResult.data || [] 
+    };
   } catch (error) {
     console.error('获取交易记录异常:', error);
     if (error instanceof Error) {
@@ -772,6 +795,116 @@ export async function bulkInsertTransactions(
   } catch (error) {
     console.error('批量插入交易记录异常:', error);
     return { success: false, error: error instanceof Error ? error.message : '批量插入交易记录失败' };
+  }
+}
+
+/**
+ * 获取当前用户的所有交易拆账记录
+ */
+export async function getTransactionSplits(): Promise<{ success: boolean; data?: TransactionSplit[]; error?: string }> {
+  try {
+    const supabase = await createClient();
+    
+    if (!supabase) {
+      console.error('Supabase 客户端创建失败');
+      return { success: false, error: 'Supabase 客户端创建失败' };
+    }
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError) {
+      console.error('获取用户信息失败:', userError);
+      return { success: false, error: '获取用户信息失败' };
+    }
+
+    if (!user) {
+      return { success: false, error: '未登录' };
+    }
+
+    const { data, error } = await supabase
+      .from('transaction_split')
+      .select('*')
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('获取拆账记录失败:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data || [] };
+  } catch (error) {
+    console.error('获取拆账记录异常:', error);
+    if (error instanceof Error) {
+      return { success: false, error: `获取拆账记录异常: ${error.message}` };
+    }
+    return { success: false, error: '获取拆账记录失败' };
+  }
+}
+
+/**
+ * 删除指定交易的所有拆账记录
+ */
+export async function deleteTransactionSplits(transactionId: number): Promise<ActionResult<null>> {
+  try {
+    const auth = await getSupabaseWithUser();
+    if ('error' in auth) {
+      return { success: false, error: auth.error };
+    }
+
+    const { supabase, user } = auth;
+    
+    const { error } = await supabase
+      .from('transaction_split')
+      .delete()
+      .eq('transaction_id', transactionId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error(`删除交易 ${transactionId} 的拆账记录失败:`, error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: null };
+  } catch (error) {
+    console.error('删除拆账记录异常:', error);
+    return { success: false, error: error instanceof Error ? error.message : '删除拆账记录失败' };
+  }
+}
+
+/**
+ * 批量插入交易拆账记录
+ */
+export async function bulkInsertTransactionSplits(
+  splits: Array<Omit<TransactionSplitInsert, 'user_id'>>
+): Promise<ActionResult<TransactionSplit[]>> {
+  try {
+    const auth = await getSupabaseWithUser();
+    if ('error' in auth) {
+      return { success: false, error: auth.error };
+    }
+
+    const { supabase, user } = auth;
+    
+    // 为所有拆账记录添加 user_id
+    const splitsWithUserId = splits.map(split => ({
+      ...split,
+      user_id: user.id,
+    }));
+
+    const { data, error } = await supabase
+      .from('transaction_split')
+      .insert(splitsWithUserId)
+      .select();
+
+    if (error) {
+      console.error('批量插入拆账记录失败:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: (data as TransactionSplit[]) || [] };
+  } catch (error) {
+    console.error('批量插入拆账记录异常:', error);
+    return { success: false, error: error instanceof Error ? error.message : '批量插入拆账记录失败' };
   }
 }
 

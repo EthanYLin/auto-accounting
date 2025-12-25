@@ -50,4 +50,5 @@ export type TransactionWithRelations = Transaction & {
   sub_category?: SubCategory;
   budget_type?: BudgetType;
   parent?: TransactionWithRelations;
+  splits?: TransactionSplit[];
 };
