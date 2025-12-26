@@ -18,6 +18,7 @@ import type { TxFieldInputsData } from "@/components/homepage/tx-field-inputs";
 import type { FourChainSelection, FourChainState } from "@/components/homepage/four-chain-selector";
 import { TransactionOverviewList } from "@/components/homepage/transaction-overview-list";
 import { StatusFilterDropdown } from "@/components/homepage/status-filter-dropdown";
+import { useFilteredTransactions } from "@/lib/hooks/use-filtered-transactions";
 import type { TransactionStatus } from "@/types";
 
 // 使用 dynamic import 替代 NoSSR
@@ -53,7 +54,6 @@ export default function Home() {
   const [chainSelection, setChainSelection] = useState<FourChainSelection>(null);
   const [chainState, setChainState] = useState<FourChainState>({}); // 管理四联选择器的内部状态
   const [currentId, setCurrentId] = useState<number | null>(null);
-  const totalCount = 25; // 假数据：总共25条记录
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [selectorMode, setSelectorMode] = useState<"listbox" | "select">("select");
@@ -92,11 +92,26 @@ export default function Home() {
     return counts;
   }, [transactions]);
 
+  // 使用自定义 Hook 处理搜索和过滤逻辑
+  const filteredTransactions = useFilteredTransactions(transactions, searchQuery, statusFilter);
+
   // 获取当前选中的交易
   const currentTransaction = useMemo(() => {
     if (currentId === null) return null;
     return transactions.find(tx => tx.id === currentId) || null;
   }, [currentId, transactions]);
+
+  // 计算当前交易在过滤后列表中的位置（从1开始）和总数
+  const { currentIndex, totalCount } = useMemo(() => {
+    if (currentId === null) {
+      return { currentIndex: 0, totalCount: filteredTransactions.length };
+    }
+    const index = filteredTransactions.findIndex(tx => tx.id === currentId);
+    return {
+      currentIndex: index === -1 ? 0 : index + 1,
+      totalCount: filteredTransactions.length
+    };
+  }, [currentId, filteredTransactions]);
 
   // 组件挂载时，如果交易数据为空，且基础数据已加载完成，再自动加载交易
   useEffect(() => {
@@ -190,19 +205,21 @@ export default function Home() {
 
   // 操作栏事件处理函数
   const handlePrevious = () => {
-    if (currentId !== null && currentId > 1) {
-      setCurrentId(currentId - 1);
+    if (currentIndex > 1) {
+      const prevTx = filteredTransactions[currentIndex - 2];
+      if (prevTx) {
+        setCurrentId(prevTx.id);
+      }
     }
   };
 
   const handleNext = () => {
-    if (currentId !== null && currentId < totalCount) {
-      setCurrentId(currentId + 1);
+    if (currentIndex > 0 && currentIndex < totalCount) {
+      const nextTx = filteredTransactions[currentIndex];
+      if (nextTx) {
+        setCurrentId(nextTx.id);
+      }
     }
-  };
-
-  const handleIdChange = (id: number) => {
-    setCurrentId(id);
   };
 
   const handleComplete = () => {
@@ -270,8 +287,7 @@ export default function Home() {
             <TransactionOverviewList 
               currentId={currentId || undefined}
               onSelectTransaction={setCurrentId}
-              statusFilter={statusFilter}
-              searchQuery={searchQuery}
+              filteredTransactions={filteredTransactions}
             />
           </div>
         </aside>
@@ -280,15 +296,14 @@ export default function Home() {
         <main className="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
           
           {/* ActionBar - 仅在选中账单时显示 */}
-          {currentId !== null && (
+          {currentId !== null && currentIndex > 0 && (
             <ActionBar
-              currentId={currentId}
+              currentIndex={currentIndex}
               totalCount={totalCount}
               autoSwitch={autoSwitch}
               onAutoSwitchChange={setAutoSwitch}
               onPrevious={handlePrevious}
               onNext={handleNext}
-              onIdChange={handleIdChange}
               onComplete={handleComplete}
               onLater={handleLater}
               onCancel={handleCancel}

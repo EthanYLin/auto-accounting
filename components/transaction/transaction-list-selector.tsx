@@ -9,8 +9,8 @@ import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from 
 import { Pagination } from "@heroui/pagination";
 import { MagnifyingGlassIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import { useTransactionCache } from '@/components/context/transaction-cache-context';
+import { useFilteredTransactions } from '@/lib/hooks/use-filtered-transactions';
 import { TRANSACTION_TYPES, TRANSACTION_STATUS_COLORS } from '@/constants/transaction-type';
-import { matchesTransactionKeyword } from '@/lib/utils/transaction-search';
 import type { TransactionWithRelations } from '@/types';
 
 interface TransactionListSelectorProps {
@@ -31,62 +31,9 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, onC
     setTempSelectedIds(selectedIds);
   }, [selectedIds]);
 
-  // 将扁平结构组织为表格行（按时间排序，父记录后面跟着子记录）
-  const flatTransactions = useMemo((): TransactionWithRelations[] => {
-    const result: TransactionWithRelations[] = [];
-    
-    // 获取所有根记录（没有 parent_id 的记录）并按时间倒序排序
-    const rootTransactions = transactions
-      .filter(tx => !tx.parent_id)
-      .sort((a, b) => {
-        const dateA = a.datetime ? new Date(a.datetime).getTime() : 0;
-        const dateB = b.datetime ? new Date(b.datetime).getTime() : 0;
-        return dateB - dateA; // 新的在前
-      });
-    
-    rootTransactions.forEach(parent => {
-      // 添加父记录
-      result.push(parent);
-      
-      // 直接使用 children 属性（保持原有顺序）
-      parent.children.forEach(child => {
-        result.push(child);
-      });
-    });
-    
-    return result;
-  }, [transactions]);
-
-  // 应用搜索过滤
-  const filteredTransactions = useMemo((): TransactionWithRelations[] => {
-    if (!searchQuery.trim()) {
-      return flatTransactions;
-    }
-
-    // 按空格分割关键字
-    const keywords = searchQuery.trim().split(/\s+/).filter(k => k.length > 0);
-
-    // 找出所有匹配的交易ID集合
-    const matchedIds = new Set<number>();
-    
-    flatTransactions.forEach(tx => {
-      const isMatch = keywords.every(keyword => matchesTransactionKeyword(tx, keyword));
-      if (isMatch) {
-        matchedIds.add(tx.id);
-        // 如果是父记录，添加所有子记录的ID
-        if (!tx.parent_id && tx.children.length > 0) {
-          tx.children.forEach(child => matchedIds.add(child.id));
-        }
-      }
-    });
-    
-    // 过滤：交易本身匹配 或 其父记录匹配
-    return flatTransactions.filter(tx => {
-      if (matchedIds.has(tx.id)) return true;
-      if (tx.parent_id && matchedIds.has(tx.parent_id)) return true;
-      return false;
-    });
-  }, [flatTransactions, searchQuery]);
+  // 使用自定义 Hook 处理排序、搜索和过滤
+  // 传入 'all' 跳过状态过滤（该组件不需要状态过滤）
+  const filteredTransactions = useFilteredTransactions(transactions, searchQuery, 'all');
 
   // 计算总页数
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
