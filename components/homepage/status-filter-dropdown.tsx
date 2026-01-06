@@ -1,23 +1,34 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Button } from '@heroui/button';
 import { Chip } from '@heroui/chip';
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@heroui/dropdown';
 import { FunnelIcon, CheckIcon } from '@heroicons/react/24/outline';
 import type { TransactionStatus } from '@/types';
+import { useTransactionCache } from '@/components/context/transaction-cache-context';
 
 interface StatusFilterDropdownProps {
   statusFilter: TransactionStatus | 'all';
   onStatusFilterChange: (status: TransactionStatus | 'all') => void;
-  stats: Record<TransactionStatus, number>;
 }
 
 export function StatusFilterDropdown({
   statusFilter,
   onStatusFilterChange,
-  stats,
 }: StatusFilterDropdownProps) {
+  const { transactions } = useTransactionCache();
+
+  const stats = useMemo(() => {
+    const counts: Record<TransactionStatus, number> = {} as Record<TransactionStatus, number>;
+    transactions.forEach(tx => {
+      if (tx.status) {
+        counts[tx.status] = (counts[tx.status] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [transactions]);
+
   const totalCount = Object.values(stats).reduce((sum, count) => sum + count, 0);
 
   return (

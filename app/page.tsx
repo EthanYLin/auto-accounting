@@ -1,9 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
-import dynamic from "next/dynamic";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Skeleton } from "@heroui/skeleton";
 import { Spinner } from "@heroui/spinner";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Button } from "@heroui/button";
@@ -14,38 +12,15 @@ import { parseDateTime } from "@internationalized/date";
 import { ActionBar } from "@/components/homepage/action-bar";
 import { useAppData } from "@/components/context/app-data-context";
 import { useTransactionCache } from "@/components/context/transaction-cache-context";
+import { TxFieldInputs } from "@/components/homepage/tx-field-inputs";
 import type { TxFieldInputsData } from "@/components/homepage/tx-field-inputs";
+import { FourChainSelector } from "@/components/homepage/four-chain-selector";
 import type { FourChainSelection, FourChainState } from "@/components/homepage/four-chain-selector";
 import { TransactionOverviewList } from "@/components/homepage/transaction-overview-list";
 import { StatusFilterDropdown } from "@/components/homepage/status-filter-dropdown";
 import { useFilteredTransactions } from "@/lib/hooks/use-filtered-transactions";
+import { useCurrentTransaction } from "@/lib/hooks/use-current-transaction";
 import type { TransactionStatus } from "@/types";
-
-// 使用 dynamic import 替代 NoSSR
-const FourChainSelector = dynamic(
-  () => import("@/components/homepage/four-chain-selector").then(mod => ({ default: mod.FourChainSelector })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="w-full mb-6">
-        <Skeleton className="h-64 w-full rounded-lg" />
-      </div>
-    )
-  }
-);
-
-// 交易输入组件
-const TxFieldInputs = dynamic(
-  () => import("@/components/homepage/tx-field-inputs").then(mod => ({ default: mod.TxFieldInputs })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="w-full">
-        <Skeleton className="h-32 w-full rounded-lg" />
-      </div>
-    )
-  }
-);
 
 export default function Home() {
   const router = useRouter();
@@ -80,38 +55,15 @@ export default function Home() {
     status: undefined
   });
   
-  // 计算真实的状态统计
-  // 直接统计每个 status 的数量，返回 key 和 count
-  const statusStats = useMemo(() => {
-    const counts: Record<TransactionStatus, number> = {} as Record<TransactionStatus, number>;
-    transactions.forEach(tx => {
-      if (tx.status) {
-        counts[tx.status] = (counts[tx.status] || 0) + 1;
-      }
-    });
-    return counts;
-  }, [transactions]);
-
   // 使用自定义 Hook 处理搜索和过滤逻辑
   const filteredTransactions = useFilteredTransactions(transactions, searchQuery, statusFilter);
 
-  // 获取当前选中的交易
-  const currentTransaction = useMemo(() => {
-    if (currentId === null) return null;
-    return transactions.find(tx => tx.id === currentId) || null;
-  }, [currentId, transactions]);
-
-  // 计算当前交易在过滤后列表中的位置（从1开始）和总数
-  const { currentIndex, totalCount } = useMemo(() => {
-    if (currentId === null) {
-      return { currentIndex: 0, totalCount: filteredTransactions.length };
-    }
-    const index = filteredTransactions.findIndex(tx => tx.id === currentId);
-    return {
-      currentIndex: index === -1 ? 0 : index + 1,
-      totalCount: filteredTransactions.length
-    };
-  }, [currentId, filteredTransactions]);
+  // 获取当前选中的交易及位置信息
+  const { currentTransaction, currentIndex, totalCount } = useCurrentTransaction(
+    currentId,
+    transactions,
+    filteredTransactions
+  );
 
   // 组件挂载时，如果交易数据为空，且基础数据已加载完成，再自动加载交易
   useEffect(() => {
@@ -277,7 +229,6 @@ export default function Home() {
               <StatusFilterDropdown
                 statusFilter={statusFilter}
                 onStatusFilterChange={setStatusFilter}
-                stats={statusStats}
               />
             </div>
           </div>
