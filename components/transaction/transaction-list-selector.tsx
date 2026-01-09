@@ -164,7 +164,7 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, onC
             {paginatedTransactions.map((tx) => {
               const isSelected = tempSelectedIds.includes(tx.id);
               const isCurrent = tx.id === currentTransactionId;
-              const isChild = !!tx.parent_id;
+              const isChild = !!tx.parent;
               const cellClassName = isChild 
                 ? 'text-xs text-gray-500 dark:text-gray-400' 
                 : isCurrent 

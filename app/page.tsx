@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Spinner } from "@heroui/spinner";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Divider } from "@heroui/divider";
@@ -12,10 +11,11 @@ import { parseDateTime } from "@internationalized/date";
 import { ActionBar } from "@/components/homepage/action-bar";
 import { useAppData } from "@/components/context/app-data-context";
 import { useTransactionCache } from "@/components/context/transaction-cache-context";
+import { useError } from "@/components/context/error-context";
 import { TxFieldInputs } from "@/components/homepage/tx-field-inputs";
 import type { TxFieldInputsData } from "@/components/homepage/tx-field-inputs";
 import { FourChainSelector } from "@/components/homepage/four-chain-selector";
-import type { FourChainSelection, FourChainState } from "@/components/homepage/four-chain-selector";
+import type { FourChainState } from "@/components/homepage/four-chain-selector";
 import { TransactionOverviewList } from "@/components/homepage/transaction-overview-list";
 import { StatusFilterDropdown } from "@/components/homepage/status-filter-dropdown";
 import { useFilteredTransactions } from "@/lib/hooks/use-filtered-transactions";
@@ -25,12 +25,10 @@ import type { TransactionStatus } from "@/types";
 export default function Home() {
   const router = useRouter();
   const { error, isLoading: appDataLoading, hasLoaded: hasLoadedAppData, accounts, mainCategories, subCategories, budgetTypes } = useAppData();
-  const { transactions, loadTransactions, isLoading, createTransactionInCache } = useTransactionCache();
-  const [chainSelection, setChainSelection] = useState<FourChainSelection>(null);
-  const [chainState, setChainState] = useState<FourChainState>({}); // 管理四联选择器的内部状态
+  const { transactions, loadTransactions, isLoading, hasLoaded, createEmptyTransaction: createTransactionInCache } = useTransactionCache();
+  const { showError } = useError();
+  const [chainState, setChainState] = useState<FourChainState>({});
   const [currentId, setCurrentId] = useState<number | null>(null);
-  const [showErrorModal, setShowErrorModal] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
   const [selectorMode, setSelectorMode] = useState<"listbox" | "select">("select");
   
   // 搜索框状态
@@ -72,10 +70,11 @@ export default function Home() {
       && mainCategories.length > 0
       && subCategories.length > 0
       && budgetTypes.length > 0;
-    if (appDataReady && transactions.length === 0 && !isLoading) {
+    // 只在未加载过的情况下自动加载，避免云端本身没有数据时无限循环
+    if (appDataReady && transactions.length === 0 && !isLoading && !hasLoaded) {
       loadTransactions();
     }
-  }, [appDataLoading, accounts.length, mainCategories.length, subCategories.length, budgetTypes.length, transactions.length, isLoading, loadTransactions]);
+  }, [appDataLoading, accounts.length, mainCategories.length, subCategories.length, budgetTypes.length, transactions.length, isLoading, hasLoaded, loadTransactions]);
 
   // 当选中的交易变化时，填充表单数据
   useEffect(() => {
@@ -83,7 +82,7 @@ export default function Home() {
       // 填充表单数据 - 金额使用绝对值
       setFormData({
         amount: Math.abs(currentTransaction.amount).toFixed(2),
-        account: currentTransaction.account_id ? String(currentTransaction.account_id) : "",
+        account: currentTransaction.account.id ? String(currentTransaction.account.id) : "",
         date: currentTransaction.datetime ? parseDateTime(currentTransaction.datetime) : null,
         name: currentTransaction.name || "",
         merchant: currentTransaction.merchant || "",
@@ -93,9 +92,9 @@ export default function Home() {
       // 填充四联选择器状态
       setChainState({
         txType: currentTransaction.transaction_type || undefined,
-        main: currentTransaction.main_category_id ? String(currentTransaction.main_category_id) : undefined,
-        sub: currentTransaction.sub_category_id ? String(currentTransaction.sub_category_id) : undefined,
-        budget: currentTransaction.budget_type_id ? String(currentTransaction.budget_type_id) : undefined,
+        main_id: currentTransaction.main_category ? String(currentTransaction.main_category.id) : undefined,
+        sub_id: currentTransaction.sub_category ? String(currentTransaction.sub_category.id) : undefined,
+        budget_id: currentTransaction.budget_type ? String(currentTransaction.budget_type.id) : undefined,
       });
     } else {
       // 清空表单
@@ -143,9 +142,9 @@ export default function Home() {
   // 监听错误状态，显示错误弹窗
   useEffect(() => {
     if (error) {
-      setShowErrorModal(true);
+      showError('数据加载失败', error + '\n\n请检查您的网络连接或重新登录。如果问题持续存在，请联系管理员。');
     }
-  }, [error]);
+  }, [error, showError]);
 
   // 表单数据变更处理
   const handleFormChange = (field: keyof TxFieldInputsData, value: any) => {
@@ -202,8 +201,7 @@ export default function Home() {
     if (result.success && result.data) {
       setCurrentId(result.data.id);
     } else {
-      setLocalError(result.error || '未知错误');
-      setShowErrorModal(true);
+      showError('操作失败', result.error || '未知错误');
     }
   };
 
@@ -356,8 +354,7 @@ export default function Home() {
                   <FourChainSelector 
                     mode={selectorMode}
                     value={chainState}
-                    onStateChange={setChainState}
-                    onSelectionChange={setChainSelection}
+                    onChange={setChainState}
                   />
                 </div>
 
@@ -389,53 +386,6 @@ export default function Home() {
         </main>
       </div>
 
-      {/* 错误提示 Modal */}
-      <Modal 
-        isOpen={showErrorModal} 
-        onClose={() => {
-          setShowErrorModal(false);
-          setLocalError(null);
-        }}
-        placement="center"
-      >
-        <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            <span className="text-danger">{localError ? '操作失败' : '数据加载失败'}</span>
-          </ModalHeader>
-          <ModalBody>
-            <p className="text-default-600">{localError || error}</p>
-            {!localError && (
-              <p className="text-sm text-default-400 mt-2">
-                请检查您的网络连接或重新登录。如果问题持续存在，请联系管理员。
-              </p>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button 
-              color="danger" 
-              variant="light" 
-              onPress={() => {
-                setShowErrorModal(false);
-                setLocalError(null);
-              }}
-            >
-              关闭
-            </Button>
-            {!localError && (
-              <Button 
-                color="primary" 
-                onPress={() => {
-                  setShowErrorModal(false);
-                  setLocalError(null);
-                  window.location.reload();
-                }}
-              >
-                刷新页面
-              </Button>
-            )}
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </>
   );
 }

@@ -112,7 +112,7 @@ export function TransactionListItem({
     'text-gray-600 dark:text-gray-400';
   const splitsCount = transaction.splits?.length || 0;
   const childrenCount = transaction.children.length;
-  const isChild = !!transaction.parent_id;
+  const isChild = !!transaction.parent;
 
   return (
     <div
@@ -173,7 +173,7 @@ export function TransactionListItem({
               </span>
               
               {/* 特殊标记图标 */}
-              {transaction.parent_id && (
+              {transaction.parent && (
                 <LinkIcon 
                   className="w-3.5 h-3.5 text-gray-500" 
                   title="附加到其他交易"

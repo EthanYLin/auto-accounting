@@ -44,12 +44,27 @@ export type TransactionType = Enums<'transaction_type'>;
 
 // ========== 辅助类型 ==========
 // 带关联数据的交易类型
-export type TransactionWithRelations = Transaction & {
-  account?: Account;
+export type TransactionWithRelations = Omit<
+  Transaction,
+  'account_id' | 'main_category_id' | 'sub_category_id' | 'budget_type_id' | 'parent_id'
+> & {
+  account: Account;
   main_category?: MainCategory;
   sub_category?: SubCategory;
   budget_type?: BudgetType;
   parent?: TransactionWithRelations;
   children: TransactionWithRelations[];
-  splits?: TransactionSplit[];
+  splits?: TransactionSplitWithRelations[];
+};
+
+// 带关联数据的交易拆账类型
+export type TransactionSplitWithRelations = Omit<
+  TransactionSplit,
+  'account_id' | 'main_category_id' | 'sub_category_id' | 'budget_type_id' | 'transaction_id'
+> & {
+  account: Account;
+  main_category?: MainCategory;
+  sub_category?: SubCategory;
+  budget_type?: BudgetType;
+  transaction: Transaction;
 };

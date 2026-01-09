@@ -10,13 +10,16 @@ import { Chip } from "@heroui/chip";
 import { TransactionListSelector } from '@/components/transaction/transaction-list-selector';
 import { useTransactionCache } from '@/components/context/transaction-cache-context';
 import { useAppData } from '@/components/context/app-data-context';
+import { useError } from '@/components/context/error-context';
 import { generateMockTransactions } from '@/lib/test-utils/generate-mock-transactions';
 
 export default function TestTransactionListPage() {
-  const { transactions, setTransactions, loadTransactions, syncTransactions, isLoading } = useTransactionCache();
+  const { transactions, setTransactions, loadTransactions, syncTransactions, deleteTransactions, deleteAllTransactions, isLoading } = useTransactionCache();
   const { accounts, mainCategories, subCategories, budgetTypes } = useAppData();
+  const { showError } = useError();
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [currentTransactionId, setCurrentTransactionId] = useState<string>('');
+  const [deleteIds, setDeleteIds] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 生成测试数据（追加50条）
@@ -39,7 +42,7 @@ export default function TestTransactionListPage() {
     const adjustedData = newMockData.map(tx => ({
       ...tx,
       id: tx.id + maxId,
-      parent_id: tx.parent_id ? tx.parent_id + maxId : null,
+      parent_id: tx.parent ? tx.parent.id + maxId : null,
     }));
     
     setTransactions([...transactions, ...adjustedData]);
@@ -66,6 +69,61 @@ export default function TestTransactionListPage() {
     setIsModalOpen(false);
   };
 
+  // 测试错误提示
+  const handleTestError = () => {
+    showError(
+      '这是一个测试错误', 
+      '这是一条测试错误消息，用于验证 ErrorProvider 是否正常工作。\n\n如果你看到这个弹窗，说明错误提示功能运行正常！✨'
+    );
+  };
+
+  // 删除指定 ID 的交易记录
+  const handleDelete = async () => {
+    if (!deleteIds.trim()) {
+      showError('输入错误', '请输入要删除的交易记录 ID（多个 ID 用逗号分隔）');
+      return;
+    }
+
+    // 解析 ID 字符串（支持逗号分隔）
+    const ids = deleteIds
+      .split(',')
+      .map(id => parseInt(id.trim()))
+      .filter(id => !isNaN(id));
+
+    if (ids.length === 0) {
+      showError('输入错误', '没有有效的 ID');
+      return;
+    }
+
+    const result = await deleteTransactions(ids);
+    if (!result.success) {
+      showError('删除失败', result.error || '未知错误');
+    } else {
+      setDeleteIds(''); // 清空输入框
+    }
+  };
+
+  // 删除所有交易记录
+  const handleDeleteAll = async () => {
+    if (transactions.length === 0) {
+      showError('操作提示', '当前没有交易记录');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `确定要删除所有 ${transactions.length} 条交易记录吗？此操作不可撤销！`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const result = await deleteAllTransactions();
+    if (!result.success) {
+      showError('删除失败', result.error || '未知错误');
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <h1 className="text-3xl font-bold mb-6">交易列表选择器测试页面</h1>
@@ -89,7 +147,7 @@ export default function TestTransactionListPage() {
               </p>
             </div>
           )}
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex gap-3 flex-wrap mb-4">
             <Button
               color="primary"
               onPress={handleGenerateData}
@@ -111,6 +169,45 @@ export default function TestTransactionListPage() {
             >
               同步（上传到云端）
             </Button>
+            <Button
+              color="danger"
+              variant="flat"
+              onPress={handleTestError}
+            >
+              🧪 测试错误提示
+            </Button>
+          </div>
+
+          {/* 删除操作区 */}
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold mb-3 text-default-600">删除操作</h3>
+            <div className="flex gap-3 flex-wrap items-end">
+              <Input
+                label="要删除的 ID（多个用逗号分隔）"
+                placeholder="例如: 1,2,3"
+                value={deleteIds}
+                onValueChange={setDeleteIds}
+                variant="bordered"
+                size="sm"
+                className="max-w-xs"
+              />
+              <Button
+                color="warning"
+                onPress={handleDelete}
+                isDisabled={isLoading || !deleteIds.trim()}
+                size="sm"
+              >
+                删除指定记录
+              </Button>
+              <Button
+                color="danger"
+                onPress={handleDeleteAll}
+                isDisabled={isLoading || transactions.length === 0}
+                size="sm"
+              >
+                删除所有记录
+              </Button>
+            </div>
           </div>
         </CardBody>
       </Card>

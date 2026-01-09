@@ -137,9 +137,9 @@ export function useFilteredTransactions(
   const flatTransactions = useMemo(() => {
     const result: TransactionWithRelations[] = [];
     
-    // 获取所有根记录（没有 parent_id 的记录）并按时间倒序排序
+    // 获取所有根记录（没有 parent 的记录）并按时间倒序排序
     const rootTransactions = transactions
-      .filter(tx => !tx.parent_id)
+      .filter(tx => !tx.parent)
       .sort((a, b) => {
         const dateA = a.datetime ? new Date(a.datetime).getTime() : 0;
         const dateB = b.datetime ? new Date(b.datetime).getTime() : 0;
@@ -169,19 +169,17 @@ export function useFilteredTransactions(
       const matched = filterTransactionsBySearch(flatTransactions, searchQuery);
       const matchedIds = new Set(matched.map(tx => tx.id));
       
-      // 找出所有匹配的父记录，并将其子记录也加入匹配集合
+      // 当子记录匹配时，将父记录也加入结果；当父记录匹配时，将子记录也加入结果。
       matched.forEach(tx => {
-        if (!tx.parent_id && tx.children.length > 0) {
+        if (!tx.parent && tx.children.length > 0) {
           tx.children.forEach(child => matchedIds.add(child.id));
+        }
+        if (tx.parent) {
+          matchedIds.add(tx.parent.id);
         }
       });
       
-      // 过滤：交易本身匹配 或 其父记录匹配
-      result = flatTransactions.filter(tx => {
-        if (matchedIds.has(tx.id)) return true;
-        if (tx.parent_id && matchedIds.has(tx.parent_id)) return true;
-        return false;
-      });
+      result = result.filter(tx => matchedIds.has(tx.id));
     }
     
     // 2. 状态过滤

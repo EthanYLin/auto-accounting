@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducer, useMemo, useEffect } from "react";
+import { useMemo, useEffect } from "react";
 import { Listbox, ListboxItem } from "@heroui/listbox";
 import { Select, SelectItem } from "@heroui/select";
 import type { TransactionType, MainCategory, SubCategory, BudgetType } from "@/types";
@@ -12,9 +12,9 @@ import { useAppData } from "@/components/context/app-data-context";
 // 四联选择器状态类型
 export type FourChainState = {
   txType?: TransactionType;
-  main?: string;
-  sub?: string;
-  budget?: string;
+  main_id?: string;
+  sub_id?: string;
+  budget_id?: string;
 };
 
 // 四联选择器动作类型
@@ -22,16 +22,7 @@ export type FourChainAction =
   | { type: "SET_TX"; tx: TransactionType | undefined }
   | { type: "SET_MAIN"; main: string | undefined }
   | { type: "SET_SUB"; sub: string | undefined }
-  | { type: "SET_BUDGET"; budget: string | undefined }
-  | { type: "RESET_CHAIN"; from: "main" | "sub" | "budget" };
-
-// 四联选择器的完整选择结果类型
-export type FourChainSelection = {
-  txType: TransactionType;
-  mainCategory: MainCategory;
-  subCategory: SubCategory;
-  budgetType?: BudgetType;
-} | null;
+  | { type: "SET_BUDGET"; budget: string | undefined };
 
 // ==================== Reducer ====================
 
@@ -42,56 +33,32 @@ function fourChainReducer(state: FourChainState, action: FourChainAction): FourC
       return {
         txType: action.tx,
         // 清除下游选择
-        main: undefined,
-        sub: undefined,
-        budget: undefined,
+        main_id: undefined,
+        sub_id: undefined,
+        budget_id: undefined,
       };
 
     case "SET_MAIN":
       return {
         ...state,
-        main: action.main,
+        main_id: action.main,
         // 清除下游选择
-        sub: undefined,
-        budget: undefined,
+        sub_id: undefined,
+        budget_id: undefined,
       };
 
     case "SET_SUB":
       return {
         ...state,
-        sub: action.sub,
+        sub_id: action.sub,
         // 预算计划可以被自动设置，但用户也可以手动调整，所以不清空
       };
 
     case "SET_BUDGET":
       return {
         ...state,
-        budget: action.budget,
+        budget_id: action.budget,
       };
-
-    case "RESET_CHAIN":
-      switch (action.from) {
-        case "main":
-          return {
-            ...state,
-            main: undefined,
-            sub: undefined,
-            budget: undefined,
-          };
-        case "sub":
-          return {
-            ...state,
-            sub: undefined,
-            budget: undefined,
-          };
-        case "budget":
-          return {
-            ...state,
-            budget: undefined,
-          };
-        default:
-          return state;
-      }
 
     default:
       return state;
@@ -122,41 +89,32 @@ export type SelectorMode = "listbox" | "select";
 
 // FourChainSelector 组件属性
 interface FourChainSelectorProps {
+  // 受控状态
+  value: FourChainState;
+  // 状态变更回调
+  onChange: (state: FourChainState) => void;
   // 数据过滤
   allowedTxTypes?: TransactionType[];
   // 显示模式
   mode?: SelectorMode;
-  // 受控状态
-  value?: FourChainState;
-  // 回调
-  onSelectionChange?: (selection: FourChainSelection) => void;
-  onStateChange?: (state: FourChainState) => void;
   // 样式
   className?: string;
 }
 
 export function FourChainSelector({
+  value,
+  onChange,
   allowedTxTypes,
   mode = "listbox",
-  value,
-  onSelectionChange,
-  onStateChange,
   className = ""
-}: FourChainSelectorProps = {}) {
+}: FourChainSelectorProps) {
   const { mainCategories, subCategories, budgetTypes } = useAppData();
 
-  // 使用 reducer 管理级联选择状态（仅在非受控模式下使用）
-  const [internalState, internalDispatch] = useReducer(fourChainReducer, {});
-  
-  // 如果是受控组件，使用外部传入的 value，否则使用内部状态
-  const state = value !== undefined ? value : internalState;
-  const dispatch = value !== undefined 
-    ? (action: FourChainAction) => {
-        // 受控模式：计算新状态并通过回调传递给父组件
-        const newState = fourChainReducer(state, action);
-        onStateChange?.(newState);
-      }
-    : internalDispatch;
+  // 受控模式：计算新状态并通过回调传递给父组件
+  const dispatch = (action: FourChainAction) => {
+    const newState = fourChainReducer(value, action);
+    onChange(newState);
+  };
 
   // 交易类型选项
   const txTypeOptions = useMemo((): ChainOption[] => {
@@ -177,10 +135,10 @@ export function FourChainSelector({
 
   // 主类别选项（按交易类型过滤）
   const mainCategoryOptions = useMemo((): ChainOption[] => {
-    if (!state.txType) return [];
+    if (!value.txType) return [];
 
     return mainCategories
-      .filter((item) => item.transaction_type === state.txType)
+      .filter((item) => item.transaction_type === value.txType)
       .map((item) => ({
         key: String(item.id),
         label: item.label,
@@ -189,13 +147,13 @@ export function FourChainSelector({
         foreColor: item.fore_color,
         textValue: item.label,
       }));
-  }, [state.txType, mainCategories]);
+  }, [value.txType, mainCategories]);
 
   // 子类别选项（按主类别过滤）
   const subCategoryOptions = useMemo((): ChainOption[] => {
-    if (!state.main) return [];
+    if (!value.main_id) return [];
 
-    const mainId = Number(state.main);
+    const mainId = Number(value.main_id);
     return subCategories
       .filter((item) => item.main_category_id === mainId)
       .map((item) => ({
@@ -206,7 +164,7 @@ export function FourChainSelector({
         foreColor: item.fore_color,
         textValue: item.label,
       }));
-  }, [state.main, subCategories]);
+  }, [value.main_id, subCategories]);
 
   // 预算计划选项（显示所有预算计划）
   const budgetOptions = useMemo((): ChainOption[] => {
@@ -222,22 +180,22 @@ export function FourChainSelector({
 
   // 自动选择逻辑
   useEffect(() => {
-    if (state.txType && !state.main && mainCategoryOptions.length === 1) {
+    if (value.txType && !value.main_id && mainCategoryOptions.length === 1) {
       dispatch({ type: "SET_MAIN", main: mainCategoryOptions[0].key });
     }
-  }, [state.txType, state.main, mainCategoryOptions]);
+  }, [value.txType, value.main_id, mainCategoryOptions]);
 
   useEffect(() => {
-    if (state.main && !state.sub && subCategoryOptions.length === 1) {
+    if (value.main_id && !value.sub_id && subCategoryOptions.length === 1) {
       dispatch({ type: "SET_SUB", sub: subCategoryOptions[0].key });
     }
-  }, [state.main, state.sub, subCategoryOptions]);
+  }, [value.main_id, value.sub_id, subCategoryOptions]);
 
   // 选择子类别后自动选择预算计划（仅在子类别改变时触发一次）
   useEffect(() => {
-    if (!state.sub) return;
+    if (!value.sub_id) return;
 
-    const matchedSub = subCategories.find((item) => item.id === Number(state.sub));
+    const matchedSub = subCategories.find((item) => item.id === Number(value.sub_id));
     if (matchedSub?.budget_type_id) {
       const budgetId = String(matchedSub.budget_type_id);
       dispatch({ type: "SET_BUDGET", budget: budgetId });
@@ -245,48 +203,25 @@ export function FourChainSelector({
       // 如果子类别没有绑定预算，清空预算选择
       dispatch({ type: "SET_BUDGET", budget: undefined });
     }
-  }, [state.sub, subCategories]); // 移除 state.budget 依赖，只在子类别改变时触发
-
-  // 构建完整选择结果
-  const fullSelection = useMemo((): FourChainSelection => {
-    if (!state.txType || !state.main || !state.sub) return null;
-
-    const main = mainCategories.find((item) => item.id === Number(state.main));
-    const sub = subCategories.find((item) => item.id === Number(state.sub));
-    const budget = state.budget ? budgetTypes.find((item) => item.id === Number(state.budget)) : undefined;
-
-    if (!main || !sub) return null;
-
-    return {
-      txType: state.txType,
-      mainCategory: main,
-      subCategory: sub,
-      budgetType: budget,
-    };
-  }, [state.txType, state.main, state.sub, state.budget, mainCategories, subCategories, budgetTypes]);
-
-  // 向外回传选择结果
-  useEffect(() => {
-    onSelectionChange?.(fullSelection);
-  }, [fullSelection, onSelectionChange]);
+  }, [value.sub_id, subCategories]);
 
   // 处理选择变更，支持取消选择
   const handleSelectionChange = (type: "tx" | "main" | "sub" | "budget", key: string | undefined) => {
     switch (type) {
       case "tx":
-        const newTx = key === state.txType ? undefined : key as TransactionType;
+        const newTx = key === value.txType ? undefined : key as TransactionType;
         dispatch({ type: "SET_TX", tx: newTx });
         break;
       case "main":
-        const newMain = key === state.main ? undefined : key;
+        const newMain = key === value.main_id ? undefined : key;
         dispatch({ type: "SET_MAIN", main: newMain });
         break;
       case "sub":
-        const newSub = key === state.sub ? undefined : key;
+        const newSub = key === value.sub_id ? undefined : key;
         dispatch({ type: "SET_SUB", sub: newSub });
         break;
       case "budget":
-        const newBudget = key === state.budget ? undefined : key;
+        const newBudget = key === value.budget_id ? undefined : key;
         dispatch({ type: "SET_BUDGET", budget: newBudget });
         break;
     }
@@ -393,7 +328,7 @@ export function FourChainSelector({
         {renderSelector(
           "交易类型",
           txTypeOptions,
-          state.txType,
+          value.txType,
           (key) => handleSelectionChange("tx", key)
         )}
 
@@ -401,9 +336,9 @@ export function FourChainSelector({
         {renderSelector(
           "主类别",
           mainCategoryOptions,
-          state.main,
+          value.main_id,
           (key) => handleSelectionChange("main", key),
-          !state.txType,
+          !value.txType,
           "请先选择交易类型"
         )}
 
@@ -411,9 +346,9 @@ export function FourChainSelector({
         {renderSelector(
           "子类别",
           subCategoryOptions,
-          state.sub,
+          value.sub_id,
           (key) => handleSelectionChange("sub", key),
-          !state.main,
+          !value.main_id,
           "请先选择主类别"
         )}
 
@@ -421,7 +356,7 @@ export function FourChainSelector({
         {renderSelector(
           "预算计划",
           budgetOptions,
-          state.budget,
+          value.budget_id,
           (key) => handleSelectionChange("budget", key)
         )}
       </div>
