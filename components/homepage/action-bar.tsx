@@ -1,40 +1,31 @@
 "use client";
 
 import { Button } from "@heroui/button";
-import { Checkbox } from "@heroui/checkbox";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import type { TransactionStatus } from "@/types";
+import { ALL_TRANSACTION_STATUS } from "@/constants/transaction-status";
 
 interface ActionBarProps {
   currentIndex: number;
   totalCount: number;
-  autoSwitch?: boolean;
-  onAutoSwitchChange?: (value: boolean) => void;
+  status?: TransactionStatus;
   onPrevious?: () => void;
   onNext?: () => void;
-  onComplete?: () => void;
-  onLater?: () => void;
-  onCancel?: () => void;
-  onSave?: () => void;
 }
 
 export function ActionBar({
   currentIndex,
   totalCount,
-  autoSwitch = false,
-  onAutoSwitchChange,
+  status,
   onPrevious,
   onNext,
-  onComplete,
-  onLater,
-  onCancel,
-  onSave
 }: ActionBarProps) {
+  const statusConfig = status ? ALL_TRANSACTION_STATUS.find((item) => item.name === status) : null;
 
   return (
     <div className="sticky top-0 z-30 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
       <div className="px-4 py-3">
         <div className="flex items-center justify-between gap-4">
-          
           {/* 左侧：导航控件 */}
           <div className="flex items-center gap-2">
             <Button
@@ -68,55 +59,22 @@ export function ActionBar({
             >
               <ChevronRightIcon className="w-4 h-4" />
             </Button>
+          </div>
 
-            <div className="ml-4">
-              <Checkbox
-                size="sm"
-                isSelected={autoSwitch}
-                onValueChange={onAutoSwitchChange}
-              >
-                <span className="text-sm text-gray-600 dark:text-gray-400">自动切换</span>
-              </Checkbox>
+          {/* 右侧：状态显示 */}
+          {statusConfig && (
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${statusConfig.bgColor} transition-colors`}>
+              {/* 状态指示点 */}
+              <div className="relative">
+                <div className={`w-2 h-2 rounded-full ${statusConfig.dotColor} shadow-sm`} />
+                <div className={`absolute inset-0 w-2 h-2 rounded-full ${statusConfig.dotColor} opacity-75`} />
+              </div>
+              {/* 状态文字 */}
+              <span className={`text-sm font-medium ${statusConfig.color}`}>
+                {status}
+              </span>
             </div>
-          </div>
-
-          {/* 右侧：操作按钮 */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onPress={onSave}
-            >
-              保存
-            </Button>
-            
-            <Button
-              variant="flat"
-              size="sm"
-              color="success"
-              onPress={onComplete}
-            >
-              保存并完成
-            </Button>
-            
-            <Button
-              variant="flat"
-              size="sm"
-              color="warning"
-              onPress={onLater}
-            >
-              保存并取消
-            </Button>
-            
-            <Button
-              variant="flat"
-              size="sm"
-              color="default"
-              onPress={onCancel}
-            >
-              保存并稍后处理
-            </Button>
-          </div>
+          )}
         </div>
       </div>
     </div>

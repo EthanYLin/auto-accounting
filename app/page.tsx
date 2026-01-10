@@ -37,9 +37,6 @@ export default function Home() {
   // 状态过滤
   const [statusFilter, setStatusFilter] = useState<TransactionStatus | 'all'>("all");
   
-  // 自动切换状态
-  const [autoSwitch, setAutoSwitch] = useState(false);
-  
   // 主内容区域的引用（用于检测宽度）
   const mainContentRef = useRef<HTMLDivElement>(null);
 
@@ -50,7 +47,11 @@ export default function Home() {
     date: null,
     name: "",
     merchant: "",
-    status: undefined
+    status: undefined,
+    source: null,
+    remark: null,
+    title: null,
+    raw_info: null,
   });
   
   // 使用自定义 Hook 处理搜索和过滤逻辑
@@ -87,6 +88,10 @@ export default function Home() {
         name: currentTransaction.name || "",
         merchant: currentTransaction.merchant || "",
         status: currentTransaction.status || undefined,
+        source: currentTransaction.source,
+        remark: currentTransaction.remark,
+        title: currentTransaction.title,
+        raw_info: currentTransaction.raw_info as Record<string, string> | null,
       });
 
       // 填充四联选择器状态
@@ -104,7 +109,11 @@ export default function Home() {
         date: null,
         name: "",
         merchant: "",
-        status: undefined
+        status: undefined,
+        source: null,
+        remark: null,
+        title: null,
+        raw_info: null,
       });
       setChainState({});
     }
@@ -173,22 +182,6 @@ export default function Home() {
     }
   };
 
-  const handleComplete = () => {
-    console.log("完成操作");
-  };
-
-  const handleLater = () => {
-    console.log("稍后处理");
-  };
-
-  const handleCancel = () => {
-    console.log("取消操作");
-  };
-
-  const handleSave = () => {
-    console.log("保存操作");
-  };
-
   // 导入账单
   const handleImport = () => {
     router.push('/upload');
@@ -249,14 +242,9 @@ export default function Home() {
             <ActionBar
               currentIndex={currentIndex}
               totalCount={totalCount}
-              autoSwitch={autoSwitch}
-              onAutoSwitchChange={setAutoSwitch}
+              status={currentTransaction?.status || undefined}
               onPrevious={handlePrevious}
               onNext={handleNext}
-              onComplete={handleComplete}
-              onLater={handleLater}
-              onCancel={handleCancel}
-              onSave={handleSave}
             />
           )}
 

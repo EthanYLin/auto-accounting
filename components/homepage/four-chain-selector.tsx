@@ -191,9 +191,11 @@ export function FourChainSelector({
     }
   }, [value.main_id, value.sub_id, subCategoryOptions]);
 
-  // 选择子类别后自动选择预算计划（仅在子类别改变时触发一次）
+  // 选择子类别后自动选择预算计划（仅在子类别改变且预算未设置时触发）
   useEffect(() => {
     if (!value.sub_id) return;
+    // 如果预算计划已经设置，不覆盖
+    if (value.budget_id) return;
 
     const matchedSub = subCategories.find((item) => item.id === Number(value.sub_id));
     if (matchedSub?.budget_type_id) {
