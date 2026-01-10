@@ -38,6 +38,11 @@ export type TransactionSplit = Tables<'transaction_split'>;
 export type TransactionSplitInsert = TablesInsert<'transaction_split'>;
 export type TransactionSplitUpdate = TablesUpdate<'transaction_split'>;
 
+// 匹配规则相关
+export type MatchingRule = Tables<'matching_rule'>;
+export type MatchingRuleInsert = TablesInsert<'matching_rule'>;
+export type MatchingRuleUpdate = TablesUpdate<'matching_rule'>;
+
 // ========== 枚举类型 ==========
 export type TransactionStatus = Enums<'transaction_status'>;
 export type TransactionType = Enums<'transaction_type'>;

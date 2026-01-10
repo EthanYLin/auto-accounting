@@ -28,7 +28,7 @@ export function TxFieldInputs({ selectedTxType, formData, onChange }: TxFieldInp
 
     return (
         <div className="w-full">
-            <div className="grid gap-4 h-32" style={{ gridTemplateColumns: "3fr 7fr" }}>
+            <div className="grid gap-3 h-28" style={{ gridTemplateColumns: "3fr 7fr" }}>
                  
                  { /* 左侧：金额输入 */}
                  <div className="row-span-2" style={{ position: 'relative' }}>
@@ -39,19 +39,48 @@ export function TxFieldInputs({ selectedTxType, formData, onChange }: TxFieldInp
                     />
                  </div>
 
-                {/* 右侧第一行：账户、日期、时间、状态 */}
-                <div className="grid grid-cols-3 gap-2" style={{ gridTemplateColumns: "2fr 3fr 2fr" }}>
+                {/* 右侧第一行：名称输入和商户输入 */}
+                <div className="grid grid-cols-2 gap-3">
+                    {/* 名称输入 */}
+                    <Input
+                        label="名称"
+                        labelPlacement="outside"
+                        placeholder="请输入名称"
+                        value={formData.name}
+                        onValueChange={(value) => onChange("name", value)}
+                        size="sm"
+                        variant="underlined"
+                        classNames={{ input: "font-bold" }}
+                    />
+
+                    {/* 商户输入 */}
+                    <Input
+                        label="商户"
+                        labelPlacement="outside"
+                        placeholder="请输入商户名称"
+                        value={formData.merchant}
+                        onValueChange={(value) => onChange("merchant", value)}
+                        size="sm"
+                        variant="underlined"
+                        classNames={{ input: "font-bold" }}
+                    />
+                </div>
+
+                {/* 右侧第二行：账户、日期、时间、状态 */}
+                <div className="grid grid-cols-3 gap-3" style={{ gridTemplateColumns: "2fr 3fr 2fr" }}>
                     {/* 账户选择 */}
                     <Select
                         label="账户"
+                        labelPlacement="outside"
+                        placeholder="请选择账户"
                         selectedKeys={formData.account ? [formData.account] : []}
                         onSelectionChange={(keys) => {
                             const account = Array.from(keys)[0] as string;
                             onChange("account", account);
                         }}
-                        size="md"
-                        variant="bordered"
-                        classNames={{ value: "font-bold" }}
+                        size="sm"
+                        variant="underlined"
+                        classNames={{ value: "font-normal" }}
                     >
                         {accounts.map((account) => (
                             <SelectItem key={account.id.toString()}>
@@ -62,48 +91,29 @@ export function TxFieldInputs({ selectedTxType, formData, onChange }: TxFieldInp
 
                     <DatePicker
                         label="日期时间"
+                        labelPlacement="outside"
                         granularity="minute"
                         hourCycle={24}
                         value={formData.date}
                         onChange={(date) => onChange("date", date)}
-                        size="md"
-                        variant="bordered"
-                        classNames={{ input: "font-bold" }}
+                        size="sm"
+                        variant="underlined"
+                        classNames={{ input: "font-normal" }}
                     />
 
                     {/* 状态（只读） */}
                     <Input
                         label="状态"
+                        labelPlacement="outside"
                         value={formData.status || ""}
                         isReadOnly
-                        size="md"
-                        variant="bordered"
-                        classNames={{ input: "font-bold" }}
+                        size="sm"
+                        variant="underlined"
+                        classNames={{ input: "font-normal" }}
                     />
                 </div>
 
-                {/* 右侧第二行：名称输入和商户输入 */}
-                <div className="grid grid-cols-2 gap-2">
-                    {/* 名称输入 */}
-                    <Input
-                        label="名称"
-                        value={formData.name}
-                        onValueChange={(value) => onChange("name", value)}
-                        size="lg"
-                        variant="bordered"
-                        classNames={{ input: "font-bold" }}
-                    />
-
-                    {/* 商户输入 */}
-                    <Input
-                        label="商户"
-                        value={formData.merchant}
-                        onValueChange={(value) => onChange("merchant", value)}
-                        size="lg"
-                        variant="bordered"
-                        classNames={{ input: "font-bold" }}
-                    />
-                </div>
+                
             </div>
 
         </div>

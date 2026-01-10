@@ -26,6 +26,7 @@ import type {
   MainCategory,
   SubCategory,
   TransactionType,
+  MatchingRule,
 } from "@/types";
 import { TRANSACTION_TYPES } from "@/constants/transaction-type";
 import {
@@ -41,6 +42,9 @@ import {
   updateBudgetType,
   updateMainCategory,
   updateSubCategory,
+  createMatchingRule,
+  updateMatchingRule,
+  deleteMatchingRule,
 } from "@/app/actions/data";
 
 type MainCategoryForm = {
@@ -62,12 +66,27 @@ type SubCategoryForm = {
   fore_color: string;
 };
 
+type MatchingRuleForm = {
+  id?: number;
+  f_original_amount_ge: string;
+  f_original_amount_le: string;
+  f_time: string;
+  f_title: string;
+  t_tx_type: TransactionType | "";
+  t_main_category_id: number | "";
+  t_sub_category_id: number | "";
+  t_budget_type_id: number | "";
+  t_name: string;
+  t_merchant: string;
+};
+
 export default function SettingsPage() {
   const {
     accounts,
     mainCategories,
     subCategories,
     budgetTypes,
+    matchingRules,
     isLoading,
     loadData,
     error: loadError,
@@ -113,12 +132,28 @@ export default function SettingsPage() {
   const [subFilterType, setSubFilterType] = useState<TransactionType | "">(TRANSACTION_TYPES[0].type);
   const [subFilterMainId, setSubFilterMainId] = useState<number | "">("");
 
+  // 匹配规则
+  const [ruleForm, setRuleForm] = useState<MatchingRuleForm>({
+    f_original_amount_ge: "",
+    f_original_amount_le: "",
+    f_time: "",
+    f_title: "",
+    t_tx_type: "",
+    t_main_category_id: "",
+    t_sub_category_id: "",
+    t_budget_type_id: "",
+    t_name: "",
+    t_merchant: "",
+  });
+  const ruleModal = useDisclosure();
+
   // 删除确认
   type DeleteTarget =
     | { type: "account"; data: Account }
     | { type: "budget"; data: BudgetType }
     | { type: "main"; data: MainCategory }
-    | { type: "sub"; data: SubCategory };
+    | { type: "sub"; data: SubCategory }
+    | { type: "rule"; data: MatchingRule };
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const deleteModal = useDisclosure();
 
@@ -156,6 +191,22 @@ export default function SettingsPage() {
       ? subCategories.filter((s) => s.main_category_id === subFilterMainId)
       : subCategories,
     [subCategories, subFilterMainId],
+  );
+
+  // 匹配规则：根据交易类型过滤主类别
+  const ruleFilteredMainCategories = useMemo(
+    () => ruleForm.t_tx_type
+      ? mainCategories.filter((m) => m.transaction_type === ruleForm.t_tx_type)
+      : mainCategories,
+    [mainCategories, ruleForm.t_tx_type],
+  );
+
+  // 匹配规则：根据主类别过滤子类别
+  const ruleFilteredSubCategories = useMemo(
+    () => ruleForm.t_main_category_id
+      ? subCategories.filter((s) => s.main_category_id === ruleForm.t_main_category_id)
+      : subCategories,
+    [subCategories, ruleForm.t_main_category_id],
   );
 
   const resetFeedback = () => {
@@ -369,6 +420,74 @@ export default function SettingsPage() {
     deleteModal.onOpen();
   };
 
+  // === 匹配规则 ===
+  const openRuleModal = (item?: MatchingRule) => {
+    resetFeedback();
+    if (item) {
+      setRuleForm({
+        id: item.id,
+        f_original_amount_ge: item.f_original_amount_ge?.toString() || "",
+        f_original_amount_le: item.f_original_amount_le?.toString() || "",
+        f_time: item.f_time || "",
+        f_title: item.f_title || "",
+        t_tx_type: item.t_tx_type || "",
+        t_main_category_id: item.t_main_category_id || "",
+        t_sub_category_id: item.t_sub_category_id || "",
+        t_budget_type_id: item.t_budget_type_id || "",
+        t_name: item.t_name || "",
+        t_merchant: item.t_merchant || "",
+      });
+    } else {
+      setRuleForm({
+        f_original_amount_ge: "",
+        f_original_amount_le: "",
+        f_time: "",
+        f_title: "",
+        t_tx_type: "",
+        t_main_category_id: "",
+        t_sub_category_id: "",
+        t_budget_type_id: "",
+        t_name: "",
+        t_merchant: "",
+      });
+    }
+    ruleModal.onOpen();
+  };
+
+  const handleSaveRule = async () => {
+    if (!ruleForm.f_title.trim()) {
+      setActionError("请输入导入描述的正则表达式");
+      return;
+    }
+
+    const payload = {
+      f_original_amount_ge: ruleForm.f_original_amount_ge ? parseFloat(ruleForm.f_original_amount_ge) : null,
+      f_original_amount_le: ruleForm.f_original_amount_le ? parseFloat(ruleForm.f_original_amount_le) : null,
+      f_time: ruleForm.f_time.trim() || null,
+      f_title: ruleForm.f_title.trim(),
+      t_tx_type: ruleForm.t_tx_type || null,
+      t_main_category_id: ruleForm.t_main_category_id || null,
+      t_sub_category_id: ruleForm.t_sub_category_id || null,
+      t_budget_type_id: ruleForm.t_budget_type_id || null,
+      t_name: ruleForm.t_name.trim() || null,
+      t_merchant: ruleForm.t_merchant.trim() || null,
+    };
+
+    await runAction(
+      () =>
+        ruleForm.id
+          ? updateMatchingRule(ruleForm.id, payload)
+          : createMatchingRule(payload),
+      ruleForm.id ? "匹配规则已更新" : "匹配规则已创建",
+      () => ruleModal.onClose(),
+    );
+  };
+
+  const handleDeleteRule = (item: MatchingRule) => {
+    setDeleteTarget({ type: "rule", data: item });
+    deleteModal.onOpen();
+  };
+
   // 确认删除
   const confirmDelete = async () => {
     if (!deleteTarget) return;
@@ -394,6 +513,10 @@ export default function SettingsPage() {
         actionFn = () => deleteSubCategory(data.id);
         successMsg = "子类别已删除";
         break;
+      case "rule":
+        actionFn = () => deleteMatchingRule(data.id);
+        successMsg = "匹配规则已删除";
+        break;
     }
 
     await runAction(actionFn, successMsg, () => {
@@ -405,7 +528,7 @@ export default function SettingsPage() {
   const isBusy = isLoading || actionLoading;
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">配置中心</h1>
@@ -438,6 +561,99 @@ export default function SettingsPage() {
         color="primary"
         className="w-full"
       >
+        <Tab key="matching-rule" title="匹配规则">
+          <Card>
+            <CardHeader className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold">匹配规则</h3>
+                <p className="text-xs text-default-500 mt-1">
+                  用于自动匹配导入的账单并设置类别、商家等信息
+                </p>
+              </div>
+              <Button color="primary" onPress={() => openRuleModal()}>
+                新增规则
+              </Button>
+            </CardHeader>
+            <Divider />
+            <CardBody>
+              {isBusy ? (
+                <div className="py-8 flex justify-center">
+                  <Spinner label="加载中..." />
+                </div>
+              ) : matchingRules.length === 0 ? (
+                <div className="py-8 text-center text-default-500">
+                  暂无匹配规则，点击"新增规则"开始添加。
+                </div>
+              ) : (
+                <Table aria-label="匹配规则列表" removeWrapper>
+                  <TableHeader>
+                    <TableColumn>ID</TableColumn>
+                    <TableColumn>导入描述(正则)</TableColumn>
+                    <TableColumn>金额范围</TableColumn>
+                    <TableColumn>时间(正则)</TableColumn>
+                    <TableColumn>目标类型</TableColumn>
+                    <TableColumn>目标主类别</TableColumn>
+                    <TableColumn>目标子类别</TableColumn>
+                    <TableColumn align="end">操作</TableColumn>
+                  </TableHeader>
+                  <TableBody items={matchingRules}>
+                    {(item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>#{item.id}</TableCell>
+                        <TableCell>
+                          <span className="text-xs font-mono">{item.f_title}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs">
+                            {item.f_original_amount_ge !== null || item.f_original_amount_le !== null
+                              ? `${item.f_original_amount_ge ?? "无限"} ~ ${item.f_original_amount_le ?? "无限"}`
+                              : "—"}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs font-mono">
+                            {item.f_time || "—"}
+                          </span>
+                        </TableCell>
+                        <TableCell>{item.t_tx_type || "—"}</TableCell>
+                        <TableCell>
+                          {item.t_main_category_id
+                            ? mainCategoryMap.get(item.t_main_category_id)?.label || `#${item.t_main_category_id}`
+                            : "—"}
+                        </TableCell>
+                        <TableCell>
+                          {item.t_sub_category_id
+                            ? subCategories.find(s => s.id === item.t_sub_category_id)?.label || `#${item.t_sub_category_id}`
+                            : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="light"
+                              onPress={() => openRuleModal(item)}
+                            >
+                              编辑
+                            </Button>
+                            <Button
+                              size="sm"
+                              color="danger"
+                              variant="flat"
+                              onPress={() => handleDeleteRule(item)}
+                            >
+                              删除
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardBody>
+          </Card>
+        </Tab>
+
         <Tab key="account" title="账户">
           <Card>
             <CardHeader className="flex items-center justify-between">
@@ -936,6 +1152,178 @@ export default function SettingsPage() {
         </ModalContent>
       </Modal>
 
+      {/* 匹配规则弹窗 */}
+      <Modal isOpen={ruleModal.isOpen} onClose={ruleModal.onClose} size="2xl" scrollBehavior="inside">
+        <ModalContent>
+          <ModalHeader>{ruleForm.id ? "编辑匹配规则" : "新增匹配规则"}</ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              {/* 过滤条件 */}
+              <div>
+                <h4 className="text-sm font-semibold mb-3">过滤条件</h4>
+                <div className="space-y-3">
+                  <Input
+                    label="导入描述 (正则表达式)"
+                    placeholder="例如：(麦当劳|McDonalds)"
+                    description="必填。匹配账单的 title 字段。"
+                    value={ruleForm.f_title}
+                    onChange={(e) => setRuleForm((prev) => ({ ...prev, f_title: e.target.value }))}
+                    isRequired
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      label="最小金额"
+                      placeholder="例如：10.00"
+                      description="选填，留空表示无限制。"
+                      type="number"
+                      step="0.01"
+                      value={ruleForm.f_original_amount_ge}
+                      onChange={(e) => setRuleForm((prev) => ({ ...prev, f_original_amount_ge: e.target.value }))}
+                    />
+                    <Input
+                      label="最大金额"
+                      placeholder="例如：100.00"
+                      description="选填，留空表示无限制。"
+                      type="number"
+                      step="0.01"
+                      value={ruleForm.f_original_amount_le}
+                      onChange={(e) => setRuleForm((prev) => ({ ...prev, f_original_amount_le: e.target.value }))}
+                    />
+                  </div>
+                  <Input
+                    label="时间 (正则表达式)"
+                    placeholder="例如：(0[6-9]|10):\d{2}"
+                    description="选填。匹配时间字段，如 06:00-10:59。"
+                    value={ruleForm.f_time}
+                    onChange={(e) => setRuleForm((prev) => ({ ...prev, f_time: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <Divider />
+
+              {/* 目标赋值 */}
+              <div>
+                <h4 className="text-sm font-semibold mb-3">目标赋值</h4>
+                <div className="space-y-3">
+                  {/* 交易类型和主类别一行 */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <Select
+                      label="交易类型"
+                      placeholder="不设置则不修改"
+                      selectedKeys={ruleForm.t_tx_type ? [ruleForm.t_tx_type] : []}
+                      onSelectionChange={(keys) => {
+                        const key = Array.from(keys)[0] as TransactionType | undefined;
+                        setRuleForm((prev) => ({ 
+                          ...prev, 
+                          t_tx_type: key || "",
+                          // 切换交易类型时清空主类别和子类别
+                          t_main_category_id: "",
+                          t_sub_category_id: "",
+                        }));
+                      }}
+                    >
+                      {TRANSACTION_TYPES.map((type) => (
+                        <SelectItem key={type.type}>{type.type}</SelectItem>
+                      ))}
+                    </Select>
+
+                    <Select
+                      label="主类别"
+                      placeholder={ruleForm.t_tx_type ? "不设置则不修改" : "请先选择交易类型"}
+                      isDisabled={!ruleForm.t_tx_type}
+                      selectedKeys={ruleForm.t_main_category_id ? [String(ruleForm.t_main_category_id)] : []}
+                      onSelectionChange={(keys) => {
+                        const key = Array.from(keys)[0];
+                        setRuleForm((prev) => ({
+                          ...prev,
+                          t_main_category_id: key ? Number(key) : "",
+                          // 切换主类别时清空子类别
+                          t_sub_category_id: "",
+                        }));
+                      }}
+                    >
+                      {ruleFilteredMainCategories.map((item) => (
+                        <SelectItem key={item.id} textValue={item.label}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </Select>
+                  </div>
+
+                  {/* 子类别和预算计划一行 */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <Select
+                      label="子类别"
+                      placeholder={ruleForm.t_main_category_id ? "不设置则不修改" : "请先选择主类别"}
+                      isDisabled={!ruleForm.t_main_category_id}
+                      selectedKeys={ruleForm.t_sub_category_id ? [String(ruleForm.t_sub_category_id)] : []}
+                      onSelectionChange={(keys) => {
+                        const key = Array.from(keys)[0];
+                        setRuleForm((prev) => ({
+                          ...prev,
+                          t_sub_category_id: key ? Number(key) : "",
+                        }));
+                      }}
+                    >
+                      {ruleFilteredSubCategories.map((item) => (
+                        <SelectItem key={item.id} textValue={item.label}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </Select>
+
+                    <Select
+                      label="预算计划"
+                      placeholder="不设置则不修改"
+                      selectedKeys={ruleForm.t_budget_type_id ? [String(ruleForm.t_budget_type_id)] : []}
+                      onSelectionChange={(keys) => {
+                        const key = Array.from(keys)[0];
+                        setRuleForm((prev) => ({
+                          ...prev,
+                          t_budget_type_id: key ? Number(key) : "",
+                        }));
+                      }}
+                    >
+                      {budgetTypes.map((item) => (
+                        <SelectItem key={item.id}>{item.name}</SelectItem>
+                      ))}
+                    </Select>
+                  </div>
+
+                  {/* 名称和商家一行 */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      label="名称"
+                      placeholder="例如：早餐"
+                      description="选填。匹配后赋值给 name 字段。"
+                      value={ruleForm.t_name}
+                      onChange={(e) => setRuleForm((prev) => ({ ...prev, t_name: e.target.value }))}
+                    />
+
+                    <Input
+                      label="商家"
+                      placeholder="例如：麦当劳"
+                      description="选填。匹配后赋值给 merchant 字段。"
+                      value={ruleForm.t_merchant}
+                      onChange={(e) => setRuleForm((prev) => ({ ...prev, t_merchant: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={ruleModal.onClose}>
+              取消
+            </Button>
+            <Button color="primary" isLoading={actionLoading} onPress={handleSaveRule}>
+              保存
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {/* 删除确认弹窗 */}
       <Modal isOpen={deleteModal.isOpen} onClose={deleteModal.onClose} size="sm">
         <ModalContent>
@@ -949,12 +1337,14 @@ export default function SettingsPage() {
                   {deleteTarget.type === "budget" && "预算计划"}
                   {deleteTarget.type === "main" && "主类别"}
                   {deleteTarget.type === "sub" && "子类别"}
+                  {deleteTarget.type === "rule" && "匹配规则"}
                   {" "}
                   <span className="font-bold">
                     {deleteTarget.type === "account" && deleteTarget.data.name}
                     {deleteTarget.type === "budget" && deleteTarget.data.name}
                     {deleteTarget.type === "main" && deleteTarget.data.label}
                     {deleteTarget.type === "sub" && deleteTarget.data.label}
+                    {deleteTarget.type === "rule" && `#${deleteTarget.data.id}`}
                   </span>
                   {" "}吗？
                 </p>

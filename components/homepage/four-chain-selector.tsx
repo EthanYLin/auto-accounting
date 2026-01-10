@@ -275,7 +275,7 @@ export function FourChainSelector({
     // ListBox模式
     return (
       <div className="flex-1 min-w-[165px]">
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{title}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{title}</p>
         <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-800 shadow-sm">
           <Listbox
             aria-label={title}
@@ -287,8 +287,12 @@ export function FourChainSelector({
               const key = Array.from(keys)[0] as string | undefined;
               onChange(key);
             }}
-            className="h-60 overflow-y-auto"
+            className="h-52 overflow-y-auto"
             emptyContent={disabled ? "请先选择上级类别" : "无可用选项"}
+            itemClasses={{
+              base: "py-1.5 px-2 min-h-unit-9",
+              title: "text-sm"
+            }}
           >
             {options.map((option) => {
               const isSelected = selectedKey === option.key;
@@ -321,9 +325,9 @@ export function FourChainSelector({
   };
 
   return (
-    <div className={`w-full space-y-4 ${className}`}>
+    <div className={`w-full space-y-3 ${className}`}>
       {/* 四联选择器 - 横向排列 */}
-      <div className={`${mode === 'select' ? 'grid grid-cols-2 md:grid-cols-4' : 'flex flex-wrap'} gap-4`}>
+      <div className={`${mode === 'select' ? 'grid grid-cols-2 md:grid-cols-4' : 'flex flex-wrap'} gap-3`}>
         {/* 交易类型选择 */}
         {renderSelector(
           "交易类型",

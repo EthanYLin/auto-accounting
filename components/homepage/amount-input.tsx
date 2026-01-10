@@ -101,7 +101,7 @@ export function AmountInput({ value, onChange, transactionType }: AmountInputPro
             ref={amountInputRef}
             aria-label="交易金额"
             startContent={
-                <span className="text-3xl whitespace-nowrap">
+                <span className="text-2xl whitespace-nowrap">
                     <span className="text-default-400">¥ </span>
                     <span className={getAmountColorClass()}>{getAmountSymbol()}</span>
                 </span>
@@ -114,10 +114,10 @@ export function AmountInput({ value, onChange, transactionType }: AmountInputPro
             onKeyDown={handleAmountKeyDown}
             classNames={{
                 base: "h-full",
-                inputWrapper: "h-full min-h-[120px] flex items-center",
-                input: `text-3xl font-bold text-right pr-4 ${getAmountColorClass()}`
+                inputWrapper: "h-full min-h-[106px] flex items-center",
+                input: `text-2xl font-bold text-right pr-3 ${getAmountColorClass()}`
             }}
-            size="lg"
+            size="sm"
             variant="bordered"
         />
     );

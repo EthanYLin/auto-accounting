@@ -18,6 +18,9 @@ import type {
   TransactionUpdate,
   TransactionSplit,
   TransactionSplitInsert,
+  MatchingRule,
+  MatchingRuleInsert,
+  MatchingRuleUpdate,
 } from '@/types';
 
 type ActionResult<T> = { success: boolean; data?: T; error?: string };
@@ -585,6 +588,90 @@ export async function deleteTransactionSplits(transactionId: number): Promise<Ac
 export async function deleteAllTransactionSplits(): Promise<ActionResult<null>> {
   return withSupabaseUser('删除当前用户的所有拆账记录', async ({ supabase, userId }) => {
     const { error } = await supabase.from('transaction_split').delete().eq('user_id', userId);
+
+    if (error) {
+      return fail(error.message);
+    }
+
+    return ok(null);
+  });
+}
+
+// ========================================================
+// 匹配规则相关
+// ========================================================
+
+/**
+ * 获取当前用户的所有匹配规则
+ */
+export async function getMatchingRules(): Promise<ActionResult<MatchingRule[]>> {
+  return withSupabaseUser('获取匹配规则', async ({ supabase, userId }) => {
+    const { data, error } = await supabase
+      .from('matching_rule')
+      .select('*')
+      .eq('user_id', userId)
+      .order('id', { ascending: true });
+
+    if (error) {
+      console.error('获取匹配规则失败:', error);
+      return fail(error.message);
+    }
+
+    return ok(data || []);
+  });
+}
+
+/**
+ * 新增匹配规则
+ */
+export async function createMatchingRule(
+  payload: Omit<MatchingRuleInsert, 'user_id'>
+): Promise<ActionResult<MatchingRule>> {
+  return withSupabaseUser('新增匹配规则', async ({ supabase, userId }) => {
+    const { data, error } = await supabase
+      .from('matching_rule')
+      .insert({ ...payload, user_id: userId })
+      .select()
+      .single();
+
+    if (error) {
+      return fail(error.message);
+    }
+
+    return ok(data as MatchingRule);
+  });
+}
+
+/**
+ * 更新匹配规则
+ */
+export async function updateMatchingRule(
+  id: number,
+  payload: Partial<Omit<MatchingRuleUpdate, 'user_id'>>
+): Promise<ActionResult<MatchingRule>> {
+  return withSupabaseUser('更新匹配规则', async ({ supabase, userId }) => {
+    const { data, error } = await supabase
+      .from('matching_rule')
+      .update(payload)
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      return fail(error.message);
+    }
+
+    return ok(data as MatchingRule);
+  });
+}
+
+/**
+ * 删除匹配规则
+ */
+export async function deleteMatchingRule(id: number): Promise<ActionResult<null>> {
+  return withSupabaseUser('删除匹配规则', async ({ supabase, userId }) => {
+    const { error } = await supabase.from('matching_rule').delete().eq('id', id).eq('user_id', userId);
 
     if (error) {
       return fail(error.message);

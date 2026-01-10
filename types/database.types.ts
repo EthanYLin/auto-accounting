@@ -83,6 +83,73 @@ export type Database = {
         }
         Relationships: []
       }
+      matching_rule: {
+        Row: {
+          f_original_amount_ge: number | null
+          f_original_amount_le: number | null
+          f_time: string | null
+          f_title: string
+          id: number
+          t_budget_type_id: number | null
+          t_main_category_id: number | null
+          t_merchant: string | null
+          t_name: string | null
+          t_sub_category_id: number | null
+          t_tx_type: Database["public"]["Enums"]["transaction_type"] | null
+          user_id: string
+        }
+        Insert: {
+          f_original_amount_ge?: number | null
+          f_original_amount_le?: number | null
+          f_time?: string | null
+          f_title: string
+          id?: number
+          t_budget_type_id?: number | null
+          t_main_category_id?: number | null
+          t_merchant?: string | null
+          t_name?: string | null
+          t_sub_category_id?: number | null
+          t_tx_type?: Database["public"]["Enums"]["transaction_type"] | null
+          user_id: string
+        }
+        Update: {
+          f_original_amount_ge?: number | null
+          f_original_amount_le?: number | null
+          f_time?: string | null
+          f_title?: string
+          id?: number
+          t_budget_type_id?: number | null
+          t_main_category_id?: number | null
+          t_merchant?: string | null
+          t_name?: string | null
+          t_sub_category_id?: number | null
+          t_tx_type?: Database["public"]["Enums"]["transaction_type"] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matching_rule_budget_type_fk"
+            columns: ["user_id", "t_budget_type_id"]
+            isOneToOne: false
+            referencedRelation: "budget_type"
+            referencedColumns: ["user_id", "id"]
+          },
+          {
+            foreignKeyName: "matching_rule_main_category_fk"
+            columns: ["user_id", "t_main_category_id"]
+            isOneToOne: false
+            referencedRelation: "main_category"
+            referencedColumns: ["user_id", "id"]
+          },
+          {
+            foreignKeyName: "matching_rule_sub_category_fk"
+            columns: ["user_id", "t_sub_category_id"]
+            isOneToOne: false
+            referencedRelation: "sub_category"
+            referencedColumns: ["user_id", "id"]
+          },
+        ]
+      }
       sub_category: {
         Row: {
           back_color: string

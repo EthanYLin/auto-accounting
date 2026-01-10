@@ -1,14 +1,15 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import type { Account, MainCategory, SubCategory, BudgetType } from '@/types';
-import { getAccounts, getMainCategories, getSubCategories, getBudgetTypes } from '@/app/actions/data';
+import type { Account, MainCategory, SubCategory, BudgetType, MatchingRule } from '@/types';
+import { getAccounts, getMainCategories, getSubCategories, getBudgetTypes, getMatchingRules } from '@/app/actions/data';
 
 interface AppData {
   accounts: Account[];
   mainCategories: MainCategory[];
   subCategories: SubCategory[];
   budgetTypes: BudgetType[];
+  matchingRules: MatchingRule[];
   isLoading: boolean;
   error: string | null;
   hasLoaded: boolean;
@@ -28,6 +29,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     mainCategories: [],
     subCategories: [],
     budgetTypes: [],
+    matchingRules: [],
     isLoading: false,
     error: null,
     hasLoaded: false,
@@ -41,11 +43,12 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
     try {
       // 并行获取所有数据
-      const [accountsResult, mainCategoriesResult, subCategoriesResult, budgetTypesResult] = await Promise.all([
+      const [accountsResult, mainCategoriesResult, subCategoriesResult, budgetTypesResult, matchingRulesResult] = await Promise.all([
         getAccounts(),
         getMainCategories(),
         getSubCategories(),
         getBudgetTypes(),
+        getMatchingRules(),
       ]);
 
       // 验证返回结果的有效性
@@ -61,6 +64,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       if (!budgetTypesResult || typeof budgetTypesResult !== 'object') {
         throw new Error('预算计划数据返回格式错误');
       }
+      if (!matchingRulesResult || typeof matchingRulesResult !== 'object') {
+        throw new Error('匹配规则数据返回格式错误');
+      }
 
       // 检查是否有错误
       if (!accountsResult.success) {
@@ -75,12 +81,16 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       if (!budgetTypesResult.success) {
         throw new Error(budgetTypesResult.error || '获取预算计划失败');
       }
+      if (!matchingRulesResult.success) {
+        throw new Error(matchingRulesResult.error || '获取匹配规则失败');
+      }
 
       setData({
         accounts: accountsResult.data || [],
         mainCategories: mainCategoriesResult.data || [],
         subCategories: subCategoriesResult.data || [],
         budgetTypes: budgetTypesResult.data || [],
+        matchingRules: matchingRulesResult.data || [],
         isLoading: false,
         error: null,
         hasLoaded: true,
@@ -104,6 +114,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       mainCategories: [],
       subCategories: [],
       budgetTypes: [],
+      matchingRules: [],
       isLoading: false,
       error: null,
       hasLoaded: false,

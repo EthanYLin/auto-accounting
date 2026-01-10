@@ -261,7 +261,7 @@ export default function Home() {
           )}
 
           {/* 主内容区域 */}
-          <div className="flex-1 min-h-0 overflow-y-auto">
+          <div ref={mainContentRef} className="flex-1 min-h-0 overflow-y-auto">
             {/* AppData 加载中 */}
             {!hasLoadedAppData || appDataLoading ? (
               <div className="flex items-center justify-center h-full">
@@ -324,11 +324,11 @@ export default function Home() {
               </div>
             ) : (
               /* 正常显示：已选择账单 */
-              <div ref={mainContentRef} className="w-full p-6 space-y-6">
+              <div className="w-full p-5 space-y-5">
                 
                 {/* 账单附加区 */}
                 <div>
-                  <h2 className="text-sm font-semibold mb-4">合并账单</h2>
+                  <h2 className="text-xs font-semibold mb-3">合并账单</h2>
                   <div className="text-xs text-gray-500 dark:text-gray-500">此区域暂时留空</div>
                 </div>
 
@@ -336,10 +336,10 @@ export default function Home() {
 
                 {/* 主要填写区 */}
                 <div>
-                  <h2 className="text-sm font-semibold mb-4">账单信息</h2>
+                  <h2 className="text-xs font-semibold mb-3">账单信息</h2>
                   
                   {/* 交易输入组件 */}
-                  <div className="mb-8">
+                  <div className="mb-5">
                     <TxFieldInputs 
                       selectedTxType={chainState.txType} 
                       formData={formData}
@@ -348,7 +348,7 @@ export default function Home() {
                   </div>
 
                   {/* 分隔线 */}
-                  <Divider className="my-8" />
+                  <Divider className="my-5" />
 
                   {/* 四联选择器组件 */}
                   <FourChainSelector 
@@ -362,7 +362,7 @@ export default function Home() {
 
                 {/* 拆账区 */}
                 <div>
-                  <h2 className="text-sm font-semibold mb-4">拆账区</h2>
+                  <h2 className="text-xs font-semibold mb-3">拆账区</h2>
                   <div className="text-xs text-gray-500 dark:text-gray-500">此区域暂时留空</div>
                 </div>
 
@@ -370,8 +370,8 @@ export default function Home() {
 
                 {/* 调试信息区 */}
                 <div>
-                  <h2 className="text-sm font-semibold mb-4">调试信息 - selectedTxWithRelations</h2>
-                  <pre className="text-xs bg-gray-100 dark:bg-gray-800 p-4 rounded overflow-auto max-h-96">
+                  <h2 className="text-xs font-semibold mb-3">调试信息 - selectedTxWithRelations</h2>
+                  <pre className="text-xs bg-gray-100 dark:bg-gray-800 p-3 rounded overflow-auto max-h-80">
                     {JSON.stringify(currentTransaction ? {
                       ...currentTransaction,
                       parent: currentTransaction.parent ? { id: currentTransaction.parent.id } : undefined,
