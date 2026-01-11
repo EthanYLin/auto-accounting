@@ -108,7 +108,7 @@ export function TransactionListItem({
   const sign = getAmountSign();
   const amountColor = 
     transaction.transaction_type ?
-    TRANSACTION_TYPES.find(t => t.type === transaction.transaction_type)?.fore_color || 'text-gray-600 dark:text-gray-400' :
+    TRANSACTION_TYPES.find(t => t.type === transaction.transaction_type)?.amount_color || 'text-gray-600 dark:text-gray-400' :
     'text-gray-600 dark:text-gray-400';
   const splitsCount = transaction.splits?.length || 0;
   const childrenCount = transaction.children.length;

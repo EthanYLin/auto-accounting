@@ -18,6 +18,7 @@ import { FourChainSelector } from "@/components/homepage/four-chain-selector";
 import type { FourChainState } from "@/components/homepage/four-chain-selector";
 import { TransactionOverviewList } from "@/components/homepage/transaction-overview-list";
 import { StatusFilterDropdown } from "@/components/homepage/status-filter-dropdown";
+import { TxParentArea } from "@/components/homepage/tx-parent-area";
 import { useFilteredTransactions } from "@/lib/hooks/use-filtered-transactions";
 import { useCurrentTransaction } from "@/lib/hooks/use-current-transaction";
 import type { TransactionStatus } from "@/types";
@@ -315,16 +316,15 @@ export default function Home() {
               <div className="w-full p-5 space-y-5">
                 
                 {/* 账单附加区 */}
-                <div>
-                  <h2 className="text-xs font-semibold mb-3">合并账单</h2>
-                  <div className="text-xs text-gray-500 dark:text-gray-500">此区域暂时留空</div>
-                </div>
+                <TxParentArea 
+                  currentTransaction={currentTransaction}
+                  onNavigateToTransaction={setCurrentId}
+                />
 
                 <Divider />
 
                 {/* 主要填写区 */}
                 <div>
-                  <h2 className="text-xs font-semibold mb-3">账单信息</h2>
                   
                   {/* 交易输入组件 */}
                   <div className="mb-5">
@@ -335,8 +335,7 @@ export default function Home() {
                     />
                   </div>
 
-                  {/* 分隔线 */}
-                  <Divider className="my-5" />
+                  <div className="h-2" />
 
                   {/* 四联选择器组件 */}
                   <FourChainSelector 

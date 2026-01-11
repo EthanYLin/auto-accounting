@@ -412,8 +412,8 @@ export function TransactionCacheProvider({ children }: { children: React.ReactNo
         .filter(tx => !idsToDelete.has(tx.id)); // 移除要删除的记录
 
       // 更新本地状态
-    setData(prev => ({
-      ...prev,
+      setData(prev => ({
+        ...prev,
         transactions: updatedTransactions,
       }));
 

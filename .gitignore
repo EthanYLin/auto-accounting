@@ -44,3 +44,6 @@ supabase/.branches
 supabase/.temp
 supabase/.ref
 supabase/config.local.toml
+
+.shared
+.cursor
