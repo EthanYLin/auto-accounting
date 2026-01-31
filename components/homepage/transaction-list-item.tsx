@@ -9,15 +9,6 @@ import { TRANSACTION_TYPES, TRANSACTION_STATUS_COLORS } from '@/constants/transa
 // ========== 工具函数 ==========
 
 /**
- * 截取文本，超过长度显示省略号
- */
-function short(text: string | null | undefined, maxLength: number = 5): string {
-  if (!text) return '';
-  if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength) + '...';
-}
-
-/**
  * 格式化金额显示
  */
 function formatAmount(amount: number, sign: number): string {
@@ -87,12 +78,12 @@ export function TransactionListItem({
 
   // 获取第一行左侧显示的文本
   const getDisplayName = () => {
-    if (transaction.name) return short(transaction.name, 8);
-    if (transaction.title) return short(transaction.title, 8);
+    if (transaction.name) return transaction.name;
+    if (transaction.title) return transaction.title;
     const mainLabel = transaction.main_category?.label || '';
     const subLabel = transaction.sub_category?.label || '';
-    if (mainLabel && subLabel) return short(`${mainLabel}-${subLabel}`, 8);
-    if (mainLabel) return short(mainLabel);
+    if (mainLabel && subLabel) return `${mainLabel}-${subLabel}`;
+    if (mainLabel) return mainLabel;
     return '-';
   };
 
@@ -158,7 +149,7 @@ export function TransactionListItem({
           <div className={`flex items-center justify-between ${isChild ? 'text-[10px]' : 'text-xs'} text-gray-500 dark:text-gray-400 mb-1`}>
             <span className="truncate">
               {formatDateTime(transaction.datetime)}
-              {transaction.merchant && ` - ${short(transaction.merchant, 8)}`}
+              {transaction.merchant && ` - ${transaction.merchant}`}
             </span>
             <span className="ml-2 flex-shrink-0 truncate max-w-[80px]">
               {transaction.account?.name || '-'}

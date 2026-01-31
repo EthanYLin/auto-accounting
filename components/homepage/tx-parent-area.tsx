@@ -4,7 +4,7 @@ import { Button } from "@heroui/button";
 import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/modal";
 import { useDisclosure } from "@heroui/use-disclosure";
 import { Chip } from "@heroui/chip";
-import { PlusIcon, XMarkIcon, ArrowUpRightIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, XMarkIcon, ArrowUpRightIcon, PencilSquareIcon, CalculatorIcon } from "@heroicons/react/24/outline";
 import { TransactionListSelector } from "@/components/transaction/transaction-list-selector";
 import { useTransactionCache } from "@/components/context/transaction-cache-context";
 import { TRANSACTION_TYPES, TRANSACTION_STATUS_COLORS } from "@/constants/transaction-type";
@@ -72,6 +72,34 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction }: Tx
     return parts.join('-') || '-';
   };
 
+  // 计算账户金额汇总
+  const calculateAccountSummary = () => {
+    if (!isRootTransaction || currentTransaction.children.length === 0) {
+      return null;
+    }
+
+    // 收集所有交易（根账单 + 子账单）
+    const allTransactions = [currentTransaction, ...currentTransaction.children];
+    
+    // 按账户分组求和
+    const accountMap = new Map<string, { name: string; amount: number }>();
+    allTransactions.forEach(tx => {
+      const accountName = tx.account?.name || '未知账户';
+      const amount = calculateAmount(tx);
+      if (accountMap.has(accountName)) {
+        accountMap.get(accountName)!.amount += amount;
+      } else {
+        accountMap.set(accountName, { name: accountName, amount });
+      }
+    });
+
+    // 转换为数组并按金额绝对值降序排序
+    const accounts = Array.from(accountMap.values()).sort((a, b) => 
+      Math.abs(b.amount) - Math.abs(a.amount)
+    );
+    return accounts;
+  };
+
   // 处理添加附加账单
   const handleConfirmSelection = (selectedIds: number[]) => {
     if (!currentTransaction) return;
@@ -136,18 +164,49 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction }: Tx
   return (
     <div className="space-y-3">
       {isRootTransaction && (
-        <Button
-          size="sm"
-          variant="flat"
-          startContent={
-            currentTransaction.children.length > 0 
-              ? <PencilSquareIcon className="w-4 h-4" />
-              : <PlusIcon className="w-4 h-4" />
-          }
-          onPress={onOpen}
-        >
-          {currentTransaction.children.length > 0 ? '选择附加账单' : '添加附加账单'}
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            size="sm"
+            variant="flat"
+            startContent={
+              currentTransaction.children.length > 0 
+                ? <PencilSquareIcon className="w-4 h-4" />
+                : <PlusIcon className="w-4 h-4" />
+            }
+            onPress={onOpen}
+          >
+            {currentTransaction.children.length > 0 ? '选择附加账单' : '添加附加账单'}
+          </Button>
+
+          {/* 账户汇总信息 */}
+          {currentTransaction.children.length > 0 && (() => {
+            const accountSummary = calculateAccountSummary();
+            if (!accountSummary || accountSummary.length === 0) return null;
+
+            const displayAccounts = accountSummary.slice(0, 2);
+            const remainingCount = accountSummary.length - 2;
+
+            return (
+              <div className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800">
+                <CalculatorIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                <span className="text-gray-700 dark:text-gray-300 font-bold">汇总</span>
+                {displayAccounts.map((account, index) => (
+                  <div key={index} className="flex items-center gap-1">
+                    <span className="text-gray-700 dark:text-gray-300">{account.name}</span>
+                    <span className="font-semibold">
+                      {account.amount > 0 ? '+' : ''}{account.amount.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+                {remainingCount > 0 && (
+                  <span className="text-gray-500 dark:text-gray-400">
+                    （还有{remainingCount}个账户）
+                  </span>
+                )}
+              </div>
+            );
+          })()}
+        </div>
       )}
 
       {!isRootTransaction && currentTransaction.parent && (

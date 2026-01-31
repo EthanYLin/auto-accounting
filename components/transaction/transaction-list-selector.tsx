@@ -101,7 +101,7 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, onC
     });
   };
 
-  const short = (s?: string | null) => (s && s.length > 10 ? s.slice(0, 10) + "..." : s);
+  const short = (s?: string | null) => (s && s.length > 13 ? s.slice(0, 13) + "..." : s);
 
   // 切换选择状态
   const toggleSelection = (id: number) => {
