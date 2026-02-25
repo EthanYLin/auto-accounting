@@ -19,6 +19,7 @@ import type { FourChainState } from "@/components/homepage/four-chain-selector";
 import { TransactionOverviewList } from "@/components/homepage/transaction-overview-list";
 import { StatusFilterDropdown } from "@/components/homepage/status-filter-dropdown";
 import { TxParentArea } from "@/components/homepage/tx-parent-area";
+import { SplitEntryArea } from "@/components/homepage/split-entry-area";
 import { useFilteredTransactions } from "@/lib/hooks/use-filtered-transactions";
 import { useCurrentTransaction } from "@/lib/hooks/use-current-transaction";
 import type { TransactionStatus } from "@/types";
@@ -348,10 +349,7 @@ export default function Home() {
                 <Divider />
 
                 {/* 拆账区 */}
-                <div>
-                  <h2 className="text-xs font-semibold mb-3">拆账区</h2>
-                  <div className="text-xs text-gray-500 dark:text-gray-500">此区域暂时留空</div>
-                </div>
+                <SplitEntryArea currentTransaction={currentTransaction} />
 
                 <Divider />
 

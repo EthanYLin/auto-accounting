@@ -9,9 +9,15 @@ interface AmountInputProps {
     value: string;
     onChange: (value: string) => void;
     transactionType?: TransactionType;
+    /** 金额数字与符号的字体大小，默认 "text-2xl" */
+    textSize?: string;
+    /** inputWrapper 的最小高度，默认 "min-h-[106px]" */
+    minHeight?: string;
+    /** 组件根元素额外的 className（如宽度），默认 "h-full" */
+    className?: string;
 }
 
-export function AmountInput({ value, onChange, transactionType }: AmountInputProps) {
+export function AmountInput({ value, onChange, transactionType, textSize = "text-2xl", minHeight = "min-h-[106px]", className = "h-full" }: AmountInputProps) {
     // 金额输入的临时状态（用于实时输入，不影响外部value）
     const [amountInput, setAmountInput] = useState(value);
     
@@ -80,7 +86,7 @@ export function AmountInput({ value, onChange, transactionType }: AmountInputPro
             ref={amountInputRef}
             aria-label="交易金额"
             startContent={
-                <span className="text-2xl whitespace-nowrap">
+                <span className={`${textSize} whitespace-nowrap`}>
                     <span className="text-default-400">¥ </span>
                     <span className={getAmountColorClass()}>{getAmountSymbol()}</span>
                 </span>
@@ -92,9 +98,9 @@ export function AmountInput({ value, onChange, transactionType }: AmountInputPro
             onBlur={handleAmountBlur}
             onKeyDown={handleAmountKeyDown}
             classNames={{
-                base: "h-full",
-                inputWrapper: "h-full min-h-[106px] flex items-center",
-                input: `text-2xl font-bold text-right pr-3 ${getAmountColorClass()}`
+                base: className,
+                inputWrapper: `h-full ${minHeight} flex items-center`,
+                input: `${textSize} font-bold text-right pr-3 ${getAmountColorClass()}`
             }}
             size="sm"
             variant="bordered"
