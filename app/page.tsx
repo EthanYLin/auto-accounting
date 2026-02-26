@@ -20,6 +20,7 @@ import { TransactionOverviewList } from "@/components/homepage/transaction-overv
 import { StatusFilterDropdown } from "@/components/homepage/status-filter-dropdown";
 import { TxParentArea } from "@/components/homepage/tx-parent-area";
 import { SplitEntryArea } from "@/components/homepage/split-entry-area";
+import type { SplitEntryData } from "@/components/homepage/split-entry-editor";
 import { useFilteredTransactions } from "@/lib/hooks/use-filtered-transactions";
 import { useCurrentTransaction } from "@/lib/hooks/use-current-transaction";
 import type { TransactionStatus } from "@/types";
@@ -38,6 +39,9 @@ export default function Home() {
   
   // 状态过滤
   const [statusFilter, setStatusFilter] = useState<TransactionStatus | 'all'>("all");
+
+  // 拆账条目状态
+  const [splitEntries, setSplitEntries] = useState<SplitEntryData[]>([]);
   
   // 主内容区域的引用（用于检测宽度）
   const mainContentRef = useRef<HTMLDivElement>(null);
@@ -119,6 +123,31 @@ export default function Home() {
       });
       setChainState({});
     }
+  }, [currentTransaction]);
+
+  // 当选中的交易变化时，初始化拆账条目
+  useEffect(() => {
+    if (!currentTransaction) {
+      setSplitEntries([]);
+      return;
+    }
+    const splits = currentTransaction.splits;
+    if (!splits || splits.length === 0) {
+      setSplitEntries([]);
+      return;
+    }
+    setSplitEntries(splits.map((split) => ({
+      localId: `db-${split.id}`,
+      accountId: String(split.account.id),
+      amount: Math.abs(split.amount).toFixed(2),
+      chainState: {
+        txType: split.transaction_type ?? undefined,
+        main_id: split.main_category ? String(split.main_category.id) : undefined,
+        sub_id: split.sub_category ? String(split.sub_category.id) : undefined,
+        budget_id: split.budget_type ? String(split.budget_type.id) : undefined,
+      },
+      name: split.name ?? "",
+    })));
   }, [currentTransaction]);
 
   // 动态检测容器宽度并设置选择器模式
@@ -346,10 +375,17 @@ export default function Home() {
                   />
                 </div>
 
-                <Divider />
-
-                {/* 拆账区 */}
-                <SplitEntryArea currentTransaction={currentTransaction} />
+                {/* 拆账区（子交易不显示） */}
+                {currentTransaction && !currentTransaction.parent && (
+                  <>
+                    <Divider />
+                    <SplitEntryArea
+                      currentTransaction={currentTransaction}
+                      entries={splitEntries}
+                      onEntriesChange={setSplitEntries}
+                    />
+                  </>
+                )}
 
                 <Divider />
 
