@@ -7,7 +7,7 @@ import { Input } from "@heroui/input";
 import { Modal, ModalContent, ModalBody } from "@heroui/modal";
 import { Divider } from "@heroui/divider";
 import { Chip } from "@heroui/chip";
-import { TransactionListSelector } from '@/components/transaction/transaction-list-selector';
+import { TransactionListSelector } from '@/components/homepage/common/transaction-list-selector';
 import { useTransactionCache } from '@/components/context/transaction-cache-context';
 import { useAppData } from '@/components/context/app-data-context';
 import { useError } from '@/components/context/error-context';

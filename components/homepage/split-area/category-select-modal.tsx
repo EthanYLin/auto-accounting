@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Button } from "@heroui/button";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
-import { FourChainSelector } from "@/components/homepage/four-chain-selector";
-import type { FourChainState } from "@/components/homepage/four-chain-selector";
+import { FourChainSelector } from "@/components/homepage/common/four-chain-selector";
+import type { FourChainState } from "@/components/homepage/common/four-chain-selector";
 
 interface CategorySelectModalProps {
   isOpen: boolean;

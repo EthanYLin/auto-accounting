@@ -9,8 +9,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import { CheckCircleIcon as CheckCircleOutline } from "@heroicons/react/24/outline";
-import { SplitEntryEditor } from "@/components/homepage/split-entry-editor";
-import type { SplitEntryData } from "@/components/homepage/split-entry-editor";
+import { SplitEntryEditor } from "@/components/homepage/split-area/split-entry-editor";
+import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
 import { getAvailableActions } from "@/lib/split-actions";
 import type { TransactionWithRelations } from "@/types";
 

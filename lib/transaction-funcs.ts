@@ -1,6 +1,6 @@
 import type { TransactionWithRelations, TransactionType, MainCategory, SubCategory } from '@/types';
 import { TRANSACTION_TYPES } from '@/constants/transaction-type';
-import type { FourChainState } from '@/components/homepage/four-chain-selector';
+import type { FourChainState } from '@/components/homepage/common/four-chain-selector';
 
 // ==================== 金额相关 ====================
 

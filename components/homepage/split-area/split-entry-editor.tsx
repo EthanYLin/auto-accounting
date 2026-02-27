@@ -5,15 +5,15 @@ import { Button } from "@heroui/button";
 import { Checkbox } from "@heroui/checkbox";
 import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
-import { AmountInput } from "@/components/homepage/amount-input";
+import { AmountInput } from "@/components/homepage/common/amount-input";
 import {
   XMarkIcon,
   Bars2Icon,
 } from "@heroicons/react/24/outline";
 import { useAppData } from "@/components/context/app-data-context";
 import { TRANSACTION_TYPES } from "@/constants/transaction-type";
-import type { FourChainState } from "@/components/homepage/four-chain-selector";
-import { CategorySelectModal } from "@/components/homepage/category-select-modal";
+import type { FourChainState } from "@/components/homepage/common/four-chain-selector";
+import { CategorySelectModal } from "@/components/homepage/split-area/category-select-modal";
 
 // ==================== 类型定义 ====================
 

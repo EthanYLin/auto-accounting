@@ -11,7 +11,7 @@ import {
   BoltIcon,
   ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
-import type { SplitEntryData } from "@/components/homepage/split-entry-editor";
+import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
 import { TRANSACTION_TYPES } from "@/constants/transaction-type";
 import type { TransactionType } from "@/types";
 

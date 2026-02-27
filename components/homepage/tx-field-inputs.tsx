@@ -10,7 +10,7 @@ import { InformationCircleIcon, EllipsisHorizontalIcon, DocumentDuplicateIcon } 
 import type { TransactionType, TransactionStatus } from "@/types";
 import type { DateValue } from "@internationalized/date";
 import { useAppData } from "@/components/context/app-data-context";
-import { AmountInput } from "./amount-input";
+import { AmountInput } from "./common/amount-input";
 import { TextPaintSelector } from "@/components/text-paint-selector";
 
 export interface TxFieldInputsData {
