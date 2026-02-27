@@ -26,7 +26,6 @@ export function DataLoader() {
           setLastUser(userId);
 
           if (user && accounts.length === 0 && !isLoading) {
-            console.log('用户已登录，开始加载数据...');
             await loadData();
           } else if (!user && accounts.length > 0) {
             console.log('用户未登录，清空数据...');

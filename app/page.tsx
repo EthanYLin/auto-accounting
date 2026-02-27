@@ -23,6 +23,7 @@ import { SplitEntryArea } from "@/components/homepage/split-area/split-entry-are
 import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
 import { useFilteredTransactions } from "@/lib/hooks/use-filtered-transactions";
 import { useCurrentTransaction } from "@/lib/hooks/use-current-transaction";
+import { useTransactionActions } from "@/lib/hooks/use-transaction-actions";
 import type { TransactionStatus } from "@/types";
 
 export default function Home() {
@@ -67,6 +68,16 @@ export default function Home() {
 
   // 获取当前选中的交易及位置信息
   const { currentTransaction, currentIndex, totalCount } = useCurrentTransaction(currentId, transactions, filteredTransactions);
+
+  // 交易操作 hook
+  const txActions = useTransactionActions({
+    currentTransaction,
+    filteredTransactions,
+    currentIndex,
+    totalCount,
+    onSelectTransaction: setCurrentId,
+    getFormSnapshot: () => ({ formData, chainState, splitEntries }),
+  });
 
   // 组件挂载时，如果交易数据为空，且基础数据已加载完成，再自动加载交易
   useEffect(() => {
@@ -193,23 +204,6 @@ export default function Home() {
   };
 
   // 操作栏事件处理函数
-  const handlePrevious = () => {
-    if (currentIndex > 1) {
-      const prevTx = filteredTransactions[currentIndex - 2];
-      if (prevTx) {
-        setCurrentId(prevTx.id);
-      }
-    }
-  };
-
-  const handleNext = () => {
-    if (currentIndex > 0 && currentIndex < totalCount) {
-      const nextTx = filteredTransactions[currentIndex];
-      if (nextTx) {
-        setCurrentId(nextTx.id);
-      }
-    }
-  };
 
   // 导入账单
   const handleImport = () => {
@@ -272,8 +266,7 @@ export default function Home() {
               currentIndex={currentIndex}
               totalCount={totalCount}
               status={currentTransaction?.status || undefined}
-              onPrevious={handlePrevious}
-              onNext={handleNext}
+              actions={txActions}
             />
           )}
 

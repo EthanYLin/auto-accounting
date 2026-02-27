@@ -91,6 +91,8 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction }: Tx
             if(gc) gc.parent = undefined; 
           });
           tx.children = [];
+          // 清除分账信息
+          tx.splits = [];
         }
       });
 

@@ -1,6 +1,8 @@
-import type { TransactionWithRelations, TransactionType, MainCategory, SubCategory } from '@/types';
+import type { TransactionWithRelations, TransactionSplitWithRelations, TransactionType, MainCategory, SubCategory } from '@/types';
 import { TRANSACTION_TYPES } from '@/constants/transaction-type';
 import type { FourChainState } from '@/components/homepage/common/four-chain-selector';
+import { TxFieldInputsData } from '@/components/homepage/tx-field-inputs';
+import { SplitEntryData } from '@/components/homepage/split-area/split-entry-editor';
 
 // ==================== 金额相关 ====================
 
@@ -26,11 +28,13 @@ export function getAmountSymbol(transactionType?: TransactionType | null): strin
 
 /**
  * 计算金额（考虑交易类型的 sign，正负向）
- * @param tx 交易记录
+ * @param tx 交易记录 或 拆账条目
  */
-export function calculateAmount(tx: TransactionWithRelations): number {
-  const txType = TRANSACTION_TYPES.find(t => t.type === tx.transaction_type);
-  return tx.amount * (txType?.sign || 1);
+export function calculateAmount(tx: TransactionWithRelations): number;
+export function calculateAmount(split: TransactionSplitWithRelations): number;
+export function calculateAmount(input: TransactionWithRelations | TransactionSplitWithRelations): number {
+  const txType = TRANSACTION_TYPES.find(t => t.type === input.transaction_type);
+  return input.amount * (txType?.sign || 1);
 }
 
 // ==================== 日期格式化 ====================
@@ -131,8 +135,22 @@ export function buildCategoryDisplayFromChainState(
   return { icon, backColor, foreColor, label: parts.join('-') };
 }
 
+export function getExitSplits(tx: TransactionWithRelations): TransactionSplitWithRelations[] {
+  if (tx.splits?.length) return tx.splits;
+  return [{
+    id: tx.id,
+    amount: tx.amount,
+    name: tx.name ?? null,
+    transaction_type: tx.transaction_type ?? null,
+    user_id: tx.user_id,
+    account: tx.account,
+    main_category: tx.main_category,
+    sub_category: tx.sub_category,
+    budget_type: tx.budget_type,
+    transaction: undefined as any,
+  }];
+}
 
-  // 本地操作
-  // buildTransaction: (formData: TxFieldInputsData, fourChainState: FourChainState, splitEntries: SplitEntryData[]) => TransactionWithRelations;
-  // isValidTransaction: (transaction: TransactionWithRelations) => {valid: boolean; hint: string[]};
-  // isWarningTransaction: (transaction: TransactionWithRelations) => {valid: boolean; hint: string[]};
+// export function buildTransaction(formData: TxFieldInputsData, fourChainState: FourChainState, splitEntries: SplitEntryData[]): TransactionWithRelations {
+//   return {} as TransactionWithRelations;
+// }
