@@ -51,7 +51,7 @@
     "@heroui/system": "2.4.22",
     "@heroui/table": "2.2.26",
     "@heroui/tabs": "2.2.23",
-    "@heroui/theme": "2.4.22",
+    "@heroui/theme": "^2.4.24",
     "@heroui/toast": "2.0.16",
     "@heroui/tooltip": "2.2.23",
     "@heroui/user": "2.2.21",
@@ -94,7 +94,7 @@
     "globals": "16.0.0",
     "postcss": "8.5.6",
     "prettier": "3.5.3",
-    "supabase": "^2.72.4",
+    "supabase": "^2.76.15",
     "tailwind-variants": "3.1.1",
     "tailwindcss": "4.1.11",
     "typescript": "5.6.3"

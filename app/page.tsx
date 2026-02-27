@@ -26,27 +26,25 @@ import { useCurrentTransaction } from "@/lib/hooks/use-current-transaction";
 import type { TransactionStatus } from "@/types";
 
 export default function Home() {
+  
   const router = useRouter();
-  const { error, isLoading: appDataLoading, hasLoaded: hasLoadedAppData, accounts, mainCategories, subCategories, budgetTypes } = useAppData();
-  const { transactions, loadTransactions, isLoading, hasLoaded, createEmptyTransaction: createTransactionInCache } = useTransactionCache();
   const { showError } = useError();
-  const [chainState, setChainState] = useState<FourChainState>({});
-  const [currentId, setCurrentId] = useState<number | null>(null);
-  const [selectorMode, setSelectorMode] = useState<"listbox" | "select">("select");
-  
-  // 搜索框状态
-  const [searchQuery, setSearchQuery] = useState("");
-  
-  // 状态过滤
-  const [statusFilter, setStatusFilter] = useState<TransactionStatus | 'all'>("all");
-
-  // 拆账条目状态
-  const [splitEntries, setSplitEntries] = useState<SplitEntryData[]>([]);
-  
   // 主内容区域的引用（用于检测宽度）
   const mainContentRef = useRef<HTMLDivElement>(null);
+  // 四联选择器的模式（列表式或下拉框式）
+  const [selectorMode, setSelectorMode] = useState<"listbox" | "select">("select");
 
-  // 表单数据状态
+  // 全局用户配置(账户、类别、预算等)，所有交易数据
+  const { error, isLoading: appDataLoading, hasLoaded: hasLoadedAppData, accounts, mainCategories, subCategories, budgetTypes } = useAppData();
+  const { transactions, loadTransactions, isLoading, hasLoaded, createEmptyTransaction: createTransactionInCache } = useTransactionCache();
+
+  // 交易切换、搜索、筛选状态数据
+  const [currentId, setCurrentId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<TransactionStatus | 'all'>("all");
+  
+  // 页面展示的当前交易数据
+  // 主要填写区
   const [formData, setFormData] = useState<TxFieldInputsData>({
     amount: "",
     account: "",
@@ -59,16 +57,16 @@ export default function Home() {
     title: null,
     raw_info: null,
   });
+  // 四联选择器
+  const [chainState, setChainState] = useState<FourChainState>({});
+  // 拆账区
+  const [splitEntries, setSplitEntries] = useState<SplitEntryData[]>([]);
   
   // 使用自定义 Hook 处理搜索和过滤逻辑
   const filteredTransactions = useFilteredTransactions(transactions, searchQuery, statusFilter);
 
   // 获取当前选中的交易及位置信息
-  const { currentTransaction, currentIndex, totalCount } = useCurrentTransaction(
-    currentId,
-    transactions,
-    filteredTransactions
-  );
+  const { currentTransaction, currentIndex, totalCount } = useCurrentTransaction(currentId, transactions, filteredTransactions);
 
   // 组件挂载时，如果交易数据为空，且基础数据已加载完成，再自动加载交易
   useEffect(() => {

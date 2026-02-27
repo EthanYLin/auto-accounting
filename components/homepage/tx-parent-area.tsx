@@ -7,9 +7,10 @@ import { Chip } from "@heroui/chip";
 import { PlusIcon, XMarkIcon, ArrowUpRightIcon, PencilSquareIcon, CalculatorIcon } from "@heroicons/react/24/outline";
 import { TransactionListSelector } from "@/components/transaction/transaction-list-selector";
 import { useTransactionCache } from "@/components/context/transaction-cache-context";
-import { TRANSACTION_TYPES, TRANSACTION_STATUS_COLORS } from "@/constants/transaction-type";
-import type { TransactionWithRelations } from "@/types";
-import { produce } from "immer";
+import { TRANSACTION_STATUS_COLORS } from '@/constants/transaction-type';
+import type { TransactionWithRelations } from '@/types';
+import { produce } from 'immer';
+import { calculateAmount, getAmountColorClass, getAmountSymbol, formatDateTime, formatCategoryText } from '@/lib/transaction-funcs';
 
 interface TxParentAreaProps {
   currentTransaction: TransactionWithRelations | null;
@@ -31,46 +32,6 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction }: Tx
 
   // 获取已附加的账单ID列表
   const childrenIds = currentTransaction.children.map(child => child.id);
-
-  // 计算金额（考虑交易类型的 sign）
-  const calculateAmount = (tx: TransactionWithRelations): number => {
-    const txType = TRANSACTION_TYPES.find(t => t.type === tx.transaction_type);
-    return tx.amount * (txType?.sign || 1);
-  };
-
-  // 获取金额颜色类名
-  const getAmountColorClass = (tx: TransactionWithRelations) => {
-    const txType = TRANSACTION_TYPES.find(t => t.type === tx.transaction_type);
-    return txType?.amount_color || 'text-default-600';
-  };
-
-  // 获取金额符号
-  const getAmountSymbol = (tx: TransactionWithRelations) => {
-    const txType = TRANSACTION_TYPES.find(t => t.type === tx.transaction_type);
-    return txType?.sign === 1 ? '+' : '-';
-  };
-
-  // 格式化日期时间
-  const formatDateTime = (datetime: string | null): string => {
-    if (!datetime) return '-';
-    const date = new Date(datetime);
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  // 格式化类别显示
-  const formatCategory = (tx: TransactionWithRelations): string => {
-    const parts = [];
-    if (tx.transaction_type) parts.push(tx.transaction_type);
-    if (tx.main_category?.label) parts.push(tx.main_category.label);
-    if (tx.sub_category?.label) parts.push(tx.sub_category.label);
-    return parts.join('-') || '-';
-  };
 
   // 计算账户金额汇总
   const calculateAccountSummary = () => {
@@ -240,13 +201,13 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction }: Tx
             </div>
 
             {/* 金额 */}
-            <div className={`flex-shrink-0 w-20 font-semibold ${getAmountColorClass(currentTransaction.parent)}`}>
-              ¥ {getAmountSymbol(currentTransaction.parent)}{Math.abs(calculateAmount(currentTransaction.parent)).toFixed(2)}
+            <div className={`flex-shrink-0 w-20 font-semibold ${getAmountColorClass(currentTransaction.parent.transaction_type)}`}>
+              ¥ {getAmountSymbol(currentTransaction.parent.transaction_type)}{Math.abs(calculateAmount(currentTransaction.parent)).toFixed(2)}
             </div>
 
             {/* 类别 */}
             <div className="flex-shrink-0 w-32 truncate text-gray-600 dark:text-gray-400">
-              {formatCategory(currentTransaction.parent)}
+              {formatCategoryText(currentTransaction.parent)}
             </div>
 
             {/* 名称 */}
@@ -285,13 +246,13 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction }: Tx
               </div>
 
               {/* 金额 */}
-              <div className={`flex-shrink-0 w-20 font-semibold ${getAmountColorClass(child)}`}>
-                ¥ {getAmountSymbol(child)}{Math.abs(calculateAmount(child)).toFixed(2)}
+              <div className={`flex-shrink-0 w-20 font-semibold ${getAmountColorClass(child.transaction_type)}`}>
+                ¥ {getAmountSymbol(child.transaction_type)}{Math.abs(calculateAmount(child)).toFixed(2)}
               </div>
 
               {/* 类别 */}
               <div className="flex-shrink-0 w-32 truncate text-gray-600 dark:text-gray-400">
-                {formatCategory(child)}
+                {formatCategoryText(child)}
               </div>
 
               {/* 名称 */}

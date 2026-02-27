@@ -11,7 +11,7 @@ import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import { CheckCircleIcon as CheckCircleOutline } from "@heroicons/react/24/outline";
 import { SplitEntryEditor } from "@/components/homepage/split-entry-editor";
 import type { SplitEntryData } from "@/components/homepage/split-entry-editor";
-import { getAvailableActions } from "@/components/homepage/split-actions";
+import { getAvailableActions } from "@/lib/split-actions";
 import type { TransactionWithRelations } from "@/types";
 
 interface SplitEntryAreaProps {

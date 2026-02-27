@@ -10,8 +10,8 @@ import { Pagination } from "@heroui/pagination";
 import { MagnifyingGlassIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import { useTransactionCache } from '@/components/context/transaction-cache-context';
 import { useFilteredTransactions } from '@/lib/hooks/use-filtered-transactions';
-import { TRANSACTION_TYPES, TRANSACTION_STATUS_COLORS } from '@/constants/transaction-type';
-import type { TransactionWithRelations } from '@/types';
+import { TRANSACTION_STATUS_COLORS } from '@/constants/transaction-type';
+import { calculateAmount, formatDateTime, formatCategoryDisplay } from '@/lib/transaction-funcs';
 
 interface TransactionListSelectorProps {
   selectedIds: number[];           // 当前选中的交易ID（受控）
@@ -60,46 +60,6 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, onC
       }
     }
   }, [currentTransactionId, filteredTransactions]);
-
-  // 计算金额（考虑交易类型的 sign）
-  const calculateAmount = (tx: TransactionWithRelations): number => {
-    const txType = TRANSACTION_TYPES.find(t => t.type === tx.transaction_type);
-    return tx.amount * (txType?.sign || 1);
-  };
-
-  // 格式化类别显示（带emoji）
-  const formatCategory = (tx: TransactionWithRelations): React.ReactNode => {
-    const parts = [];
-    if (tx.main_category?.label) parts.push(tx.main_category.label);
-    if (tx.sub_category?.label) parts.push(tx.sub_category.label);
-    
-    const categoryText = parts.join('-') || '-';
-    const emoji = tx.sub_category?.icon || tx.main_category?.icon;
-    
-    if (emoji) {
-      return (
-        <span>
-          <span className="mr-1">{emoji}</span>
-          {categoryText}
-        </span>
-      );
-    }
-    
-    return categoryText;
-  };
-
-  // 格式化日期时间
-  const formatDateTime = (datetime: string | null): string => {
-    if (!datetime) return '-';
-    const date = new Date(datetime);
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
 
   const short = (s?: string | null) => (s && s.length > 13 ? s.slice(0, 13) + "..." : s);
 
@@ -217,7 +177,20 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, onC
                     <span className={cellClassName}>{tx.account?.name || '-'}</span>
                   </TableCell>
                   <TableCell>
-                    <span className={cellClassName}>{formatCategory(tx)}</span>
+                    {(() => {
+                      const cat = formatCategoryDisplay(tx);
+                      if (!cat) return <span className={cellClassName}>-</span>;
+                      return (
+                        <span className={`flex items-center gap-1.5 ${cellClassName}`}>
+                          <span
+                            className={`inline-flex items-center justify-center rounded-full flex-shrink-0 w-5 h-5 text-[11px] ${cat.backColor || "bg-gray-200 dark:bg-gray-600"}`}
+                          >
+                            {cat.icon}
+                          </span>
+                          {cat.label}
+                        </span>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell>
                     <span className={cellClassName}>{formatDateTime(tx.datetime)}</span>

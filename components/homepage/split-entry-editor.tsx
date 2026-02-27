@@ -127,13 +127,13 @@ export function SplitEntryEditor({
       const sub = chainState.sub_id
         ? subCategories.find((s) => String(s.id) === chainState.sub_id)
         : null;
-      const txTypeDef = chainState.txType
+      const txType = chainState.txType
         ? TRANSACTION_TYPES.find((t) => t.type === chainState.txType)
         : null;
 
-      const icon = sub?.icon ?? main?.icon ?? txTypeDef?.icon ?? "📋";
-      const backColor = sub?.back_color ?? main?.back_color ?? txTypeDef?.back_color ?? "";
-      const foreColor = sub?.fore_color ?? main?.fore_color ?? txTypeDef?.fore_color ?? "";
+      const icon = sub?.icon ?? main?.icon ?? txType?.icon ?? "📋";
+      const backColor = sub?.back_color ?? main?.back_color ?? txType?.back_color ?? "";
+      const foreColor = sub?.fore_color ?? main?.fore_color ?? txType?.fore_color ?? "";
 
       const parts: string[] = [];
       if (main?.label) parts.push(main.label);

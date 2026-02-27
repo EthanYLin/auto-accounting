@@ -5,6 +5,7 @@ import { Chip } from '@heroui/chip';
 import { LinkIcon, RectangleStackIcon, ScissorsIcon } from '@heroicons/react/24/outline';
 import type { TransactionWithRelations } from '@/types';
 import { TRANSACTION_TYPES, TRANSACTION_STATUS_COLORS } from '@/constants/transaction-type';
+import { formatDateTime } from '@/lib/transaction-funcs';
 
 // ========== 工具函数 ==========
 
@@ -15,19 +16,6 @@ function formatAmount(amount: number, sign: number): string {
   const value = amount * sign;
   const formatted = Math.abs(value).toFixed(2);
   return sign >= 0 ? `¥${formatted}` : `-¥${formatted}`;
-}
-
-/**
- * 格式化日期时间为 MM/DD HH:MM
- */
-function formatDateTime(datetime: string | null): string {
-  if (!datetime) return '-';
-  const date = new Date(datetime);
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${month}/${day} ${hours}:${minutes}`;
 }
 
 // ========== 组件接口 ==========
@@ -148,7 +136,7 @@ export function TransactionListItem({
           {/* 第二行：日期时间和账户 */}
           <div className={`flex items-center justify-between ${isChild ? 'text-[10px]' : 'text-xs'} text-gray-500 dark:text-gray-400 mb-1`}>
             <span className="truncate">
-              {formatDateTime(transaction.datetime)}
+              {formatDateTime(transaction.datetime, 'short')}
               {transaction.merchant && ` - ${transaction.merchant}`}
             </span>
             <span className="ml-2 flex-shrink-0 truncate max-w-[80px]">

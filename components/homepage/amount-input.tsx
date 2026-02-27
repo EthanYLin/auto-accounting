@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@heroui/input";
 import type { TransactionType } from "@/types";
-import { TRANSACTION_TYPES } from "@/constants/transaction-type";
+import { getAmountColorClass, getAmountSymbol } from '@/lib/transaction-funcs';
 
 interface AmountInputProps {
     value: string;
@@ -28,20 +28,6 @@ export function AmountInput({ value, onChange, transactionType, textSize = "text
     useEffect(() => {
         setAmountInput(value);
     }, [value]);
-
-    // 获取颜色类名
-    const getAmountColorClass = () => {
-        if (!transactionType) return 'text-default-600';
-        const txType = TRANSACTION_TYPES.find(t => t.type === transactionType);
-        return txType?.amount_color || 'text-default-600';
-    };
-
-    // 获取金额符号
-    const getAmountSymbol = () => {
-        if (!transactionType) return '';
-        const txType = TRANSACTION_TYPES.find(t => t.type === transactionType);
-        return txType?.sign === 1? '+' : '-';
-    };
 
     // 计算表达式或解析数字
     const evaluateExpression = (input: string): number => {
@@ -88,7 +74,7 @@ export function AmountInput({ value, onChange, transactionType, textSize = "text
             startContent={
                 <span className={`${textSize} whitespace-nowrap`}>
                     <span className="text-default-400">¥ </span>
-                    <span className={getAmountColorClass()}>{getAmountSymbol()}</span>
+                    <span className={getAmountColorClass(transactionType)}>{getAmountSymbol(transactionType)}</span>
                 </span>
             }
             type="text"
@@ -100,7 +86,7 @@ export function AmountInput({ value, onChange, transactionType, textSize = "text
             classNames={{
                 base: className,
                 inputWrapper: `h-full ${minHeight} flex items-center`,
-                input: `${textSize} font-bold text-right pr-3 ${getAmountColorClass()}`
+                input: `${textSize} font-bold text-right pr-3 ${getAmountColorClass(transactionType)}`
             }}
             size="sm"
             variant="bordered"
