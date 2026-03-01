@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Spinner } from "@heroui/spinner";
 import { Button } from "@heroui/button";
@@ -21,10 +21,12 @@ import { StatusFilterDropdown } from "@/components/homepage/left-panel/status-fi
 import { TxParentArea } from "@/components/homepage/tx-parent-area";
 import { SplitEntryArea } from "@/components/homepage/split-area/split-entry-area";
 import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
+import { calculateAmount } from "@/lib/transaction-funcs";
 import { useFilteredTransactions } from "@/lib/hooks/use-filtered-transactions";
 import { useCurrentTransaction } from "@/lib/hooks/use-current-transaction";
 import { useTransactionActions } from "@/lib/hooks/use-transaction-actions";
-import type { TransactionStatus } from "@/types";
+import type { TransactionStatus, TransactionWithRelations } from "@/types";
+import type { SplitHint } from "@/components/homepage/action-bar";
 
 export default function Home() {
   
@@ -68,6 +70,39 @@ export default function Home() {
 
   // 获取当前选中的交易及位置信息
   const { currentTransaction, currentIndex, totalCount } = useCurrentTransaction(currentId, transactions, filteredTransactions);
+
+  // 计算分账/合并提示
+  const splitHint = useMemo<SplitHint>(() => {
+    if (!currentTransaction || currentTransaction.parent_id) return null;
+
+    const exitCount = splitEntries.length; // 出口数
+    const entryCount = currentTransaction.children_ids.length + 1; // 入口数
+
+    if (exitCount > 1) {
+      return { type: 'info', message: `该账单会拆分为${exitCount}条记录` };
+    }
+    if (exitCount === 1 && entryCount > 1) {
+      return { type: 'info', message: '该账单会合并为1条记录' };
+    }
+    if (exitCount === 1 && entryCount === 1) {
+      return { type: 'warn', message: '该账单经过分账修改' };
+    }
+    if (exitCount === 0 && entryCount > 1) {
+      const childTransactions = currentTransaction.children_ids
+        .map(id => transactions.find(t => t.id === id))
+        .filter((t): t is TransactionWithRelations => !!t);
+      const allEntries = [currentTransaction, ...childTransactions];
+      const totalAmount = allEntries.reduce((sum, tx) => sum + calculateAmount(tx), 0);
+
+      if (Math.abs(totalAmount) < 0.005) {
+        return { type: 'info', message: '该账单正负相抵不会被导出' };
+      } else {
+        return { type: 'warn', message: '该账单会默认按账户进行合并' };
+      }
+    }
+    // exitCount === 0 && entryCount === 1: 正常情况，不显示
+    return null;
+  }, [currentTransaction, splitEntries.length, transactions]);
 
   // 交易操作 hook
   const txActions = useTransactionActions({
@@ -132,7 +167,7 @@ export default function Home() {
       });
       setChainState({});
     }
-  }, [currentTransaction]);
+  }, [currentTransaction?.id]);
 
   // 当选中的交易变化时，初始化拆账条目
   useEffect(() => {
@@ -157,7 +192,7 @@ export default function Home() {
       },
       name: split.name ?? "",
     })));
-  }, [currentTransaction]);
+  }, [currentTransaction?.id]);
 
   // 动态检测容器宽度并设置选择器模式
   useEffect(() => {
@@ -267,6 +302,7 @@ export default function Home() {
               totalCount={totalCount}
               status={currentTransaction?.status || undefined}
               actions={txActions}
+              splitHint={splitHint}
             />
           )}
 

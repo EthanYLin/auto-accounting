@@ -18,10 +18,16 @@ import {
   ChevronDownIcon,
   CheckIcon,
   XMarkIcon,
+  InformationCircleIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import type { TransactionStatus } from "@/types";
 import { ALL_TRANSACTION_STATUS } from "@/constants/transaction-status";
 import type { TransactionActions } from "@/lib/hooks/use-transaction-actions";
+
+// ==================== 分账提示类型 ====================
+
+export type SplitHint = { type: 'info' | 'warn'; message: string } | null;
 
 // ==================== 下拉菜单动作定义 ====================
 
@@ -107,6 +113,7 @@ interface ActionBarProps {
   totalCount: number;
   status?: TransactionStatus;
   actions: TransactionActions;
+  splitHint?: SplitHint;
 }
 
 // ==================== 组件 ====================
@@ -116,6 +123,7 @@ export function ActionBar({
   totalCount,
   status,
   actions,
+  splitHint,
 }: ActionBarProps) {
   const statusConfig = status ? ALL_TRANSACTION_STATUS.find((item) => item.name === status) : null;
 
@@ -285,6 +293,22 @@ export function ActionBar({
                 </DropdownMenu>
               </Dropdown>
             </ButtonGroup>
+
+            {/* 分账提示 */}
+            {splitHint && (
+              <div className={`flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-medium ${
+                splitHint.type === 'warn'
+                  ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                  : 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+              }`}>
+                {splitHint.type === 'warn' ? (
+                  <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0" />
+                ) : (
+                  <InformationCircleIcon className="w-4 h-4 flex-shrink-0" />
+                )}
+                <span>{splitHint.message}</span>
+              </div>
+            )}
           </div>
 
           {/* 右侧：状态显示 */}
