@@ -367,7 +367,7 @@ export default function Home() {
                 </div>
 
                 {/* 拆账区（子交易不显示） */}
-                {currentTransaction && !currentTransaction.parent && (
+                {currentTransaction && !currentTransaction.parent_id && (
                   <>
                     <Divider />
                     <SplitEntryArea
@@ -386,8 +386,7 @@ export default function Home() {
                   <pre className="text-xs bg-gray-100 dark:bg-gray-800 p-3 rounded overflow-auto max-h-80">
                     {JSON.stringify(currentTransaction ? {
                       ...currentTransaction,
-                      parent: currentTransaction.parent ? { id: currentTransaction.parent.id } : undefined,
-                      children: currentTransaction.children.map(c => ({ id: c.id })),
+                      children_ids: currentTransaction.children_ids,
                     } : null, null, 2)}
                   </pre>
                 </div>

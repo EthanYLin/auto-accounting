@@ -147,7 +147,6 @@ export function getExitSplits(tx: TransactionWithRelations): TransactionSplitWit
     main_category: tx.main_category,
     sub_category: tx.sub_category,
     budget_type: tx.budget_type,
-    transaction: undefined as any,
   }];
 }
 

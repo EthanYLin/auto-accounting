@@ -90,8 +90,8 @@ export function TransactionListItem({
     TRANSACTION_TYPES.find(t => t.type === transaction.transaction_type)?.amount_color || 'text-gray-600 dark:text-gray-400' :
     'text-gray-600 dark:text-gray-400';
   const splitsCount = transaction.splits?.length || 0;
-  const childrenCount = transaction.children.length;
-  const isChild = !!transaction.parent;
+  const childrenCount = transaction.children_ids.length;
+  const isChild = !!transaction.parent_id;
 
   return (
     <div
@@ -152,7 +152,7 @@ export function TransactionListItem({
               </span>
               
               {/* 特殊标记图标 */}
-              {transaction.parent && (
+              {transaction.parent_id && (
                 <LinkIcon 
                   className="w-3.5 h-3.5 text-gray-500" 
                   title="附加到其他交易"

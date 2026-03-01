@@ -8,6 +8,7 @@ import type {
   BudgetType,
 } from '@/types';
 import { useAppData } from '@/components/context/app-data-context';
+import { useTransactionCache } from '@/components/context/transaction-cache-context';
 import { getExitSplits } from '@/lib/transaction-funcs';
 
 // ==================== 类型 ====================
@@ -90,6 +91,13 @@ function validateBudgetType(
  */
 export function useTransactionValidation() {
   const { accounts, mainCategories, subCategories, budgetTypes } = useAppData();
+  const { transactions } = useTransactionCache();
+
+  // 通过 children_ids 查找子交易对象
+  const getChildTransactions = (tx: TransactionWithRelations) =>
+    tx.children_ids
+      .map(id => transactions.find(t => t.id === id))
+      .filter((t): t is TransactionWithRelations => !!t);
 
   function isValidTransaction(tx: TransactionWithRelations): ValidationResult {
     const hint: string[] = [];
@@ -139,10 +147,10 @@ export function useTransactionValidation() {
 
     if (tx.status === '附加到其他交易') {
       // A. 有父ID、无子记录、不允许分账
-      if (!tx.parent) {
+      if (!tx.parent_id) {
         hint.push('该附加交易必须有父交易');
       }
-      if (tx.children?.length > 0) {
+      if (tx.children_ids.length > 0) {
         hint.push('该附加交易不允许有子交易');
       }
       if (tx.splits && tx.splits.length > 0) {
@@ -150,17 +158,18 @@ export function useTransactionValidation() {
       }
     } else {
       // B. 非附加：无父ID
-      if (tx.parent) {
+      if (tx.parent_id) {
         hint.push('非附加交易不应有父交易');
       }
-      if (tx.children?.length > 0) {
+      const childTxs = getChildTransactions(tx);
+      if (childTxs.length > 0) {
         // 若有子记录，所有子记录状态必须为"附加到其他交易"
-        const invalid = tx.children.filter(c => c.status !== '附加到其他交易');
+        const invalid = childTxs.filter(c => c.status !== '附加到其他交易');
         if (invalid.length > 0) {
           hint.push(`存在 ${invalid.length} 条子交易状态不是"附加到其他交易"`);
         }
         // 递归校验子记录
-        tx.children.forEach((child, i) => {
+        childTxs.forEach((child, i) => {
           const childResult = isValidTransaction(child);
           if (!childResult.valid) {
             hint.push(`子交易[${i + 1}]校验未通过: ${childResult.hint.join('; ')}`);
@@ -170,11 +179,6 @@ export function useTransactionValidation() {
     }
 
     // ========== (2) 分账判定 ==========
-    
-    // 若有子交易，则该交易必须分账
-    if (tx.children?.length > 0 && (!tx.splits || tx.splits.length === 0)) {
-      hint.push('存在子交易时必须分账');
-    }
 
     if (tx.splits && tx.splits.length > 1) {
       tx.splits.forEach((split, i) => {
@@ -245,7 +249,7 @@ export function useTransactionValidation() {
     const hints: string[] = [];
     if (tx.splits?.length ?? 0 >= 2) {
       hints.push(`该账单会拆分为${tx.splits?.length ?? 0}条记录`);
-    } else if (tx.children?.length ?? 0 > 0) {
+    } else if (tx.children_ids.length > 0) {
       hints.push(`该账单会合并为1条记录`);
     }
 
@@ -256,7 +260,7 @@ export function useTransactionValidation() {
 
     // 3. 入口账户金额与出口账户金额不一致
     // 入口处各账户金额
-    const entranceRecords = [tx, ...tx.children ?? []];
+    const entranceRecords = [tx, ...getChildTransactions(tx)];
     const entranceAccountMap = new Map<string, number>();
     entranceRecords.forEach(record => {
       if (record.account?.name) {

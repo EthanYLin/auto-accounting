@@ -1,7 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import type { Transaction, TransactionWithRelations, TransactionInsert, TransactionSplit, TransactionSplitInsert } from '@/types';
+import { produce } from 'immer';
+import type { Transaction, TransactionWithRelations, TransactionInsert, TransactionSplit, TransactionSplitInsert, NewTransactionData } from '@/types';
 import { deleteAllTransactions, bulkInsertTransactions, bulkInsertTransactionSplits, insertTransaction, getAllTransactions, getAllTransactionSplits, updateTransaction, deleteTransactionSplits, bulkDeleteTransactions } from '@/app/actions/data';
 import { useAppData } from './app-data-context';
 import { useError } from './error-context';
@@ -18,7 +19,7 @@ interface TransactionCacheContextValue extends TransactionCacheData {
   syncTransactions: () => Promise<void>;
   setTransactions: (transactions: TransactionWithRelations[]) => void;
   createEmptyTransaction: () => Promise<{ success: boolean; data?: TransactionWithRelations; error?: string }>;
-  createTransactions: (transactions: TransactionWithRelations[]) => Promise<{ success: boolean; error?: string }>;
+  createTransactions: (transactions: NewTransactionData[]) => Promise<{ success: boolean; error?: string }>;
   saveTransaction: (transaction: TransactionWithRelations) => Promise<{ success: boolean; error?: string }>;
   deleteTransactions: (ids: number[]) => Promise<{ success: boolean; error?: string }>;
   deleteAllTransactions: () => Promise<{ success: boolean; error?: string }>;
@@ -66,32 +67,28 @@ export function TransactionCacheProvider({ children }: { children: React.ReactNo
             main_category: splitMainCategory,
             sub_category: splitSubCategory,
             budget_type: splitBudgetType,
-            transaction: tx,
           };
         });
 
       // 排除 ID 字段，构造 TransactionWithRelations
-      const { account_id, main_category_id, sub_category_id, budget_type_id, parent_id, ...txWithoutIds } = tx;
+      const { account_id, main_category_id, sub_category_id, budget_type_id, ...txWithoutIds } = tx;
       return {
         ...txWithoutIds,
         account: account!,
         main_category: mainCategory,
         sub_category: subCategory,
         budget_type: budgetType,
-        parent: undefined, // 初始化为 undefined，稍后更新
-        children: [], // 初始化为空数组，稍后更新
+        children_ids: [] as number[],
         splits: txSplitsWithRelations,
       };
     });
 
-    // 第二遍：为有 parent_id 的记录添加 parent 引用，并维护 children 关系
-    // 使用原始的 flatTransactions 来获取 parent_id
+    // 第二遍：维护 children_ids 关系
     allTransactions.forEach((tx, index) => {
       if (tx.parent_id) {
         const parentIndex = allTransactions.findIndex(p => p.id === tx.parent_id);
         if (parentIndex !== -1) {
-          txWithRelations[index].parent = txWithRelations[parentIndex];
-          txWithRelations[parentIndex].children.push(txWithRelations[index]);
+          txWithRelations[parentIndex].children_ids.push(txWithRelations[index].id);
         }
       }
     });
@@ -109,7 +106,7 @@ export function TransactionCacheProvider({ children }: { children: React.ReactNo
     splits: TransactionSplit[];
   } => {
     // 排除关系对象字段，提取原始数据
-    const { account, main_category, sub_category, budget_type, parent, children, splits: txSplits, ...txData } = txWithRelations;
+    const { account, main_category, sub_category, budget_type, children_ids, splits: txSplits, ...txData } = txWithRelations;
     
     // 从关系对象中提取 ID，重新构造 Transaction
     const transaction: Transaction = {
@@ -118,20 +115,19 @@ export function TransactionCacheProvider({ children }: { children: React.ReactNo
       main_category_id: main_category?.id ?? null,
       sub_category_id: sub_category?.id ?? null,
       budget_type_id: budget_type?.id ?? null,
-      parent_id: parent?.id ?? null,
     };
 
     // 从 TransactionSplitWithRelations 数组中提取 ID，重新构造 TransactionSplit[]
     const splits: TransactionSplit[] = (txSplits ?? []).map(splitWithRelations => {
       // 排除关系对象字段
-      const { account, main_category, sub_category, budget_type, transaction, ...splitData } = splitWithRelations;
+      const { account, main_category, sub_category, budget_type, ...splitData } = splitWithRelations;
       return {
         ...splitData,
         account_id: account.id,
         main_category_id: main_category?.id ?? null,
         sub_category_id: sub_category?.id ?? null,
         budget_type_id: budget_type?.id ?? null,
-        transaction_id: transaction.id,
+        transaction_id: txWithRelations.id,
       };
     });
 
@@ -189,7 +185,7 @@ export function TransactionCacheProvider({ children }: { children: React.ReactNo
 
       // 步骤2：将所有本地交易数据 TxWithRelations 转换为 Transaction 和 TransactionSplit[]
       // 首先处理根记录，将根记录及其拆账记录插入到数据库中，确保子记录的 parent_id 存在
-      const rootTxWithRelations = data.transactions.filter(tx => !tx.parent);
+      const rootTxWithRelations = data.transactions.filter(tx => !tx.parent_id);
       const rootTxAndSplits = rootTxWithRelations.map(txWithRelations => buildTransactionAndSplits(txWithRelations));
       const rootTx = rootTxAndSplits.map(result => result.transaction);
       const rootSplits = rootTxAndSplits.flatMap(result => result.splits);
@@ -203,7 +199,7 @@ export function TransactionCacheProvider({ children }: { children: React.ReactNo
       }
 
       // 然后处理子记录，将子记录插入到数据库中，子记录不允许有拆账记录
-      const childTxWithRelations = data.transactions.filter(tx => tx.parent);
+      const childTxWithRelations = data.transactions.filter(tx => !!tx.parent_id);
       const childTx = childTxWithRelations.map(txWithRelations => buildTransactionAndSplits(txWithRelations).transaction);
       const childInsertResult = await bulkInsertTransactions(childTx);
       if (!childInsertResult.success) {
@@ -273,60 +269,76 @@ export function TransactionCacheProvider({ children }: { children: React.ReactNo
   }, [accounts, buildTransactionsWithRelations, showError]);
 
   /**
-   * 创建多条交易记录
-   * 这些交易记录一般来自于导入或批量创建，皆为没有ID的新数据。
-   * 1. 创建交易记录时会忽略记录的 ID, parent 关系。
-   * 2. 若要创建拆账，只需在交易记录的 splits 中添加拆账记录即可，拆账记录的 ID 可留空。
-   * 3. 若要创建子记录，只需在交易记录的 children 中添加子记录即可，子记录的 ID 及 parent 字段可留空，子记录的 splits 以及 children 字段会被忽略。
+   * 将 NewTransactionData 的关联对象还原为 ID 字段，生成可插入数据库的 payload
    */
-  const createTransactions = useCallback(async (transactions: TransactionWithRelations[]) => {
+  const buildInsertFromNewData = useCallback((data: NewTransactionData): {
+    tx: Omit<TransactionInsert, 'user_id'>;
+    splits: Array<Omit<TransactionSplitInsert, 'user_id' | 'transaction_id'>>;
+  } => {
+    const { account, main_category, sub_category, budget_type, children, splits, ...txFields } = data;
+    const tx: Omit<TransactionInsert, 'user_id'> = {
+      ...txFields,
+      account_id: account.id,
+      main_category_id: main_category?.id ?? null,
+      sub_category_id: sub_category?.id ?? null,
+      budget_type_id: budget_type?.id ?? null,
+    };
+    const insertSplits = (splits ?? []).map(split => {
+      const { account, main_category, sub_category, budget_type, ...splitFields } = split;
+      return {
+        ...splitFields,
+        account_id: account.id,
+        main_category_id: main_category?.id ?? null,
+        sub_category_id: sub_category?.id ?? null,
+        budget_type_id: budget_type?.id ?? null,
+      };
+    });
+    return { tx, splits: insertSplits };
+  }, []);
+
+  /**
+   * 创建多条交易记录
+   * 这些交易记录一般来自于导入或批量创建，皆为没有 ID 的新数据。
+   * 1. 若要创建拆账，只需在交易记录的 splits 中添加拆账记录即可。
+   * 2. 若要创建子记录，只需在交易记录的 children 中直接嵌套子交易即可，子交易的 children 会被忽略。
+   */
+  const createTransactions = useCallback(async (transactions: NewTransactionData[]) => {
     try {
-      for (let i = 0; i < transactions.length; i++) {
-        const txWithRelations = transactions[i];
-        const { transaction, splits } = buildTransactionAndSplits(txWithRelations);
-        
-        // 1. 清空 tx 的 id, parent 关系，插入数据库
-        const { id, parent_id, ...txToInsert } = transaction;
-        const insertTxResult = await insertTransaction(txToInsert);
+      for (const txData of transactions) {
+        // 1. 插入根交易记录
+        const { tx, splits } = buildInsertFromNewData(txData);
+        const insertTxResult = await insertTransaction(tx);
         if (!insertTxResult.success || !insertTxResult.data) {
           return { success: false, error: insertTxResult.error || '插入交易记录失败' } as const;
         }
         const createdTxId = insertTxResult.data.id;
 
-        // 2. 清空 splits 的 id, 填写所属 tx_id，插入数据库
-        const splitsToInsert = splits.map(split => {
-          const { id, transaction_id, ...splitToInsert } = split;
-          return {
-            ...splitToInsert,
-            transaction_id: createdTxId,
-          };
-        });
-        if (splitsToInsert.length > 0) {
+        // 2. 插入拆账记录
+        if (splits.length > 0) {
+          const splitsToInsert = splits.map(s => ({ ...s, transaction_id: createdTxId }));
           const insertSplitsResult = await bulkInsertTransactionSplits(splitsToInsert);
           if (!insertSplitsResult.success) {
             return { success: false, error: insertSplitsResult.error || '插入拆账记录失败' } as const;
           }
         }
 
-        // 3. 清空 children 的 id, 填写 parent_id，插入数据库
-        const childrenToInsert = txWithRelations.children.map(child => {
-          const { id, parent_id, ...childToInsert } = buildTransactionAndSplits(child).transaction;
-          return {
-            ...childToInsert,
-            parent_id: createdTxId,
-          };
-        });
-        if (childrenToInsert.length > 0) {
+        // 3. 插入子交易记录（忽略子交易的 children）
+        const children = txData.children ?? [];
+        if (children.length > 0) {
+          const childrenToInsert = children.map(child => {
+            const { tx: childTx } = buildInsertFromNewData(child);
+            return { ...childTx, parent_id: createdTxId };
+          });
           const insertChildrenResult = await bulkInsertTransactions(childrenToInsert);
           if (!insertChildrenResult.success) {
             return { success: false, error: insertChildrenResult.error || '插入子交易记录失败' } as const;
           }
         }
       }
-      
+
       // 重新加载数据
       await loadTransactions();
-      
+
       return { success: true } as const;
     } catch (error) {
       console.error('创建交易记录异常:', error);
@@ -334,7 +346,7 @@ export function TransactionCacheProvider({ children }: { children: React.ReactNo
       showError('创建交易记录失败', errorMessage);
       return { success: false, error: errorMessage } as const;
     }
-  }, [buildTransactionAndSplits, loadTransactions, showError]);
+  }, [buildInsertFromNewData, loadTransactions, showError]);
 
 
   /**
@@ -367,7 +379,10 @@ export function TransactionCacheProvider({ children }: { children: React.ReactNo
     }
 
     // 3. 更新该记录的所有 children 记录的信息
-    for (const child of transaction.children) {
+    const childTransactions = transaction.children_ids
+      .map(id => data.transactions.find(t => t.id === id))
+      .filter((t): t is TransactionWithRelations => !!t);
+    for (const child of childTransactions) {
       const childToUpdate = buildTransactionAndSplits(child).transaction;
       childToUpdate.parent_id = txId;
       const updateChildResult = await updateTransaction(childToUpdate.id, childToUpdate);
@@ -389,32 +404,20 @@ export function TransactionCacheProvider({ children }: { children: React.ReactNo
         return { success: true } as const;
       }
 
-      // 更新本地 cache
       const idsToDelete = new Set(ids);
-      const updatedTransactions = data.transactions
-        .map(tx => {
-          // 如果这个交易的 children 中有要删除的记录，将它们移除
-          if (tx.children.length > 0) {
-            const filteredChildren = tx.children.filter(child => !idsToDelete.has(child.id));
-            if (filteredChildren.length !== tx.children.length) {
-              return { ...tx, children: filteredChildren };
-            }
-          }
-          return tx;
-        })
-        .map(tx => {
-          // 如果这个交易的 parent 要被删除，将 parent 设置为 undefined
-          if (tx.parent && idsToDelete.has(tx.parent.id)) {
-            return { ...tx, parent: undefined };
-          }
-          return tx;
-        })
-        .filter(tx => !idsToDelete.has(tx.id)); // 移除要删除的记录
 
       // 更新本地状态
-      setData(prev => ({
-        ...prev,
-        transactions: updatedTransactions,
+      setData(produce(draft => {
+        for (const tx of draft.transactions) {
+          // 如果这个交易的 children_ids 中有要删除的记录，将它们移除
+          tx.children_ids = tx.children_ids.filter(id => !idsToDelete.has(id));
+          // 如果这个交易的 parent 要被删除，将 parent_id 设置为 null
+          if (tx.parent_id && idsToDelete.has(tx.parent_id)) {
+            tx.parent_id = null;
+          }
+        }
+        // 移除要删除的记录
+        draft.transactions = draft.transactions.filter(tx => !idsToDelete.has(tx.id));
       }));
 
       // 数据库删除
@@ -432,7 +435,7 @@ export function TransactionCacheProvider({ children }: { children: React.ReactNo
       showError('删除交易记录失败', errorMessage);
       return { success: false, error: errorMessage } as const;
     }
-  }, [data.transactions, loadTransactions, showError]);
+  }, [loadTransactions, showError]);
 
   /**
    * 删除所有交易记录

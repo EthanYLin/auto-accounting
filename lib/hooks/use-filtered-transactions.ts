@@ -139,7 +139,7 @@ export function useFilteredTransactions(
     
     // 获取所有根记录（没有 parent 的记录）并按时间倒序排序
     const rootTransactions = transactions
-      .filter(tx => !tx.parent)
+      .filter(tx => !tx.parent_id)
       .sort((a, b) => {
         const dateA = a.datetime ? new Date(a.datetime).getTime() : 0;
         const dateB = b.datetime ? new Date(b.datetime).getTime() : 0;
@@ -150,9 +150,10 @@ export function useFilteredTransactions(
       // 添加父记录
       result.push(parent);
       
-      // 直接使用 children 属性（保持原有顺序）
-      parent.children.forEach(child => {
-        result.push(child);
+      // 通过 children_ids 查找子记录
+      parent.children_ids.forEach(childId => {
+        const child = transactions.find(t => t.id === childId);
+        if (child) result.push(child);
       });
     });
     
@@ -171,11 +172,11 @@ export function useFilteredTransactions(
       
       // 当子记录匹配时，将父记录也加入结果；当父记录匹配时，将子记录也加入结果。
       matched.forEach(tx => {
-        if (!tx.parent && tx.children.length > 0) {
-          tx.children.forEach(child => matchedIds.add(child.id));
+        if (!tx.parent_id && tx.children_ids.length > 0) {
+          tx.children_ids.forEach(childId => matchedIds.add(childId));
         }
-        if (tx.parent) {
-          matchedIds.add(tx.parent.id);
+        if (tx.parent_id) {
+          matchedIds.add(tx.parent_id);
         }
       });
       

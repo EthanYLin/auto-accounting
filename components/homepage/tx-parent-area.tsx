@@ -31,16 +31,26 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction }: Tx
   }
 
   // 获取已附加的账单ID列表
-  const childrenIds = currentTransaction.children.map(child => child.id);
+  const childrenIds = currentTransaction.children_ids;
+
+  // 查找子交易对象
+  const childTransactions = childrenIds
+    .map(id => transactions.find(t => t.id === id))
+    .filter((t): t is TransactionWithRelations => !!t);
+
+  // 查找父交易对象
+  const parentTransaction = currentTransaction.parent_id
+    ? transactions.find(t => t.id === currentTransaction.parent_id) ?? null
+    : null;
 
   // 计算账户金额汇总
   const calculateAccountSummary = () => {
-    if (!isRootTransaction || currentTransaction.children.length === 0) {
+    if (!isRootTransaction || childTransactions.length === 0) {
       return null;
     }
 
     // 收集所有交易（根账单 + 子账单）
-    const allTransactions = [currentTransaction, ...currentTransaction.children];
+    const allTransactions = [currentTransaction, ...childTransactions];
     
     // 按账户分组求和
     const accountMap = new Map<string, { name: string; amount: number }>();
@@ -72,32 +82,32 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction }: Tx
       const selectedSet = new Set(selectedIds);
       draft.forEach(tx => {
         // A. 要移除的孩子
-        if (tx.parent?.id === root.id && !selectedSet.has(tx.id)) {
-          tx.parent = undefined;
+        if (tx.parent_id === root.id && !selectedSet.has(tx.id)) {
+          tx.parent_id = null;
         }
 
         // B. 要添加的孩子
-        if (tx.parent?.id !== root.id && selectedSet.has(tx.id)) {
+        if (tx.parent_id !== root.id && selectedSet.has(tx.id)) {
           // 从旧父节点移除
-          const oldParent = draft.find(p => p.id === tx.parent?.id);
+          const oldParent = draft.find(p => p.id === tx.parent_id);
           if (oldParent) {
-            oldParent.children = oldParent.children.filter(c => c.id !== tx.id);
+            oldParent.children_ids = oldParent.children_ids.filter(id => id !== tx.id);
           }
           // 添加到新父节点
-          tx.parent = root; 
+          tx.parent_id = root.id; 
           // 清理孙子节点
-          tx.children.forEach(c => {
-            const gc = draft.find(t => t.id === c.id);
-            if(gc) gc.parent = undefined; 
+          tx.children_ids.forEach(childId => {
+            const gc = draft.find(t => t.id === childId);
+            if(gc) gc.parent_id = null; 
           });
-          tx.children = [];
+          tx.children_ids = [];
           // 清除分账信息
           tx.splits = [];
         }
       });
 
-      // 重建 root.children 数组
-      root.children = draft.filter(t => t.parent?.id === root.id);
+      // 重建 root.children_ids
+      root.children_ids = draft.filter(t => t.parent_id === root.id).map(t => t.id);
     });
     setTransactions(nextState);
     onClose();
@@ -111,18 +121,18 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction }: Tx
       const child = draft.find(t => t.id === childId);
       if (!root || !child) return;
       
-      // 从父节点的 children 中移除
-      root.children = root.children.filter(c => c.id !== childId);
+      // 从父节点的 children_ids 中移除
+      root.children_ids = root.children_ids.filter(id => id !== childId);
       
-      // 清空子节点的 parent
-      child.parent = undefined;
+      // 清空子节点的 parent_id
+      child.parent_id = null;
     });
     
     setTransactions(nextState);
   };
 
   // 是否是根账单（没有 parent）
-  const isRootTransaction = !currentTransaction.parent;
+  const isRootTransaction = !currentTransaction.parent_id;
 
   return (
     <div className="space-y-3">
@@ -132,17 +142,17 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction }: Tx
             size="sm"
             variant="flat"
             startContent={
-              currentTransaction.children.length > 0 
+              childTransactions.length > 0 
                 ? <PencilSquareIcon className="w-4 h-4" />
                 : <PlusIcon className="w-4 h-4" />
             }
             onPress={onOpen}
           >
-            {currentTransaction.children.length > 0 ? '选择附加账单' : '添加附加账单'}
+            {childTransactions.length > 0 ? '选择附加账单' : '添加附加账单'}
           </Button>
 
           {/* 账户汇总信息 */}
-          {currentTransaction.children.length > 0 && (() => {
+          {childTransactions.length > 0 && (() => {
             const accountSummary = calculateAccountSummary();
             if (!accountSummary || accountSummary.length === 0) return null;
 
@@ -172,7 +182,7 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction }: Tx
         </div>
       )}
 
-      {!isRootTransaction && currentTransaction.parent && (
+      {!isRootTransaction && parentTransaction && (
         <div className="space-y-2">
           <div className="text-sm font-bold">
             该账单已被附加到以下账单
@@ -181,40 +191,40 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction }: Tx
           <div className="flex items-center gap-2 p-2 rounded-lg text-xs">
             {/* 状态 */}
             <div className="flex-shrink-0">
-              {currentTransaction.parent.status && (
+              {parentTransaction.status && (
                 <Chip
                   size="sm"
-                  color={TRANSACTION_STATUS_COLORS[currentTransaction.parent.status]}
+                  color={TRANSACTION_STATUS_COLORS[parentTransaction.status]}
                   variant="flat"
                 >
-                  {currentTransaction.parent.status}
+                  {parentTransaction.status}
                 </Chip>
               )}
             </div>
 
             {/* 日期时间 */}
             <div className="flex-shrink-0 w-28 truncate text-gray-500 dark:text-gray-400">
-              {formatDateTime(currentTransaction.parent.datetime)}
+              {formatDateTime(parentTransaction.datetime)}
             </div>
             
             {/* 账户 */}
             <div className="flex-shrink-0 w-18 truncate">
-              {currentTransaction.parent.account?.name || '-'}
+              {parentTransaction.account?.name || '-'}
             </div>
 
             {/* 金额 */}
-            <div className={`flex-shrink-0 w-20 font-semibold ${getAmountColorClass(currentTransaction.parent.transaction_type)}`}>
-              ¥ {getAmountSymbol(currentTransaction.parent.transaction_type)}{Math.abs(calculateAmount(currentTransaction.parent)).toFixed(2)}
+            <div className={`flex-shrink-0 w-20 font-semibold ${getAmountColorClass(parentTransaction.transaction_type)}`}>
+              ¥ {getAmountSymbol(parentTransaction.transaction_type)}{Math.abs(calculateAmount(parentTransaction)).toFixed(2)}
             </div>
 
             {/* 类别 */}
             <div className="flex-shrink-0 w-32 truncate text-gray-600 dark:text-gray-400">
-              {formatCategoryText(currentTransaction.parent)}
+              {formatCategoryText(parentTransaction)}
             </div>
 
             {/* 名称 */}
             <div className="flex-1 truncate">
-              {currentTransaction.parent.name || currentTransaction.parent.title || '-'}
+              {parentTransaction.name || parentTransaction.title || '-'}
             </div>
 
             {/* 跳转按钮 */}
@@ -223,7 +233,7 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction }: Tx
                 size="sm"
                 variant="flat"
                 color="default"
-                onPress={() => onNavigateToTransaction(currentTransaction.parent!.id)}
+                onPress={() => onNavigateToTransaction(parentTransaction.id)}
                 title="跳转到主账单"
               >
                 <ArrowUpRightIcon className="w-4 h-4" />
@@ -235,9 +245,9 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction }: Tx
       )}
 
       {/* 显示已附加的账单列表 */}
-      {currentTransaction.children.length > 0 && (
+      {childTransactions.length > 0 && (
         <div className="space-y-2">
-          {currentTransaction.children.map((child) => (
+          {childTransactions.map((child) => (
             <div
               key={child.id}
               className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-xs"

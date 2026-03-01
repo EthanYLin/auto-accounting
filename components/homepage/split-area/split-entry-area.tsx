@@ -62,11 +62,6 @@ export function SplitEntryArea({ currentTransaction, entries, onEntriesChange }:
 
   // ==================== 渲染 ====================
 
-  const emptyMessage =
-    currentTransaction.children.length === 0
-      ? "暂无拆账数据"
-      : "暂无拆账数据，将按照账户自动合并拆账";
-
   return (
     <div>
       {/* 工具栏 */}
@@ -150,7 +145,6 @@ export function SplitEntryArea({ currentTransaction, entries, onEntriesChange }:
         entries={entries}
         onEntriesChange={onEntriesChange}
         placeholderName={currentTransaction.name ?? undefined}
-        emptyMessage={emptyMessage}
         selectedIds={selectedIds}
         onSelectedIdsChange={setSelectedIds}
         showName={showName}

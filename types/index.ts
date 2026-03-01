@@ -51,14 +51,13 @@ export type TransactionType = Enums<'transaction_type'>;
 // 带关联数据的交易类型
 export type TransactionWithRelations = Omit<
   Transaction,
-  'account_id' | 'main_category_id' | 'sub_category_id' | 'budget_type_id' | 'parent_id'
+  'account_id' | 'main_category_id' | 'sub_category_id' | 'budget_type_id'
 > & {
   account: Account;
   main_category?: MainCategory;
   sub_category?: SubCategory;
   budget_type?: BudgetType;
-  parent?: TransactionWithRelations;
-  children: TransactionWithRelations[];
+  children_ids: number[];
   splits?: TransactionSplitWithRelations[];
 };
 
@@ -67,9 +66,25 @@ export type TransactionSplitWithRelations = Omit<
   TransactionSplit,
   'account_id' | 'main_category_id' | 'sub_category_id' | 'budget_type_id' | 'transaction_id'
 > & {
-  account: Account;
+  account: Account; 
   main_category?: MainCategory;
   sub_category?: SubCategory;
   budget_type?: BudgetType;
-  transaction: Transaction;
+};
+
+// ========== 用于批量创建的数据结构 ==========
+/** 用于创建新拆账记录的数据结构（不含 id、user_id） */
+export type NewTransactionSplitData = Omit<TransactionSplitWithRelations, 'id' | 'user_id'>;
+
+/** 
+ * 用于批量创建交易的数据结构（不含 id、parent_id、user_id）
+ * - 通过 splits 添加拆账记录
+ * - 通过 children 直接嵌套子交易，子交易的 splits 会被处理，children 会被忽略
+ */
+export type NewTransactionData = Omit<
+  TransactionWithRelations,
+  'id' | 'parent_id' | 'user_id' | 'children_ids' | 'splits'
+> & {
+  splits?: NewTransactionSplitData[];
+  children?: NewTransactionData[];
 };
