@@ -288,6 +288,8 @@ export default function Home() {
               currentId={currentId || undefined}
               onSelectTransaction={setCurrentId}
               filteredTransactions={filteredTransactions}
+              isFiltered={searchQuery.trim() !== '' || statusFilter !== 'all'}
+              onClearFilters={() => { setSearchQuery(''); setStatusFilter('all'); }}
             />
           </div>
         </aside>

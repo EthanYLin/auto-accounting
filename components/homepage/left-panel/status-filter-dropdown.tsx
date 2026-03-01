@@ -4,7 +4,9 @@ import React, { useMemo } from 'react';
 import { Button } from '@heroui/button';
 import { Chip } from '@heroui/chip';
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@heroui/dropdown';
-import { FunnelIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { CheckIcon } from '@heroicons/react/24/outline';
+import { FunnelIcon as FunnelIconSolid } from '@heroicons/react/24/solid';
+import { FunnelIcon } from '@heroicons/react/24/outline';
 import type { TransactionStatus } from '@/types';
 import { useTransactionCache } from '@/components/context/transaction-cache-context';
 import { ALL_TRANSACTION_STATUS } from '@/constants/transaction-status';
@@ -41,7 +43,10 @@ export function StatusFilterDropdown({
           variant="bordered"
           className="min-w-8 h-8"
         >
-          <FunnelIcon className="w-4 h-4" />
+          {statusFilter !== 'all'
+            ? <FunnelIconSolid className="w-4 h-4 text-primary" />
+            : <FunnelIcon className="w-4 h-4" />
+          }
         </Button>
       </DropdownTrigger>
       <DropdownMenu 

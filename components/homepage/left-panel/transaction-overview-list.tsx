@@ -3,7 +3,7 @@
 import React from 'react';
 import { Spinner } from '@heroui/spinner';
 import { Button } from '@heroui/button';
-import { CloudArrowDownIcon } from '@heroicons/react/24/outline';
+import { CloudArrowDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { TransactionListItem } from './transaction-list-item';
 import { useTransactionCache } from '@/components/context/transaction-cache-context';
 import { useAppData } from '@/components/context/app-data-context';
@@ -16,14 +16,20 @@ interface TransactionOverviewListProps {
   onSelectTransaction: (id: number) => void;
   /** 已过滤的交易列表 */
   filteredTransactions: TransactionWithRelations[];
+  /** 是否有激活的过滤条件 */
+  isFiltered?: boolean;
+  /** 清除过滤器的回调 */
+  onClearFilters?: () => void;
 }
 
 export function TransactionOverviewList({
   currentId,
   onSelectTransaction,
   filteredTransactions,
+  isFiltered = false,
+  onClearFilters,
 }: TransactionOverviewListProps) {
-  const { isLoading, error, loadTransactions } = useTransactionCache();
+  const { isLoading, error, loadTransactions, transactions} = useTransactionCache();
   const { isLoading: appDataLoading, hasLoaded: hasLoadedAppData } = useAppData();
 
   // 错误状态
@@ -53,16 +59,28 @@ export function TransactionOverviewList({
       <div className="flex h-full w-full">
         <div className="m-auto flex flex-col items-center justify-center text-center gap-3">
           <p className="text-sm text-gray-500 dark:text-gray-400">暂无交易记录</p>
-          <Button 
-            size="sm" 
-            color="default" 
-            variant="flat" 
-            onPress={loadTransactions} 
-            isDisabled={isLoading || appDataLoading || !hasLoadedAppData}
-            startContent={<CloudArrowDownIcon className="w-4 h-4" />}
-          >
-            从云端加载
-          </Button>
+          {isFiltered && transactions.length > 0 ? (
+            <Button
+              size="sm"
+              color="default"
+              variant="flat"
+              onPress={onClearFilters}
+              startContent={<XMarkIcon className="w-4 h-4" />}
+            >
+              清除过滤器
+            </Button>
+          ) : (
+            <Button 
+              size="sm" 
+              color="default" 
+              variant="flat" 
+              onPress={loadTransactions} 
+              isDisabled={isLoading || appDataLoading || !hasLoadedAppData}
+              startContent={<CloudArrowDownIcon className="w-4 h-4" />}
+            >
+              从云端加载
+            </Button>
+          )}
         </div>
       </div>
     );
