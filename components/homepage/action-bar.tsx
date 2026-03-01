@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button, ButtonGroup } from "@heroui/button";
+import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure } from "@heroui/modal";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection } from "@heroui/dropdown";
 import {
   ChevronLeftIcon,
@@ -36,7 +37,6 @@ type QuickActionKey =
   | "next-pending" | "locate-current"
   | "cloud-upload";
 
-
 const DEFAULT_QUICK_ACTION: QuickActionKey = "save-cancel";
 
 interface QuickAction {
@@ -47,7 +47,35 @@ interface QuickAction {
   onClick: () => void;
 }
 
-const QUICK_ACTIONS: QuickAction[] = [
+// ==================== 组件 ====================
+
+interface ActionBarProps {
+  currentIndex: number;
+  totalCount: number;
+  status?: TransactionStatus;
+  actions: TransactionActions;
+  splitHint?: SplitHint;
+}
+
+// ==================== 组件 ====================
+
+export function ActionBar({
+  currentIndex,
+  totalCount,
+  status,
+  actions,
+  splitHint,
+}: ActionBarProps) {
+  const statusConfig = status ? ALL_TRANSACTION_STATUS.find((item) => item.name === status) : null;
+
+  // 记住上次点击的快捷动作
+  const [quickActionKey, setQuickActionKey] = useState<QuickActionKey>(DEFAULT_QUICK_ACTION);
+  // 保存后自动切换 checkbox
+  const [autoSwitch, setAutoSwitch] = useState(true);
+  // 删除确认 modal
+  const deleteConfirmModal = useDisclosure();
+
+  const QUICK_ACTIONS: QuickAction[] = [
   {
     key: "save",
     label: "保存交易",
@@ -74,63 +102,37 @@ const QUICK_ACTIONS: QuickAction[] = [
     label: "删除交易",
     icon: <TrashIcon className="w-4 h-4" />,
     section: 1,
-    onClick: () => {},
+    onClick: deleteConfirmModal.onOpen,
   },
   {
     key: "new",
     label: "新建交易",
     icon: <PlusIcon className="w-4 h-4" />,
     section: 1,
-    onClick: () => {},
+    onClick: actions.createNewTransaction,
   },
   {
     key: "next-pending",
     label: "跳转到下一条待处理的交易",
     icon: <ForwardIcon className="w-4 h-4" />,
     section: 2,
-    onClick: () => {},
+    onClick: actions.goToNextPending,
   },
   {
     key: "locate-current",
     label: "定位到当前交易",
     icon: <MapPinIcon className="w-4 h-4" />,
     section: 2,
-    onClick: () => {},
+    onClick: actions.locateCurrent,
   },
   {
     key: "cloud-upload",
     label: "上传到云端",
     icon: <CloudArrowUpIcon className="w-4 h-4" />,
     section: 3,
-    onClick: () => {},
+    onClick: actions.uploadToServer,
   },
 ];
-
-// ==================== 组件 ====================
-
-interface ActionBarProps {
-  currentIndex: number;
-  totalCount: number;
-  status?: TransactionStatus;
-  actions: TransactionActions;
-  splitHint?: SplitHint;
-}
-
-// ==================== 组件 ====================
-
-export function ActionBar({
-  currentIndex,
-  totalCount,
-  status,
-  actions,
-  splitHint,
-}: ActionBarProps) {
-  const statusConfig = status ? ALL_TRANSACTION_STATUS.find((item) => item.name === status) : null;
-
-  // 记住上次点击的快捷动作
-  const [quickActionKey, setQuickActionKey] = useState<QuickActionKey>(DEFAULT_QUICK_ACTION);
-  // 保存后自动切换 checkbox
-  const [autoSwitch, setAutoSwitch] = useState(false);
 
   const currentQuickAction = QUICK_ACTIONS.find((a) => a.key === quickActionKey)!;
 
@@ -327,6 +329,33 @@ export function ActionBar({
           )}
         </div>
       </div>
+
+
+      {/* 删除确认 Modal */}
+      <Modal isOpen={deleteConfirmModal.isOpen} onClose={deleteConfirmModal.onClose} size="sm">
+        <ModalContent>
+          <ModalHeader>确认要删除吗？</ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              若不想导出该交易，可将状态设置为&ldquo;取消&rdquo;。
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={deleteConfirmModal.onClose}>
+              取消
+            </Button>
+            <Button
+              color="danger"
+              onPress={() => {
+                deleteConfirmModal.onClose();
+                actions.deleteTransaction();
+              }}
+            >
+              确认删除
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

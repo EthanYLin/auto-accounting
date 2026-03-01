@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import { Spinner } from '@heroui/spinner';
 import { Button } from '@heroui/button';
 import { CloudArrowDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -22,15 +22,35 @@ interface TransactionOverviewListProps {
   onClearFilters?: () => void;
 }
 
-export function TransactionOverviewList({
+export interface TransactionOverviewListHandle {
+  /** 将列表滚动到当前选中的交易 */
+  scrollToCurrent: () => void;
+}
+
+export const TransactionOverviewList = forwardRef<TransactionOverviewListHandle, TransactionOverviewListProps>(
+function TransactionOverviewList(
+  {
   currentId,
   onSelectTransaction,
   filteredTransactions,
   isFiltered = false,
   onClearFilters,
-}: TransactionOverviewListProps) {
+}: TransactionOverviewListProps,
+  ref: React.Ref<TransactionOverviewListHandle>
+) {
   const { isLoading, error, loadTransactions, transactions} = useTransactionCache();
   const { isLoading: appDataLoading, hasLoaded: hasLoadedAppData } = useAppData();
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    scrollToCurrent() {
+      if (currentId == null || !containerRef.current) return;
+      const el = containerRef.current.querySelector(`[data-tx-id="${currentId}"]`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    },
+  }));
+
 
   // 错误状态
   if (error) {
@@ -88,18 +108,19 @@ export function TransactionOverviewList({
 
   // 渲染交易列表
   return (
-    <div className="w-full">
+    <div className="w-full" ref={containerRef}>
       {filteredTransactions.map((transaction) => {
         return (
-          <TransactionListItem
-            key={transaction.id}
-            transaction={transaction}
-            isSelected={currentId !== undefined && transaction.id === currentId}
-            onClick={() => onSelectTransaction(transaction.id)}
-          />
+          <div key={transaction.id} data-tx-id={transaction.id}>
+            <TransactionListItem
+              transaction={transaction}
+              isSelected={currentId !== undefined && transaction.id === currentId}
+              onClick={() => onSelectTransaction(transaction.id)}
+            />
+          </div>
         );
       })}
     </div>
   );
-}
+});
 

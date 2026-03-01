@@ -3,12 +3,12 @@ import type {
   TransactionSplitWithRelations,
   TransactionStatus,
 } from "@/types";
-import { TRANSACTION_TYPES } from "@/constants/transaction-type";
 import { useAppData } from "@/components/context/app-data-context";
 import { useTransactionCache } from "@/components/context/transaction-cache-context";
 import type { TxFieldInputsData } from "@/components/homepage/tx-field-inputs";
 import type { FourChainState } from "@/components/homepage/common/four-chain-selector";
 import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
+import { addToast } from "@heroui/toast";
 
 interface UseTransactionActionsOptions {
   currentTransaction: TransactionWithRelations | null;
@@ -21,6 +21,7 @@ interface UseTransactionActionsOptions {
     chainState: FourChainState;
     splitEntries: SplitEntryData[];
   };
+  onLocateCurrent?: () => void;
 }
 
 export function useTransactionActions({
@@ -30,117 +31,89 @@ export function useTransactionActions({
   totalCount,
   onSelectTransaction,
   getFormSnapshot,
+  onLocateCurrent,
 }: UseTransactionActionsOptions) {
   const { accounts, mainCategories, subCategories, budgetTypes } = useAppData();
-  const { saveTransaction } = useTransactionCache();
+  const { transactions, setTransactions, syncTransactions, deleteTransactions, createEmptyTransaction } = useTransactionCache();
 
-  // ==================== 内部方法 ====================
+  // ==================== 缓存更新方法 ====================
 
-  function buildTransaction(
-    formData: TxFieldInputsData,
-    fourChainState: FourChainState,
-    splitEntries: SplitEntryData[],
-  ): TransactionWithRelations {
-    if (!currentTransaction) throw new Error("没有选中的交易");
+  /**
+   * 将当前页面表单数据写回缓存中的当前交易
+   * @param status 可选的新状态，不传则保持当前交易的原有状态
+   */
+  const updateCurrentTransactionInCache = (status?: TransactionStatus) => {
+    if (!currentTransaction) return;
 
-    // 交易类型 sign（收入 +1，支出 -1，转账 -1 etc.）
-    const txTypeDef = fourChainState.txType
-      ? TRANSACTION_TYPES.find((t) => t.type === fourChainState.txType)
-      : null;
-    const sign = txTypeDef?.sign ?? 1;
+    const { formData, chainState, splitEntries } = getFormSnapshot();
 
-    // 查找关联对象
-    const account = accounts.find((a) => String(a.id) === formData.account);
-    if (!account) throw new Error(`找不到账户 ID: ${formData.account}`);
-    const mainCategory = fourChainState.main_id
-      ? mainCategories.find((m) => String(m.id) === fourChainState.main_id)
+    const account = accounts.find(a => String(a.id) === formData.account);
+    if (!account) return; // 账户为必填项
+
+    const mainCategory = chainState.main_id
+      ? mainCategories.find(mc => String(mc.id) === chainState.main_id)
       : undefined;
-    const subCategory = fourChainState.sub_id
-      ? subCategories.find((s) => String(s.id) === fourChainState.sub_id)
+    const subCategory = chainState.sub_id
+      ? subCategories.find(sc => String(sc.id) === chainState.sub_id)
       : undefined;
-    const budgetType = fourChainState.budget_id
-      ? budgetTypes.find((b) => String(b.id) === fourChainState.budget_id)
+    const budgetType = chainState.budget_id
+      ? budgetTypes.find(bt => String(bt.id) === chainState.budget_id)
       : undefined;
 
-    // 日期：DateValue.toString() → "YYYY-MM-DDTHH:MM:SS"，追加时区零偏移
-    const datetime = formData.date ? formData.date.toString() : null;
+    const amount = parseFloat(formData.amount) || 0;
+    const datetime = formData.date ? formData.date.toString() : currentTransaction.datetime;
+    const resolvedStatus = status ?? currentTransaction.status;
 
-    // 构建拆账条目
-    const splits: TransactionSplitWithRelations[] = splitEntries.map((entry) => {
-      const splitTxTypeDef = entry.chainState.txType
-        ? TRANSACTION_TYPES.find((t) => t.type === entry.chainState.txType)
-        : null;
-      const splitSign = splitTxTypeDef?.sign ?? 1;
-      const splitAccount = accounts.find((a) => String(a.id) === entry.accountId);
-      if (!splitAccount) throw new Error(`拆账条目找不到账户 ID: ${entry.accountId}`);
-
-      // localId 格式为 "db-{n}" 表示已存在的记录，否则为新建（id = 0）
-      const splitId = entry.localId.startsWith("db-")
-        ? parseInt(entry.localId.slice(3), 10)
-        : 0;
+    // 构建 splits
+    const splits: TransactionSplitWithRelations[] = splitEntries.map((entry, i) => {
+      const splitAccount = accounts.find(a => String(a.id) === entry.accountId)!;
+      const splitMainCat = entry.chainState.main_id
+        ? mainCategories.find(mc => String(mc.id) === entry.chainState.main_id)
+        : undefined;
+      const splitSubCat = entry.chainState.sub_id
+        ? subCategories.find(sc => String(sc.id) === entry.chainState.sub_id)
+        : undefined;
+      const splitBudget = entry.chainState.budget_id
+        ? budgetTypes.find(bt => String(bt.id) === entry.chainState.budget_id)
+        : undefined;
 
       return {
-        id: splitId,
-        amount: splitSign * parseFloat(entry.amount || "0"),
+        id: i,
+        amount: parseFloat(entry.amount) || 0,
         name: entry.name || null,
         transaction_type: entry.chainState.txType ?? null,
         user_id: currentTransaction.user_id,
         account: splitAccount,
-        main_category: entry.chainState.main_id
-          ? mainCategories.find((m) => String(m.id) === entry.chainState.main_id)
-          : undefined,
-        sub_category: entry.chainState.sub_id
-          ? subCategories.find((s) => String(s.id) === entry.chainState.sub_id)
-          : undefined,
-        budget_type: entry.chainState.budget_id
-          ? budgetTypes.find((b) => String(b.id) === entry.chainState.budget_id)
-          : undefined,
-        // transaction 字段填原始交易引用（context 内保存时会重新提取 ID）
-        transaction: currentTransaction as any,
+        main_category: splitMainCat,
+        sub_category: splitSubCat,
+        budget_type: splitBudget,
       };
     });
 
-    return {
+    const updatedTx: TransactionWithRelations = {
       ...currentTransaction,
-      amount: sign * parseFloat(formData.amount || "0"),
-      name: formData.name,
-      merchant: formData.merchant || null,
+      amount,
+      account,
       datetime,
-      status: formData.status ?? null,
+      name: formData.name || null,
+      merchant: formData.merchant || null,
+      status: resolvedStatus,
       source: formData.source ?? null,
       remark: formData.remark ?? null,
-      title: formData.title ?? null,
-      raw_info: (formData.raw_info as any) ?? null,
-      transaction_type: fourChainState.txType ?? null,
-      account,
+      transaction_type: chainState.txType ?? null,
       main_category: mainCategory,
       sub_category: subCategory,
       budget_type: budgetType,
       splits,
     };
-  }
 
-  // ==================== 保存方法 ====================
+    setTransactions(transactions.map(tx =>
+      tx.id === currentTransaction.id ? updatedTx : tx
+    ));
+  };
 
-  /** 以指定状态保存当前交易 */
-  async function saveWithStatus(status: TransactionStatus) {
-    if (!currentTransaction) return { success: false, error: "没有选中的交易" };
-    const { formData, chainState, splitEntries } = getFormSnapshot();
-    const tx = buildTransaction(
-      { ...formData, status },
-      chainState,
-      splitEntries,
-    );
-    return saveTransaction(tx);
-  }
+   
 
-  /** 保存当前交易（保留表单中的状态）*/
-  async function save() {
-    if (!currentTransaction) return { success: false, error: "没有选中的交易" };
-    const { formData, chainState, splitEntries } = getFormSnapshot();
-    const tx = buildTransaction(formData, chainState, splitEntries);
-    return saveTransaction(tx);
-  }
 
   // ==================== 导航方法 ====================
 
@@ -158,11 +131,62 @@ export function useTransactionActions({
     }
   };
 
+  const goToNextPending = () => {
+    // 从当前交易之后开始查找下一个待处理的交易
+    const startIndex = currentIndex; // currentIndex 是 1-based，filteredTransactions[currentIndex] 即为下一条
+    for (let i = startIndex; i < filteredTransactions.length; i++) {
+      if (filteredTransactions[i].status === "待处理") {
+        onSelectTransaction(filteredTransactions[i].id);
+        return;
+      }
+    }
+    // 若没有的话，再从头开始查找，直到当前交易的位置
+    for (let i = 0; i < startIndex; i++) {
+      if (filteredTransactions[i].status === "待处理") {
+        onSelectTransaction(filteredTransactions[i].id);
+        return;
+      }
+    }
+    // 如果全都没有，展示提示
+    addToast({
+      title: "无更多待处理的交易",
+      description: "当前列表中没有更多待处理的交易。",
+      color: "primary"
+    });
+  };
+
+  // ==================== 云端同步方法 ====================
+  const uploadToServer = syncTransactions;
+
+  // ==================== 交易操作方法 ====================
+  const deleteTransaction = () => {
+    if (!currentTransaction) return;
+    const idToDelete = currentTransaction.id;
+    deleteTransactions([idToDelete]);
+    // currentIndex 是 1-based，filteredTransactions[currentIndex] 即为下一条交易（0-based）
+    const nextTx = filteredTransactions[currentIndex];
+    if (nextTx) {
+      onSelectTransaction(nextTx.id);
+    } else {
+      // 没有下一条时，尝试选择前一条
+      const prevTx = filteredTransactions[currentIndex - 2];
+      onSelectTransaction(prevTx ? prevTx.id : null);
+    }
+  }
+
+  const createNewTransaction = createEmptyTransaction;
+
+  const locateCurrent = () => onLocateCurrent?.();
+
   return {
-    save,
-    saveWithStatus,
+    updateCurrentTransactionInCache,
     goToPrevious,
     goToNext,
+    goToNextPending,
+    uploadToServer,
+    deleteTransaction,
+    createNewTransaction,
+    locateCurrent,
   };
 }
 

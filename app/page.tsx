@@ -17,6 +17,7 @@ import type { TxFieldInputsData } from "@/components/homepage/tx-field-inputs";
 import { FourChainSelector } from "@/components/homepage/common/four-chain-selector";
 import type { FourChainState } from "@/components/homepage/common/four-chain-selector";
 import { TransactionOverviewList } from "@/components/homepage/left-panel/transaction-overview-list";
+import type { TransactionOverviewListHandle } from "@/components/homepage/left-panel/transaction-overview-list";
 import { StatusFilterDropdown } from "@/components/homepage/left-panel/status-filter-dropdown";
 import { TxParentArea } from "@/components/homepage/tx-parent-area";
 import { SplitEntryArea } from "@/components/homepage/split-area/split-entry-area";
@@ -32,6 +33,8 @@ export default function Home() {
   
   const router = useRouter();
   const { showError } = useError();
+  // 交易列表组件的 ref（用于定位功能）
+  const transactionListRef = useRef<TransactionOverviewListHandle>(null);
   // 主内容区域的引用（用于检测宽度）
   const mainContentRef = useRef<HTMLDivElement>(null);
   // 四联选择器的模式（列表式或下拉框式）
@@ -112,6 +115,7 @@ export default function Home() {
     totalCount,
     onSelectTransaction: setCurrentId,
     getFormSnapshot: () => ({ formData, chainState, splitEntries }),
+    onLocateCurrent: () => transactionListRef.current?.scrollToCurrent(),
   });
 
   // 组件挂载时，如果交易数据为空，且基础数据已加载完成，再自动加载交易
@@ -285,6 +289,7 @@ export default function Home() {
           {/* 账单概览区 - 占据剩余空间 */}
           <div className="flex-1 min-h-0 overflow-y-auto">
             <TransactionOverviewList 
+              ref={transactionListRef}
               currentId={currentId || undefined}
               onSelectTransaction={setCurrentId}
               filteredTransactions={filteredTransactions}

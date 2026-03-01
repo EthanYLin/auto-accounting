@@ -240,7 +240,8 @@ export function TransactionCacheProvider({ children }: { children: React.ReactNo
     }
 
     try {
-      const now = new Date().toISOString();
+      const timezoneOffset = 8 * 60 * 60 * 1000; // 东八区
+      const now = new Date(Date.now() + timezoneOffset).toISOString();
       const result = await insertTransaction({
         account_id: accounts[0].id,
         amount: 0,
