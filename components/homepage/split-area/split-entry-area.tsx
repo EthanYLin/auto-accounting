@@ -13,6 +13,7 @@ import { SplitEntryEditor } from "@/components/homepage/split-area/split-entry-e
 import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
 import { getAvailableActions } from "@/lib/split-actions";
 import type { TransactionWithRelations } from "@/types";
+import { useAppData } from "@/components/context/app-data-context";
 
 interface SplitEntryAreaProps {
   currentTransaction: TransactionWithRelations;
@@ -26,6 +27,7 @@ export function SplitEntryArea({ currentTransaction, entries, onEntriesChange }:
   const nextIdRef = useRef(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showName, setShowName] = useState(false);
+  const { accounts } = useAppData();
 
   // currentTransaction 切换时重置工具栏状态
   useEffect(() => {
@@ -56,7 +58,7 @@ export function SplitEntryArea({ currentTransaction, entries, onEntriesChange }:
     const id = `split-${nextIdRef.current++}`;
     onEntriesChange([
       ...entries,
-      { localId: id, accountId: "", amount: "", chainState: {}, name: "" },
+      { localId: id, accountId: accounts[0]?.id.toString() ?? "", amount: "", chainState: {}, name: "" },
     ]);
   }, [entries, onEntriesChange]);
 

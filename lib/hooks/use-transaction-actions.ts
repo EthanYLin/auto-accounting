@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import type {
   TransactionWithRelations,
   TransactionSplitWithRelations,
@@ -5,10 +6,19 @@ import type {
 } from "@/types";
 import { useAppData } from "@/components/context/app-data-context";
 import { useTransactionCache } from "@/components/context/transaction-cache-context";
+import { useTransactionValidation } from "@/lib/hooks/use-transaction-validation";
 import type { TxFieldInputsData } from "@/components/homepage/tx-field-inputs";
 import type { FourChainState } from "@/components/homepage/common/four-chain-selector";
 import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
 import { addToast } from "@heroui/toast";
+
+// ==================== 保存后提示类型 ====================
+
+export type ValidationAlert = {
+  type: 'danger' | 'warning';
+  title: string;
+  hints: string[];
+} | null;
 
 interface UseTransactionActionsOptions {
   currentTransaction: TransactionWithRelations | null;
@@ -34,21 +44,33 @@ export function useTransactionActions({
   onLocateCurrent,
 }: UseTransactionActionsOptions) {
   const { accounts, mainCategories, subCategories, budgetTypes } = useAppData();
-  const { transactions, setTransactions, syncTransactions, deleteTransactions, createEmptyTransaction } = useTransactionCache();
+  const { transactions, setTransactions, syncTransactions, deleteTransactions, createEmptyTransaction, saveTransaction } = useTransactionCache();
+  const { isValidTransaction, isWarningTransaction } = useTransactionValidation();
 
-  // ==================== 缓存更新方法 ====================
+  // ==================== 保存后状态 ====================
+
+  const [validationAlert, setValidationAlert] = useState<ValidationAlert>(null);
+  const [saveButtonOverride, setSaveButtonOverride] = useState(false);
+
+  // 切换交易时清除状态
+  useEffect(() => {
+    setValidationAlert(null);
+    setSaveButtonOverride(false);
+  }, [currentTransaction?.id]);
+
+  // ==================== 构建更新后的交易对象 ====================
 
   /**
-   * 将当前页面表单数据写回缓存中的当前交易
+   * 从当前表单数据构建更新后的交易对象（不写入缓存）
    * @param status 可选的新状态，不传则保持当前交易的原有状态
    */
-  const updateCurrentTransactionInCache = (status?: TransactionStatus) => {
-    if (!currentTransaction) return;
+  const buildUpdatedTransaction = (status?: TransactionStatus): TransactionWithRelations | null => {
+    if (!currentTransaction) return null;
 
     const { formData, chainState, splitEntries } = getFormSnapshot();
 
     const account = accounts.find(a => String(a.id) === formData.account);
-    if (!account) return; // 账户为必填项
+    if (!account) return null; // 账户为必填项
 
     const mainCategory = chainState.main_id
       ? mainCategories.find(mc => String(mc.id) === chainState.main_id)
@@ -90,7 +112,7 @@ export function useTransactionActions({
       };
     });
 
-    const updatedTx: TransactionWithRelations = {
+    return {
       ...currentTransaction,
       amount,
       account,
@@ -106,14 +128,95 @@ export function useTransactionActions({
       budget_type: budgetType,
       splits,
     };
-
-    setTransactions(transactions.map(tx =>
-      tx.id === currentTransaction.id ? updatedTx : tx
-    ));
   };
 
-   
+  // ==================== 保存并校验方法 ====================
 
+  /**
+   * 更新缓存、校验、保存到数据库，并处理后续提示和导航
+   * @param status 可选的目标状态
+   * @param autoSwitch 是否在保存成功后自动切换到下一条待处理交易
+   */
+  const updateAndSaveCurrentTransaction = async (status?: TransactionStatus, autoSwitch: boolean = false) => {
+    if (!currentTransaction) return;
+
+    try {
+      // 1. 构建更新后的交易对象
+      let updatedTx = buildUpdatedTransaction(status);
+      if (!updatedTx) return;
+
+      // 2. 校验
+      const validResult = isValidTransaction(updatedTx);
+      const warnResult = isWarningTransaction(updatedTx);
+
+      // 3. 若无效且用户欲保存为"已完成"或不更改状态，降级为"稍后处理"
+      if (!validResult.valid && (status === '已完成' || status === undefined)) {
+        updatedTx = { ...updatedTx, status: '稍后处理' };
+      }
+
+      // 4. 更新缓存并异步保存到数据库
+      setTransactions(transactions.map(tx =>
+        tx.id === currentTransaction.id ? updatedTx! : tx
+      ));
+      const txId = currentTransaction.id;
+      saveTransaction(updatedTx).then(saveResult => {
+        if (!saveResult.success) {
+          addToast({ title: `ID为#${txId}的交易保存失败`, description: saveResult.error || '未知错误', color: 'danger' });
+        }
+        if (saveResult.success && !autoSwitch) {
+          addToast({ title: `ID为#${txId}的交易已保存`, color: 'success' });
+        }
+      });
+
+      // 5. 显示校验提示
+      if (!validResult.valid && status === '已完成') {
+        // (1) 无效且用户欲保存为"已完成"：Danger 提示
+        setValidationAlert({
+          type: 'danger',
+          title: '该交易已被设置为稍后处理',
+          hints: validResult.hint,
+        });
+      } else if (!warnResult.valid) {
+        // (2) 存在警告：Warning 提示
+        setValidationAlert({
+          type: 'warning',
+          title: '请留意以下信息',
+          hints: warnResult.hint,
+        });
+      } else {
+        setValidationAlert(null);
+      }
+
+      // 6. 按钮状态和自动切换
+      const hasIssues = !validResult.valid || !warnResult.valid;
+      if (hasIssues && status === '已完成' && autoSwitch) {
+        // (1) 存在问题且用户欲保存为"已完成"且自动切换开：按钮变为"仍切换到下一条"
+        setSaveButtonOverride(true);
+      } else if (autoSwitch) {
+        // (2) 自动切换开且无问题：直接切换到下一条
+        goToNextPending();
+      }
+    } catch (error) {
+      console.error('保存交易失败:', error);
+      addToast({ title: '保存失败', description: error instanceof Error ? error.message : '未知错误', color: 'danger' });
+    }
+  };
+
+  /**
+   * 确认跳转到下一条待处理交易（在按钮覆盖模式下使用）
+   */
+  const confirmGoToNextPending = () => {
+    setSaveButtonOverride(false);
+    setValidationAlert(null);
+    goToNextPending();
+  };
+
+  /**
+   * 重置保存按钮覆盖状态（任何用户交互时调用）
+   */
+  const resetSaveButtonOverride = () => {
+    setSaveButtonOverride(false);
+  };
 
   // ==================== 导航方法 ====================
 
@@ -179,7 +282,11 @@ export function useTransactionActions({
   const locateCurrent = () => onLocateCurrent?.();
 
   return {
-    updateCurrentTransactionInCache,
+    updateAndSaveCurrentTransaction,
+    confirmGoToNextPending,
+    validationAlert,
+    saveButtonOverride,
+    resetSaveButtonOverride,
     goToPrevious,
     goToNext,
     goToNextPending,

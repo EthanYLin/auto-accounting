@@ -81,21 +81,21 @@ export function ActionBar({
     label: "保存交易",
     icon: <BookmarkIcon className="w-4 h-4" />,
     section: 1,
-    onClick: () => {console.log("保存交易"); /* TODO */},
+    onClick: () => actions.updateAndSaveCurrentTransaction(undefined, false),
   },
   {
     key: "save-cancel",
     label: "保存并设为取消",
     icon: <XCircleIcon className="w-4 h-4" />,
     section: 1,
-    onClick: () => {},
+    onClick: () => actions.updateAndSaveCurrentTransaction('取消', autoSwitch),
   },
   {
     key: "save-later",
     label: "保存并稍后处理",
     icon: <ClockIcon className="w-4 h-4" />,
     section: 1,
-    onClick: () => {},
+    onClick: () => actions.updateAndSaveCurrentTransaction('稍后处理', autoSwitch),
   },
   {
     key: "delete",
@@ -141,6 +141,7 @@ export function ActionBar({
       setAutoSwitch((v) => !v);
       return;
     }
+    actions.resetSaveButtonOverride();
     const action = QUICK_ACTIONS.find((a) => a.key === key);
     if (action) {
       action.onClick();
@@ -191,16 +192,20 @@ export function ActionBar({
               </Button>
             </div>
 
-            {/* 主操作按钮：保存并完成 */}
+            {/* 主操作按钮：保存并完成 / 仍切换到下一条 */}
             <Button
-              color="primary"
+              color={actions.saveButtonOverride ? "danger" : "primary"}
               variant="shadow"
               size="sm"
-              startContent={<CheckCircleIcon className="w-4 h-4" />}
+              startContent={actions.saveButtonOverride
+                ? <ForwardIcon className="w-4 h-4" />
+                : <CheckCircleIcon className="w-4 h-4" />}
               className="font-medium"
-              onPress={() => {/* TODO */}}
+              onPress={() => actions.saveButtonOverride
+                ? actions.confirmGoToNextPending()
+                : actions.updateAndSaveCurrentTransaction('已完成', autoSwitch)}
             >
-              保存并完成
+              {actions.saveButtonOverride ? "仍切换到下一条" : "保存并完成"}
             </Button>
 
             {/* 快捷操作 Split Button */}

@@ -6,6 +6,7 @@ import { Spinner } from "@heroui/spinner";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Divider } from "@heroui/divider";
+import { Alert } from "@heroui/alert";
 import { MagnifyingGlassIcon, DocumentPlusIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { parseDateTime } from "@internationalized/date";
 import { ActionBar } from "@/components/homepage/action-bar";
@@ -22,7 +23,7 @@ import { StatusFilterDropdown } from "@/components/homepage/left-panel/status-fi
 import { TxParentArea } from "@/components/homepage/tx-parent-area";
 import { SplitEntryArea } from "@/components/homepage/split-area/split-entry-area";
 import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
-import { calculateAmount } from "@/lib/transaction-funcs";
+import { calculateAmount, defaultMerge } from "@/lib/transaction-funcs";
 import { useFilteredTransactions } from "@/lib/hooks/use-filtered-transactions";
 import { useCurrentTransaction } from "@/lib/hooks/use-current-transaction";
 import { useTransactionActions } from "@/lib/hooks/use-transaction-actions";
@@ -94,10 +95,7 @@ export default function Home() {
       const childTransactions = currentTransaction.children_ids
         .map(id => transactions.find(t => t.id === id))
         .filter((t): t is TransactionWithRelations => !!t);
-      const allEntries = [currentTransaction, ...childTransactions];
-      const totalAmount = allEntries.reduce((sum, tx) => sum + calculateAmount(tx), 0);
-
-      if (Math.abs(totalAmount) < 0.005) {
+      if (defaultMerge(currentTransaction, childTransactions).length === 0) {
         return { type: 'info', message: '该账单正负相抵不会被导出' };
       } else {
         return { type: 'warn', message: '该账单会默认按账户进行合并' };
@@ -240,6 +238,7 @@ export default function Home() {
       ...prev,
       [field]: value
     }));
+    txActions.resetSaveButtonOverride();
   };
 
   // 操作栏事件处理函数
@@ -273,7 +272,7 @@ export default function Home() {
               <Input
                 placeholder="搜索名称, 金额..."
                 value={searchQuery}
-                onValueChange={setSearchQuery}
+                onValueChange={(v) => { setSearchQuery(v); txActions.resetSaveButtonOverride(); }}
                 startContent={<MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />}
                 variant="bordered"
                 size="sm"
@@ -281,7 +280,7 @@ export default function Home() {
               />
               <StatusFilterDropdown
                 statusFilter={statusFilter}
-                onStatusFilterChange={setStatusFilter}
+                onStatusFilterChange={(v) => { setStatusFilter(v); txActions.resetSaveButtonOverride(); }}
               />
             </div>
           </div>
@@ -379,10 +378,27 @@ export default function Home() {
               /* 正常显示：已选择账单 */
               <div className="w-full p-5 space-y-5">
                 
+                {/* 校验提示区域 */}
+                {txActions.validationAlert && (
+                  <Alert
+                    color={txActions.validationAlert.type}
+                    variant="flat"
+                    title={txActions.validationAlert.title}
+                    description={
+                      <ul className="space-y-0.5 mt-0.5">
+                        {txActions.validationAlert.hints.map((hint, i) => (
+                          <li key={i}>• {hint}</li>
+                        ))}
+                      </ul>
+                    }
+                  />
+                )}
+
                 {/* 账单附加区 */}
                 <TxParentArea 
                   currentTransaction={currentTransaction}
                   onNavigateToTransaction={setCurrentId}
+                  resetSaveButtonOverride={txActions.resetSaveButtonOverride}
                 />
 
                 <Divider />
@@ -405,7 +421,7 @@ export default function Home() {
                   <FourChainSelector 
                     mode={selectorMode}
                     value={chainState}
-                    onChange={setChainState}
+                    onChange={(v) => { setChainState(v); txActions.resetSaveButtonOverride(); }}
                   />
                 </div>
 
@@ -416,7 +432,7 @@ export default function Home() {
                     <SplitEntryArea
                       currentTransaction={currentTransaction}
                       entries={splitEntries}
-                      onEntriesChange={setSplitEntries}
+                      onEntriesChange={(entries) => { setSplitEntries(entries); txActions.resetSaveButtonOverride(); }}
                     />
                   </>
                 )}

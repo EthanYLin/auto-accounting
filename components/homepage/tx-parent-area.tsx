@@ -15,9 +15,10 @@ import { calculateAmount, getAmountColorClass, getAmountSymbol, formatDateTime, 
 interface TxParentAreaProps {
   currentTransaction: TransactionWithRelations | null;
   onNavigateToTransaction: (id: number) => void;
+  resetSaveButtonOverride: () => void;
 }
 
-export function TxParentArea({ currentTransaction, onNavigateToTransaction }: TxParentAreaProps) {
+export function TxParentArea({ currentTransaction, onNavigateToTransaction, resetSaveButtonOverride }: TxParentAreaProps) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { transactions, setTransactions } = useTransactionCache();
 
@@ -84,6 +85,7 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction }: Tx
         // A. 要移除的孩子
         if (tx.parent_id === root.id && !selectedSet.has(tx.id)) {
           tx.parent_id = null;
+          tx.status = "待处理"; // 取消附加后重置状态为待处理
         }
 
         // B. 要添加的孩子
@@ -94,11 +96,12 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction }: Tx
             oldParent.children_ids = oldParent.children_ids.filter(id => id !== tx.id);
           }
           // 添加到新父节点
-          tx.parent_id = root.id; 
+          tx.parent_id = root.id;
+          tx.status = "附加到其他交易";
           // 清理孙子节点
           tx.children_ids.forEach(childId => {
             const gc = draft.find(t => t.id === childId);
-            if(gc) gc.parent_id = null; 
+            if(gc) {gc.parent_id = null; gc.status = "待处理";}
           });
           tx.children_ids = [];
           // 清除分账信息
@@ -126,6 +129,7 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction }: Tx
       
       // 清空子节点的 parent_id
       child.parent_id = null;
+      child.status = "待处理"; // 取消附加后重置状态为待处理
     });
     
     setTransactions(nextState);
@@ -146,7 +150,7 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction }: Tx
                 ? <PencilSquareIcon className="w-4 h-4" />
                 : <PlusIcon className="w-4 h-4" />
             }
-            onPress={onOpen}
+            onPress={() => {resetSaveButtonOverride(); onOpen();}}
           >
             {childTransactions.length > 0 ? '选择附加账单' : '添加附加账单'}
           </Button>

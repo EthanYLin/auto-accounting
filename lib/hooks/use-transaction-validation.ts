@@ -1,7 +1,6 @@
 
 import type {
   TransactionWithRelations,
-  TransactionSplitWithRelations,
   MainCategory,
   SubCategory,
   Account,
@@ -9,7 +8,7 @@ import type {
 } from '@/types';
 import { useAppData } from '@/components/context/app-data-context';
 import { useTransactionCache } from '@/components/context/transaction-cache-context';
-import { getExitSplits } from '@/lib/transaction-funcs';
+import { calculateAmount, getExitSplits } from '@/lib/transaction-funcs';
 
 // ==================== 类型 ====================
 
@@ -180,7 +179,7 @@ export function useTransactionValidation() {
 
     // ========== (2) 分账判定 ==========
 
-    if (tx.splits && tx.splits.length > 1) {
+    if (tx.splits) {
       tx.splits.forEach((split, i) => {
         const p = `分账[${i + 1}]: `;
 
@@ -208,19 +207,14 @@ export function useTransactionValidation() {
           hint.push(`${p}收支类型不能为空`);
         }
 
-        // 5. 名称不为空
-        if (!split.name?.trim()) {
-          hint.push(`${p}名称不能为空`);
-        }
-
-        // 6. 账户不为空且在枚举中
+        // 5. 账户不为空且在枚举中
         hint.push(...validateAccount(split.account, accounts, p));
       });
     }
 
     // ========== (3) 转账判定 ==========
 
-    const exitSplits = getExitSplits(tx);
+    const exitSplits = getExitSplits(tx, getChildTransactions(tx));
     const inList = exitSplits.filter(s => s.transaction_type === '转入');
     const outList = exitSplits.filter(s => s.transaction_type === '转出');
 
@@ -247,10 +241,10 @@ export function useTransactionValidation() {
     
     // 1. 提示入口记录数>1或者出口数>1
     const hints: string[] = [];
-    if (tx.splits?.length ?? 0 >= 2) {
-      hints.push(`该账单会拆分为${tx.splits?.length ?? 0}条记录`);
-    } else if (tx.children_ids.length > 0) {
-      hints.push(`该账单会合并为1条记录`);
+    const entranceCount = 1 + (tx.children_ids.length ?? 0);
+    const exitCount = tx.splits?.length ?? 0;
+    if (entranceCount == 1 && exitCount == 1) {
+      hints.push('该账单经过分账修改');
     }
 
     // 2. original_amount非null且与amount不一致
@@ -265,16 +259,18 @@ export function useTransactionValidation() {
     entranceRecords.forEach(record => {
       if (record.account?.name) {
         const accountName = record.account.name;
-        entranceAccountMap.set(accountName, (entranceAccountMap.get(accountName) ?? 0) + record.amount);
+        const amount = calculateAmount(record);
+        entranceAccountMap.set(accountName, (entranceAccountMap.get(accountName) ?? 0) + amount);
       }
     });
     // 出口处各账户金额
-    const exitSplits = getExitSplits(tx);
+    const exitSplits = getExitSplits(tx, getChildTransactions(tx));
     const exitAccountMap = new Map<string, number>();
     exitSplits.forEach(split => {
       if (split.account?.name) {
         const accountName = split.account.name;
-        exitAccountMap.set(accountName, (exitAccountMap.get(accountName) ?? 0) + split.amount);
+        const amount = calculateAmount(split);
+        exitAccountMap.set(accountName, (exitAccountMap.get(accountName) ?? 0) + amount);
       }
     });
     // 对比入口与出口账户金额（取两侧账户名的并集，避免漏掉只在一侧出现的账户）
