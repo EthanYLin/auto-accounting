@@ -59,6 +59,13 @@ export function AmountInput({ value, onChange, transactionType, textSize = "text
         onChange(formatted);
     };
 
+    // 聚焦时若为 0.00 则全选，方便直接输入覆盖
+    const handleAmountFocus = () => {
+        if (amountInput === "0.00") {
+            amountInputRef.current?.select();
+        }
+    };
+
     // 处理回车键
     const handleAmountKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
@@ -81,6 +88,7 @@ export function AmountInput({ value, onChange, transactionType, textSize = "text
             placeholder="0.00"
             value={amountInput}
             onValueChange={setAmountInput}
+            onFocus={handleAmountFocus}
             onBlur={handleAmountBlur}
             onKeyDown={handleAmountKeyDown}
             classNames={{
