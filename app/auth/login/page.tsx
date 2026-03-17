@@ -1,57 +1,84 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Card, CardHeader, CardBody, CardFooter } from '@heroui/card'
-import { Input } from '@heroui/input'
-import { Button } from '@heroui/button'
-import { Link } from '@heroui/link'
-import { Divider } from '@heroui/divider'
-import { signIn } from '@/app/actions/auth'
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
+import { Input } from "@heroui/input";
+import { Button } from "@heroui/button";
+import { Link } from "@heroui/link";
+import { Divider } from "@heroui/divider";
+
+import { signIn } from "@/app/actions/auth";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  return (
+    <Suspense fallback={<LoginPageFallback />}>
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+function LoginPageFallback() {
+  return (
+    <div className="w-full max-w-md">
+      <Card className="w-full">
+        <CardHeader className="flex flex-col gap-1 items-start px-6 pt-6">
+          <h1 className="text-2xl font-bold">登录</h1>
+          <p className="text-sm text-default-500">正在加载登录表单...</p>
+        </CardHeader>
+        <Divider />
+        <CardBody className="px-6 py-6">
+          <div className="h-40 rounded-lg bg-default-100" />
+        </CardBody>
+      </Card>
+    </div>
+  );
+}
+
+function LoginPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const presetEmail = searchParams.get('email')
+    const presetEmail = searchParams.get("email");
+
     if (presetEmail) {
-      setEmail(presetEmail)
+      setEmail(presetEmail);
     }
-  }, [searchParams])
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
     try {
-      const result = await signIn(email, password)
+      const result = await signIn(email, password);
+
       if (result?.error) {
-        setError(result.error)
+        setError(result.error);
       } else if (result?.success) {
-        router.push('/')
-        router.refresh()
+        router.push("/");
+        router.refresh();
       }
     } catch (err) {
-      console.error('登录错误:', err)
       if (err instanceof Error) {
-        if (err.message.includes('fetch') || err.message.includes('network')) {
-          setError('网络连接失败，请检查网络后重试')
+        if (err.message.includes("fetch") || err.message.includes("network")) {
+          setError("网络连接失败，请检查网络后重试");
         } else {
-          setError(`登录失败: ${err.message}`)
+          setError(`登录失败: ${err.message}`);
         }
       } else {
-        setError('登录失败，请重试')
+        setError("登录失败，请重试");
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="w-full max-w-md">
@@ -62,26 +89,26 @@ export default function LoginPage() {
         </CardHeader>
         <Divider />
         <CardBody className="px-6 py-6">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <Input
-              type="email"
-              label="邮箱"
-              variant="bordered"
-              labelPlacement="outside-top"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               isRequired
               autoComplete="email"
+              label="邮箱"
+              labelPlacement="outside-top"
+              type="email"
+              value={email}
+              variant="bordered"
+              onChange={(e) => setEmail(e.target.value)}
             />
             <Input
-              type="password"
-              label="密码"
-              variant="bordered"
-              labelPlacement="outside-top"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               isRequired
               autoComplete="current-password"
+              label="密码"
+              labelPlacement="outside-top"
+              type="password"
+              value={password}
+              variant="bordered"
+              onChange={(e) => setPassword(e.target.value)}
             />
 
             {error && (
@@ -95,7 +122,7 @@ export default function LoginPage() {
                 href={
                   email
                     ? `/auth/forgot-password?email=${encodeURIComponent(email)}`
-                    : '/auth/forgot-password'
+                    : "/auth/forgot-password"
                 }
                 size="sm"
               >
@@ -104,10 +131,10 @@ export default function LoginPage() {
             </div>
 
             <Button
-              type="submit"
+              className="w-full"
               color="primary"
               isLoading={loading}
-              className="w-full"
+              type="submit"
             >
               登录
             </Button>
@@ -116,7 +143,7 @@ export default function LoginPage() {
         <Divider />
         <CardFooter className="px-6 py-4">
           <p className="text-sm text-default-500">
-            还没有账号？{' '}
+            还没有账号？{" "}
             <Link href="/auth/register" size="sm">
               立即注册
             </Link>
@@ -124,6 +151,5 @@ export default function LoginPage() {
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }
-

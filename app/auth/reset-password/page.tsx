@@ -1,124 +1,150 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Card, CardHeader, CardBody, CardFooter } from '@heroui/card'
-import { Input } from '@heroui/input'
-import { Button } from '@heroui/button'
-import { Link } from '@heroui/link'
-import { Divider } from '@heroui/divider'
-import { Alert } from '@heroui/alert'
-import { updatePassword } from '@/app/actions/auth'
-import { createClient } from '@/lib/supabase/client'
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
+import { Input } from "@heroui/input";
+import { Button } from "@heroui/button";
+import { Link } from "@heroui/link";
+import { Divider } from "@heroui/divider";
+import { Alert } from "@heroui/alert";
+
+import { updatePassword } from "@/app/actions/auth";
+import { createClient } from "@/lib/supabase/client";
 
 export default function ResetPasswordPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [error, setError] = useState('')
-  const [linkError, setLinkError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [sessionReady, setSessionReady] = useState(false)
+  return (
+    <Suspense fallback={<ResetPasswordFallback />}>
+      <ResetPasswordContent />
+    </Suspense>
+  );
+}
+
+function ResetPasswordFallback() {
+  return (
+    <div className="w-full max-w-md">
+      <Card className="w-full">
+        <CardHeader className="flex flex-col gap-1 items-start px-6 pt-6">
+          <h1 className="text-2xl font-bold">重置密码</h1>
+          <p className="text-sm text-default-500">正在验证重置链接...</p>
+        </CardHeader>
+        <Divider />
+        <CardBody className="px-6 py-6">
+          <div className="h-40 rounded-lg bg-default-100" />
+        </CardBody>
+      </Card>
+    </div>
+  );
+}
+
+function ResetPasswordContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setSuccess(false)
-
+    e.preventDefault();
+    setError("");
+    setSuccess(false);
     if (password.length < 6) {
-      setError('密码长度至少为 6 个字符')
-      return
+      setError("密码长度至少为 6 个字符");
+      return;
     }
 
     if (password !== confirmPassword) {
-      setError('两次输入的密码不一致')
-      return
+      setError("两次输入的密码不一致");
+      return;
     }
 
     if (!sessionReady) {
-      setError('重置链接无效或已过期，请重新获取邮件')
-      return
+      setError("重置链接无效或已过期，请重新获取邮件");
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
     try {
-      const result = await updatePassword(password)
+      const result = await updatePassword(password);
       if (result?.error) {
-        setError(result.error)
+        setError(result.error);
       } else if (result?.success) {
-        setSuccess(true)
-        router.push('/auth/login?message=密码已重置，请使用新密码登录')
+        setSuccess(true);
+        router.push("/auth/login?message=密码已重置，请使用新密码登录");
       }
     } catch (err) {
-      console.error('重置密码错误:', err)
+      console.error("重置密码错误:", err);
       if (err instanceof Error) {
-        if (err.message.includes('fetch') || err.message.includes('network')) {
-          setError('网络连接失败，请检查网络后重试')
+        if (err.message.includes("fetch") || err.message.includes("network")) {
+          setError("网络连接失败，请检查网络后重试");
         } else {
-          setError(`重置密码失败: ${err.message}`)
+          setError(`重置密码失败: ${err.message}`);
         }
       } else {
-        setError('重置密码失败，请重试')
+        setError("重置密码失败，请重试");
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    const errorParam = searchParams.get('error')
-    const errorDesc = searchParams.get('error_description')
-    const tokenHash = searchParams.get('token_hash')
-    const type = searchParams.get('type')
+    const errorParam = searchParams.get("error");
+    const errorDesc = searchParams.get("error_description");
+    const tokenHash = searchParams.get("token_hash");
+    const type = searchParams.get("type");
 
     if (errorParam) {
-      const msg =
-        errorDesc
-          ? decodeURIComponent(errorDesc)
-          : '重置链接无效或已过期，请重新获取邮件'
-      setLinkError(msg)
-      setError(msg)
-      return
+      const msg = errorDesc
+        ? decodeURIComponent(errorDesc)
+        : "重置链接无效或已过期，请重新获取邮件";
+
+      setLinkError(msg);
+      setError(msg);
+      return;
     }
 
-    if (!tokenHash || type !== 'recovery') {
-      const msg = '重置链接无效或已过期，请重新获取邮件'
-      setLinkError(msg)
-      setError(msg)
-      return
+    if (!tokenHash || type !== "recovery") {
+      const msg = "重置链接无效或已过期，请重新获取邮件";
+      setLinkError(msg);
+      setError(msg);
+      return;
     }
 
-    const supabase = createClient()
-    setLoading(true)
+    const supabase = createClient();
+
+    setLoading(true);
     supabase.auth
       .verifyOtp({
         token_hash: tokenHash,
-        type: 'recovery',
+        type: "recovery",
       })
       .then(({ error: verifyError }) => {
         if (verifyError) {
-          const msg = verifyError.message || '重置链接无效或已过期，请重新获取邮件'
-          setLinkError(msg)
-          setError(msg)
-          setSessionReady(false)
+          const msg = verifyError.message || "重置链接无效或已过期，请重新获取邮件";
+          setLinkError(msg);
+          setError(msg);
+          setSessionReady(false);
         } else {
-          setSessionReady(true)
-          setLinkError(null)
-          setError('')
+          setSessionReady(true);
+          setLinkError(null);
+          setError("");
         }
       })
       .catch((err) => {
-        console.error('verifyOtp 错误:', err)
-        const msg = '重置链接无效或已过期，请重新获取邮件'
-        setLinkError(msg)
-        setError(msg)
-        setSessionReady(false)
+        console.error("verifyOtp 错误:", err);
+        const msg = "重置链接无效或已过期，请重新获取邮件";
+        setLinkError(msg);
+        setError(msg);
+        setSessionReady(false);
       })
-      .finally(() => setLoading(false))
-  }, [searchParams])
+      .finally(() => setLoading(false));
+  }, [searchParams]);
 
   if (linkError) {
     return (
@@ -130,16 +156,16 @@ export default function ResetPasswordPage() {
             </Alert>
             <Button
               as={Link}
-              href="/auth/forgot-password"
-              color="primary"
               className="w-full"
+              color="primary"
+              href="/auth/forgot-password"
             >
               重新获取重置邮件
             </Button>
           </CardBody>
         </Card>
       </div>
-    )
+    );
   }
 
   if (success) {
@@ -157,9 +183,9 @@ export default function ResetPasswordPage() {
               </div>
               <Button
                 as={Link}
-                href="/auth/login"
-                color="primary"
                 className="w-full"
+                color="primary"
+                href="/auth/login"
               >
                 继续
               </Button>
@@ -167,7 +193,7 @@ export default function ResetPasswordPage() {
           </CardBody>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -179,27 +205,27 @@ export default function ResetPasswordPage() {
         </CardHeader>
         <Divider />
         <CardBody className="px-6 py-6">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <Input
-              type="password"
-              label="新密码"
-              variant="bordered"
-              labelPlacement="outside-top"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               isRequired
               autoComplete="new-password"
               description="密码长度至少为 6 个字符"
+              label="新密码"
+              labelPlacement="outside-top"
+              type="password"
+              value={password}
+              variant="bordered"
+              onChange={(e) => setPassword(e.target.value)}
             />
             <Input
-              type="password"
-              label="确认新密码"
-              variant="bordered"
-              labelPlacement="outside-top"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
               isRequired
               autoComplete="new-password"
+              label="确认新密码"
+              labelPlacement="outside-top"
+              type="password"
+              value={confirmPassword}
+              variant="bordered"
+              onChange={(e) => setConfirmPassword(e.target.value)}
             />
 
             {error && (
@@ -209,10 +235,10 @@ export default function ResetPasswordPage() {
             )}
 
             <Button
-              type="submit"
+              className="w-full"
               color="primary"
               isLoading={loading}
-              className="w-full"
+              type="submit"
             >
               更新密码
             </Button>
@@ -228,7 +254,5 @@ export default function ResetPasswordPage() {
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }
-
-

@@ -200,8 +200,15 @@ export async function getUser() {
 
     return user
   } catch (err) {
+    if (
+      err instanceof Error &&
+      (err.message.includes('Dynamic server usage') ||
+        ('digest' in err && err.digest === 'DYNAMIC_SERVER_USAGE'))
+    ) {
+      return null
+    }
+
     console.error('getUser 错误:', err)
     return null
   }
 }
-
