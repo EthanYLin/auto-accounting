@@ -4,23 +4,22 @@ import { Button } from "@heroui/button";
 import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/modal";
 import { useDisclosure } from "@heroui/use-disclosure";
 import { Chip } from "@heroui/chip";
+import { addToast } from "@heroui/toast";
 import { PlusIcon, XMarkIcon, ArrowUpRightIcon, PencilSquareIcon, CalculatorIcon } from "@heroicons/react/24/outline";
 import { TransactionListSelector } from "@/components/homepage/common/transaction-list-selector";
-import { useTransactionCache } from "@/components/context/transaction-cache-context";
+import { useTransactionStore } from "@/components/context/transaction-store-context";
+import { useTransactionEditor } from "@/components/context/transaction-editor-context";
 import { TRANSACTION_STATUS_COLORS } from '@/constants/transaction-type';
-import type { TransactionWithRelations } from '@/types';
-import { produce } from 'immer';
-import { calculateAmount, getAmountColorClass, getAmountSymbol, formatDateTime, formatCategoryText } from '@/lib/transaction-funcs';
+import { calculateAmount, getAmountColorClass, getAmountSymbol, formatDateTime, formatCategoryText } from '@/lib/transaction/transaction-display';
 
-interface TxParentAreaProps {
-  currentTransaction: TransactionWithRelations | null;
-  onNavigateToTransaction: (id: number) => void;
-  resetSaveButtonOverride: () => void;
-}
-
-export function TxParentArea({ currentTransaction, onNavigateToTransaction, resetSaveButtonOverride }: TxParentAreaProps) {
+export function TxParentArea() {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { transactions, setTransactions } = useTransactionCache();
+  const store = useTransactionStore();
+  const editor = useTransactionEditor();
+  const currentTransaction = editor.currentTransaction;
+  const childTransactions = editor.currentChildTransactions;
+  const parentTransaction = editor.currentParentTransaction;
+  const isBusy = store.saveState !== 'idle';
 
   // 如果没有选中交易，不显示任何内容
   if (!currentTransaction) {
@@ -33,16 +32,7 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction, rese
 
   // 获取已附加的账单ID列表
   const childrenIds = currentTransaction.children_ids;
-
-  // 查找子交易对象
-  const childTransactions = childrenIds
-    .map(id => transactions.find(t => t.id === id))
-    .filter((t): t is TransactionWithRelations => !!t);
-
-  // 查找父交易对象
-  const parentTransaction = currentTransaction.parent_id
-    ? transactions.find(t => t.id === currentTransaction.parent_id) ?? null
-    : null;
+  const selectorKey = `${currentTransaction.id}:${childrenIds.join(',')}`;
 
   // 计算账户金额汇总
   const calculateAccountSummary = () => {
@@ -73,66 +63,23 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction, rese
   };
 
   // 处理添加附加账单
-  const handleConfirmSelection = (selectedIds: number[]) => {
+  const handleConfirmSelection = async (selectedIds: number[]) => {
     if (!currentTransaction) return;
-
-    const nextState = produce(transactions, (draft) => {
-      const root = draft.find(t => t.id === currentTransaction.id);
-      if (!root) return;
-      
-      const selectedSet = new Set(selectedIds);
-      draft.forEach(tx => {
-        // A. 要移除的孩子
-        if (tx.parent_id === root.id && !selectedSet.has(tx.id)) {
-          tx.parent_id = null;
-          tx.status = "待处理"; // 取消附加后重置状态为待处理
-        }
-
-        // B. 要添加的孩子
-        if (tx.parent_id !== root.id && selectedSet.has(tx.id)) {
-          // 从旧父节点移除
-          const oldParent = draft.find(p => p.id === tx.parent_id);
-          if (oldParent) {
-            oldParent.children_ids = oldParent.children_ids.filter(id => id !== tx.id);
-          }
-          // 添加到新父节点
-          tx.parent_id = root.id;
-          tx.status = "附加到其他交易";
-          // 清理孙子节点
-          tx.children_ids.forEach(childId => {
-            const gc = draft.find(t => t.id === childId);
-            if(gc) {gc.parent_id = null; gc.status = "待处理";}
-          });
-          tx.children_ids = [];
-          // 清除分账信息
-          tx.splits = [];
-        }
-      });
-
-      // 重建 root.children_ids
-      root.children_ids = draft.filter(t => t.parent_id === root.id).map(t => t.id);
-    });
-    setTransactions(nextState);
     onClose();
+    const result = await editor.updateChildrenIds(selectedIds);
+    if (!result.success) {
+      addToast({ title: '附加账单失败', description: result.error || '未知错误', color: 'danger' });
+    }
   };
 
   // 处理取消附加单个账单
-  const handleRemoveChild = (childId: number) => {
+  const handleRemoveChild = async (childId: number) => {
     if (!currentTransaction) return;
-    const nextState = produce(transactions, (draft) => {
-      const root = draft.find(t => t.id === currentTransaction.id);
-      const child = draft.find(t => t.id === childId);
-      if (!root || !child) return;
-      
-      // 从父节点的 children_ids 中移除
-      root.children_ids = root.children_ids.filter(id => id !== childId);
-      
-      // 清空子节点的 parent_id
-      child.parent_id = null;
-      child.status = "待处理"; // 取消附加后重置状态为待处理
-    });
-    
-    setTransactions(nextState);
+    const newIds = currentTransaction.children_ids.filter(id => id !== childId);
+    const result = await editor.updateChildrenIds(newIds);
+    if (!result.success) {
+      addToast({ title: '取消附加失败', description: result.error || '未知错误', color: 'danger' });
+    }
   };
 
   // 是否是根账单（没有 parent）
@@ -145,12 +92,13 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction, rese
           <Button
             size="sm"
             variant="flat"
+            isDisabled={isBusy}
             startContent={
               childTransactions.length > 0 
                 ? <PencilSquareIcon className="w-4 h-4" />
                 : <PlusIcon className="w-4 h-4" />
             }
-            onPress={() => {resetSaveButtonOverride(); onOpen();}}
+            onPress={() => onOpen()}
           >
             {childTransactions.length > 0 ? '选择附加账单' : '添加附加账单'}
           </Button>
@@ -237,7 +185,7 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction, rese
                 size="sm"
                 variant="flat"
                 color="default"
-                onPress={() => onNavigateToTransaction(parentTransaction.id)}
+                onPress={() => editor.selectTransaction(parentTransaction.id)}
                 title="跳转到主账单"
               >
                 <ArrowUpRightIcon className="w-4 h-4" />
@@ -283,7 +231,7 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction, rese
                   size="sm"
                   variant="light"
                   color="default"
-                  onPress={() => onNavigateToTransaction(child.id)}
+                  onPress={() => editor.selectTransaction(child.id)}
                   title="跳转到该账单"
                 >
                   <ArrowUpRightIcon className="w-4 h-4" />
@@ -293,6 +241,7 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction, rese
                   size="sm"
                   variant="light"
                   color="danger"
+                  isDisabled={isBusy}
                   onPress={() => handleRemoveChild(child.id)}
                   title="取消附加"
                 >
@@ -321,8 +270,10 @@ export function TxParentArea({ currentTransaction, onNavigateToTransaction, rese
           </ModalHeader>
           <ModalBody>
             <TransactionListSelector
+              key={selectorKey}
               selectedIds={childrenIds}
               currentTransactionId={currentTransaction.id}
+              isDisabled={isBusy}
               onConfirm={handleConfirmSelection}
             />
           </ModalBody>

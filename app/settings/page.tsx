@@ -89,6 +89,7 @@ export default function SettingsPage() {
     matchingRules,
     isLoading,
     loadData,
+    refetchData,
     error: loadError,
   } = useAppData();
 
@@ -157,10 +158,10 @@ export default function SettingsPage() {
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const deleteModal = useDisclosure();
 
-  // 初始化或刷新数据
+  // 初始化：触发数据加载
   useEffect(() => {
     if (!isLoading && accounts.length === 0 && mainCategories.length === 0) {
-      void loadData();
+      loadData();
     }
   }, [accounts.length, isLoading, loadData, mainCategories.length]);
 
@@ -231,7 +232,7 @@ export default function SettingsPage() {
 
     setActionSuccess(successMsg);
     onSuccess?.(); // 立即执行成功回调（如关闭弹窗）
-    await loadData(); // 然后在后台刷新数据
+    await refetchData(); // 然后在后台刷新数据
   };
 
   // === 账户 ===
@@ -540,7 +541,7 @@ export default function SettingsPage() {
             isLoading={isBusy}
             onPress={() => {
               resetFeedback();
-              void loadData();
+              void refetchData();
             }}
           >
             刷新

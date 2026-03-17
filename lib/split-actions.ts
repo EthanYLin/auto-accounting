@@ -31,6 +31,9 @@ export interface SplitActionRule {
   icon?: ComponentType<{ className?: string }>;
   /** 判断当前选中状态是否满足此规则 */
   test: (selected: SplitEntryData[]) => boolean;
+  /** 执行拆账操作，返回新的条目列表 */
+  // TODO: 去掉问号
+  split?: (sources: SplitEntryData[]) => SplitEntryData[];
 }
 
 // ==================== 辅助函数 ====================
@@ -79,6 +82,86 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
     test: (selected) => 
       selected.length >= 2 &&
       !distinctAccounts(selected),
+    split: (sources) => {
+      const result: SplitEntryData[] = [];
+      const participating: SplitEntryData[] = [];
+
+      // 1. 过滤不参与合并的记录（转出、转入、无类型则原样保留）
+      sources.forEach((e) => {
+        if (!e.chainState.txType || e.chainState.txType === "转出" || e.chainState.txType === "转入") {
+          result.push(e);
+        } else {
+          participating.push(e);
+        }
+      });
+
+      // 2. 相同账户聚合
+      const groups = new Map<string, SplitEntryData[]>();
+      participating.forEach((e) => {
+        const accId = e.accountId;
+        if (!groups.has(accId)) groups.set(accId, []);
+        groups.get(accId)!.push(e);
+      });
+
+      // 3. 逐组合并
+      Array.from(groups.values()).forEach((entries) => {
+        // (1) 金额求和
+        const sum = entries.reduce(
+          (acc, e) => acc + getSignedAmount(e),
+          0
+        );
+        if (sum === 0) return; // 完全抵消
+
+        // (2) 确定名称：第一条有名称的记录
+        const name = entries.find((e) => e.name)?.name || "";
+
+        // (3) 确定交易类型
+        let refCategory: "income_expense" | "receivable_payable" | "other" = "other";
+        const firstType = entries.find((e) => e.chainState.txType)?.chainState.txType;
+        if (firstType === "收入" || firstType === "支出") {
+          refCategory = "income_expense";
+        } else if (firstType === "应收款项" || firstType === "应付款项") {
+          refCategory = "receivable_payable";
+        }
+
+        let mergedType: TransactionType;
+        if (refCategory === "income_expense" || refCategory === "other") {
+          mergedType = sum < 0 ? "支出" : "收入";
+        } else {
+          mergedType = sum < 0 ? "应收款项" : "应付款项";
+        }
+
+        // (4) 推导分类（主分类, 子分类, 预算计划）
+        let txMain: string | undefined;
+        let txSub: string | undefined;
+        let txBudget: string | undefined;
+
+        // 类型与 mergedType 一致，且有主分类的
+        const typeMatch = entries.find(
+          (e) => e.chainState.txType === mergedType && e.chainState.main_id
+        );
+        if (typeMatch) {
+          txMain = typeMatch.chainState.main_id;
+          txSub = typeMatch.chainState.sub_id;
+          txBudget = typeMatch.chainState.budget_id;
+        }
+
+        result.push({
+          localId: entries[0].localId,
+          accountId: entries[0].accountId,
+          amount: Math.abs(sum).toFixed(2),
+          name,
+          chainState: {
+            txType: mergedType,
+            main_id: txMain,
+            sub_id: txSub,
+            budget_id: txBudget,
+          },
+        });
+      });
+
+      return result;
+    },
   },
   {
     key: "offset",

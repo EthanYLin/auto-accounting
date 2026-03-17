@@ -12,28 +12,66 @@ import { CheckCircleIcon as CheckCircleOutline } from "@heroicons/react/24/outli
 import { SplitEntryEditor } from "@/components/homepage/split-area/split-entry-editor";
 import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
 import { getAvailableActions } from "@/lib/split-actions";
-import type { TransactionWithRelations } from "@/types";
 import { useAppData } from "@/components/context/app-data-context";
-
-interface SplitEntryAreaProps {
-  currentTransaction: TransactionWithRelations;
-  entries: SplitEntryData[];
-  onEntriesChange: (entries: SplitEntryData[]) => void;
-}
+import { useTransactionEditor } from "@/components/context/transaction-editor-context";
+import { txSplitsToEntries, entriesToTxSplits } from "@/lib/transaction/transaction-convert";
+import { defaultMerge, getExitSplits } from "@/lib/transaction/transaction-split-merge";
 
 // ==================== 主组件 ====================
 
-export function SplitEntryArea({ currentTransaction, entries, onEntriesChange }: SplitEntryAreaProps) {
+/**  
+ * 生成 entries 的签名字符串，用于判断 store 中的拆账内容是否发生了外部回滚。
+ */
+function getEntriesSignature(entries: SplitEntryData[]): string {
+  return JSON.stringify(
+    entries.map(({ accountId, amount, name, chainState }) => ({
+      accountId,
+      amount,
+      name,
+      txType: chainState.txType ?? null,
+      main_id: chainState.main_id ?? null,
+      sub_id: chainState.sub_id ?? null,
+      budget_id: chainState.budget_id ?? null,
+    })),
+  );
+}
+
+export function SplitEntryArea() {
+  const editor = useTransactionEditor();
+  const appData = useAppData();
+  const tx = editor.currentTransaction;
+  const childTransactions = editor.currentChildTransactions;
+  const selectedTransactionId = tx?.id ?? null;
+
   const nextIdRef = useRef(1);
+  const lastLocalSignatureRef = useRef("[]");
+  const [entries, setEntries] = useState<SplitEntryData[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showName, setShowName] = useState(false);
-  const { accounts } = useAppData();
+  const txEntries = useMemo(() => txSplitsToEntries(tx?.splits), [tx?.splits]);
+  const txEntriesSignature = useMemo(() => getEntriesSignature(txEntries), [txEntries]);
+  const canMergeByDefault = useMemo(() => {
+    if (!tx || tx.children_ids.length === 0) return false;
+    return getExitSplits(tx, childTransactions).length !== 0;
+  }, [tx, childTransactions]);
 
-  // currentTransaction 切换时重置工具栏状态
+  // 切换交易时，直接用当前交易的拆账初始化本地 UI 状态。
   useEffect(() => {
+    lastLocalSignatureRef.current = txEntriesSignature;
+    setEntries(txEntries);
     setSelectedIds(new Set());
-    setShowName(currentTransaction.splits?.some((s) => s.name && s.name.trim() !== "") ?? false);
-  }, [currentTransaction]);
+    setShowName(tx?.splits?.some((s) => s.name && s.name.trim() !== "") ?? false);
+  }, [editor.currentId, selectedTransactionId]);
+
+  // 同一条交易下，如果 store 中的拆账内容和本地签名不一致，说明发生了外部回滚，同步回本地 entries。
+  useEffect(() => {
+    if (!tx) return;
+    if (txEntriesSignature === lastLocalSignatureRef.current) return;
+    lastLocalSignatureRef.current = txEntriesSignature;
+    setEntries(txEntries);
+    setSelectedIds(new Set());
+    setShowName(txEntries.some((entry) => entry.name.trim() !== ""));
+  }, [tx, txEntries, txEntriesSignature]);
 
   // ==================== 派生状态 ====================
 
@@ -54,13 +92,39 @@ export function SplitEntryArea({ currentTransaction, entries, onEntriesChange }:
     });
   }, [entries]);
 
+  // entries 变更时同步回 store
+  const handleEntriesChange = useCallback((newEntries: SplitEntryData[]) => {
+    lastLocalSignatureRef.current = getEntriesSignature(newEntries);
+    setEntries(newEntries);
+    if (!tx) return;
+    const splits = entriesToTxSplits(newEntries, appData, tx.user_id);
+    editor.updateSplits(splits);
+  }, [tx, appData, editor]);
+
   const handleAdd = useCallback(() => {
     const id = `split-${nextIdRef.current++}`;
-    onEntriesChange([
+    handleEntriesChange([
       ...entries,
-      { localId: id, accountId: accounts[0]?.id.toString() ?? "", amount: "", chainState: {}, name: "" },
+      { localId: id, accountId: appData.accounts[0]?.id.toString() ?? "", amount: "", chainState: {}, name: "" },
     ]);
-  }, [entries, onEntriesChange]);
+  }, [entries, handleEntriesChange, appData.accounts]);
+
+  const handleDefaultMerge = useCallback(() => {
+    if (!tx) return;
+    const defaultMergedSplits = defaultMerge(tx, childTransactions);
+    editor.updateSplits(defaultMergedSplits);
+  }, [tx, childTransactions, editor]);
+
+  const handleActionSplit = useCallback((actionKey: string) => {
+    const action = availableActions.find((a) => a.key === actionKey);
+    if (!action || !action.split) return;
+    const selectedEntries = entries.filter((e) => selectedIds.has(e.localId));
+    const unselectedEntries = entries.filter((e) => !selectedIds.has(e.localId));
+    const newSelectedEntries = action.split(selectedEntries);
+    const newEntries = [...unselectedEntries, ...newSelectedEntries];
+    handleEntriesChange(newEntries);
+    setSelectedIds(new Set());
+  }, [availableActions, entries, selectedIds, handleEntriesChange]);
 
   // ==================== 渲染 ====================
 
@@ -129,9 +193,7 @@ export function SplitEntryArea({ currentTransaction, entries, onEntriesChange }:
                         ? <ActionIcon className="w-3.5 h-3.5 flex-shrink-0" />
                         : undefined
                     }
-                    onPress={() => {
-                      // TODO: 按钮点击逻辑
-                    }}
+                    onPress={() => handleActionSplit(action.key)}
                   >
                     {action.label}
                   </Button>
@@ -145,8 +207,11 @@ export function SplitEntryArea({ currentTransaction, entries, onEntriesChange }:
       {/* 数据区 */}
       <SplitEntryEditor
         entries={entries}
-        onEntriesChange={onEntriesChange}
-        placeholderName={currentTransaction.name ?? undefined}
+        onEntriesChange={handleEntriesChange}
+        emptyMessage="暂无拆账记录"
+        emptyActionLabel={canMergeByDefault ? "按默认方式合并" : undefined}
+        onEmptyAction={canMergeByDefault ? handleDefaultMerge : undefined}
+        placeholderName={tx?.name ?? undefined}
         selectedIds={selectedIds}
         onSelectedIdsChange={setSelectedIds}
         showName={showName}

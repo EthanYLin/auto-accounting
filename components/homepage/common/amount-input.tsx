@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@heroui/input";
 import type { TransactionType } from "@/types";
-import { getAmountColorClass, getAmountSymbol } from '@/lib/transaction-funcs';
+import { getAmountColorClass, getAmountSymbol } from '@/lib/transaction/transaction-display';
 
 interface AmountInputProps {
     value: string;
@@ -62,7 +62,10 @@ export function AmountInput({ value, onChange, transactionType, textSize = "text
     // 聚焦时若为 0.00 则全选，方便直接输入覆盖
     const handleAmountFocus = () => {
         if (amountInput === "0.00") {
-            amountInputRef.current?.select();
+            // 使用 setTimeout 确保 select 在浏览器默认点击行为之后触发
+            setTimeout(() => {
+                amountInputRef.current?.select();
+            }, 0);
         }
     };
 

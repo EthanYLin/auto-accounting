@@ -43,6 +43,15 @@ export type MatchingRule = Tables<'matching_rule'>;
 export type MatchingRuleInsert = TablesInsert<'matching_rule'>;
 export type MatchingRuleUpdate = TablesUpdate<'matching_rule'>;
 
+// App 基础数据
+export interface AppDataValue {
+  accounts: Account[];
+  mainCategories: MainCategory[];
+  subCategories: SubCategory[];
+  budgetTypes: BudgetType[];
+  matchingRules: MatchingRule[];
+}
+
 // ========== 枚举类型 ==========
 export type TransactionStatus = Enums<'transaction_status'>;
 export type TransactionType = Enums<'transaction_type'>;
@@ -60,6 +69,11 @@ export type TransactionWithRelations = Omit<
   children_ids: number[];
   splits?: TransactionSplitWithRelations[];
 };
+
+export type TransactionContentDraft = Omit<
+  TransactionWithRelations,
+  'parent_id' | 'children_ids'
+>;
 
 // 带关联数据的交易拆账类型
 export type TransactionSplitWithRelations = Omit<

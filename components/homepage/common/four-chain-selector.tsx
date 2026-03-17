@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useCallback } from "react";
 import { Listbox, ListboxItem } from "@heroui/listbox";
 import { Select, SelectItem } from "@heroui/select";
-import type { TransactionType, MainCategory, SubCategory, BudgetType } from "@/types";
+import type { TransactionType } from "@/types";
 import { TRANSACTION_TYPES } from "@/constants/transaction-type";
 import { useAppData } from "@/components/context/app-data-context";
+import { useTransactionEditor } from "@/components/context/transaction-editor-context";
 
 // ==================== 类型定义 ====================
 
@@ -23,6 +24,15 @@ export type FourChainAction =
   | { type: "SET_MAIN"; main: string | undefined }
   | { type: "SET_SUB"; sub: string | undefined }
   | { type: "SET_BUDGET"; budget: string | undefined };
+
+function isSameFourChainState(a: FourChainState, b: FourChainState): boolean {
+  return (
+    a.txType === b.txType &&
+    a.main_id === b.main_id &&
+    a.sub_id === b.sub_id &&
+    a.budget_id === b.budget_id
+  );
+}
 
 // ==================== Reducer ====================
 
@@ -110,11 +120,11 @@ export function FourChainSelector({
 }: FourChainSelectorProps) {
   const { mainCategories, subCategories, budgetTypes } = useAppData();
 
-  // 受控模式：计算新状态并通过回调传递给父组件
-  const dispatch = (action: FourChainAction) => {
-    const newState = fourChainReducer(value, action);
-    onChange(newState);
-  };
+  const dispatch = useCallback((action: FourChainAction) => {
+    const nextValue = fourChainReducer(value, action);
+    if (isSameFourChainState(value, nextValue)) return;
+    onChange(nextValue);
+  }, [onChange, value]);
 
   // 交易类型选项
   const txTypeOptions = useMemo((): ChainOption[] => {
@@ -127,7 +137,6 @@ export function FourChainSelector({
         icon: typeOption?.icon || "🔄",
         backColor: typeOption?.back_color || "bg-gray-100 dark:bg-gray-800",
         foreColor: typeOption?.fore_color || "text-gray-800 dark:text-gray-200",
-        color: typeOption?.back_color || "default",
         textValue: txType
       };
     });
@@ -183,13 +192,13 @@ export function FourChainSelector({
     if (value.txType && !value.main_id && mainCategoryOptions.length === 1) {
       dispatch({ type: "SET_MAIN", main: mainCategoryOptions[0].key });
     }
-  }, [value.txType, value.main_id, mainCategoryOptions]);
+  }, [dispatch, value.txType, value.main_id, mainCategoryOptions]);
 
   useEffect(() => {
     if (value.main_id && !value.sub_id && subCategoryOptions.length === 1) {
       dispatch({ type: "SET_SUB", sub: subCategoryOptions[0].key });
     }
-  }, [value.main_id, value.sub_id, subCategoryOptions]);
+  }, [dispatch, value.main_id, value.sub_id, subCategoryOptions]);
 
   // 选择子类别后自动选择预算计划（仅在子类别改变且预算未设置时触发）
   useEffect(() => {
@@ -198,14 +207,14 @@ export function FourChainSelector({
     if (value.budget_id) return;
 
     const matchedSub = subCategories.find((item) => item.id === Number(value.sub_id));
-    if (matchedSub?.budget_type_id) {
-      const budgetId = String(matchedSub.budget_type_id);
+    const budgetId = matchedSub?.budget_type_id
+      ? String(matchedSub.budget_type_id)
+      : undefined;
+
+    if (budgetId !== value.budget_id) {
       dispatch({ type: "SET_BUDGET", budget: budgetId });
-    } else {
-      // 如果子类别没有绑定预算，清空预算选择
-      dispatch({ type: "SET_BUDGET", budget: undefined });
     }
-  }, [value.sub_id, subCategories]);
+  }, [dispatch, value.sub_id, value.budget_id, subCategories]);
 
   // 处理选择变更，支持取消选择
   const handleSelectionChange = (type: "tx" | "main" | "sub" | "budget", key: string | undefined) => {
@@ -368,5 +377,57 @@ export function FourChainSelector({
       </div>
 
     </div>
+  );
+}
+
+// TransactionEditorFourChainSelector 组件：绑定当前交易编辑器状态的四联选择器
+export interface TransactionEditorFourChainSelectorProps {
+  // 数据过滤
+  allowedTxTypes?: TransactionType[];
+  // 显示模式
+  mode?: SelectorMode;
+  // 样式
+  className?: string;
+}
+
+export function TransactionEditorFourChainSelector({
+  allowedTxTypes,
+  mode = "listbox",
+  className = "",
+}: TransactionEditorFourChainSelectorProps) {
+  const { currentTransaction, updateFields } = useTransactionEditor();
+
+  const value = useMemo(
+    () => ({
+      txType: currentTransaction?.transaction_type as TransactionType | undefined,
+      main_id: currentTransaction?.main_category ? String(currentTransaction.main_category.id) : undefined,
+      sub_id: currentTransaction?.sub_category ? String(currentTransaction.sub_category.id) : undefined,
+      budget_id: currentTransaction?.budget_type ? String(currentTransaction.budget_type.id) : undefined,
+    }),
+    [
+      currentTransaction?.transaction_type,
+      currentTransaction?.main_category?.id,
+      currentTransaction?.sub_category?.id,
+      currentTransaction?.budget_type?.id,
+    ],
+  );
+
+  const handleChange = useCallback((nextValue: FourChainState) => {
+    updateFields({
+      transaction_type: nextValue.txType || "",
+      main_category: nextValue.main_id,
+      sub_category: nextValue.sub_id,
+      budget_type: nextValue.budget_id,
+    });
+  }, [updateFields]);
+
+  return (
+    <FourChainSelector
+      value={value}
+      onChange={handleChange}
+      allowedTxTypes={allowedTxTypes}
+      mode={mode}
+      className={className}
+    />
   );
 }

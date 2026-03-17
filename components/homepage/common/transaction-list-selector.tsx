@@ -8,32 +8,40 @@ import { Chip } from "@heroui/chip";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
 import { Pagination } from "@heroui/pagination";
 import { MagnifyingGlassIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
-import { useTransactionCache } from '@/components/context/transaction-cache-context';
-import { useFilteredTransactions } from '@/lib/hooks/use-filtered-transactions';
+import { useTransactionStore } from '@/components/context/transaction-store-context';
+import { filterTransactionsBySearch, flattenTransactionsWithChildren } from '@/lib/hooks/use-transaction-filter';
 import { TRANSACTION_STATUS_COLORS } from '@/constants/transaction-type';
-import { calculateAmount, formatDateTime, formatCategoryDisplay } from '@/lib/transaction-funcs';
+import { calculateAmount, formatDateTime, formatCategoryDisplay } from '@/lib/transaction/transaction-display';
 
 interface TransactionListSelectorProps {
   selectedIds: number[];           // 当前选中的交易ID（受控）
   currentTransactionId?: number;    // 当前交易ID（高亮显示且不可选）
-  onConfirm: (ids: number[]) => void;  // 点击完成时的回调
+  isDisabled?: boolean;
+  onConfirm: (ids: number[]) => void | Promise<void>;  // 点击完成时的回调
 }
 
-export function TransactionListSelector({ selectedIds, currentTransactionId, onConfirm }: TransactionListSelectorProps) {
-  const { transactions } = useTransactionCache();
+export function TransactionListSelector({ selectedIds, currentTransactionId, isDisabled = false, onConfirm }: TransactionListSelectorProps) {
+  const { transactions } = useTransactionStore();
   const [searchQuery, setSearchQuery] = useState("");
-  const [tempSelectedIds, setTempSelectedIds] = useState<number[]>(selectedIds);
+  const [tempSelectedIds, setTempSelectedIds] = useState<number[]>(() => [...selectedIds]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   // 当外部 selectedIds 变化时，同步到内部状态
   useEffect(() => {
-    setTempSelectedIds(selectedIds);
+    setTempSelectedIds([...selectedIds]);
   }, [selectedIds]);
 
-  // 使用自定义 Hook 处理排序、搜索和过滤
-  // 传入 'all' 跳过状态过滤（该组件不需要状态过滤）
-  const filteredTransactions = useFilteredTransactions(transactions, searchQuery, 'all');
+  const orderedTransactions = useMemo(
+    () => flattenTransactionsWithChildren(transactions),
+    [transactions]
+  );
+
+  // 使用搜索过滤
+  const filteredTransactions = useMemo(
+    () => filterTransactionsBySearch(orderedTransactions, searchQuery),
+    [orderedTransactions, searchQuery]
+  );
 
   // 计算总页数
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
@@ -66,7 +74,7 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, onC
   // 切换选择状态
   const toggleSelection = (id: number) => {
     // 如果是当前交易，不允许选择
-    if (id === currentTransactionId) {
+    if (isDisabled || id === currentTransactionId) {
       return;
     }
     
@@ -97,6 +105,7 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, onC
           placeholder="搜索交易记录..."
           value={searchQuery}
           onValueChange={setSearchQuery}
+          isDisabled={isDisabled}
           startContent={<MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />}
           variant="bordered"
           size="sm"
@@ -159,7 +168,7 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, onC
                           isSelected={isSelected}
                           onValueChange={() => toggleSelection(tx.id)}
                           size="sm"
-                          isDisabled={isCurrent}
+                          isDisabled={isDisabled || isCurrent}
                         />
                       </div>
                     </div>
@@ -238,6 +247,7 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, onC
             <Button
               color="default"
               variant="bordered"
+              isDisabled={isDisabled}
               onPress={handleClearAndConfirm}
               startContent={<XCircleIcon className="w-5 h-5" />}
             >
@@ -246,6 +256,7 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, onC
           )}
           <Button
             color="primary"
+            isDisabled={isDisabled}
             onPress={handleConfirm}
             startContent={<CheckCircleIcon className="w-5 h-5" />}
           >
@@ -256,5 +267,3 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, onC
     </div>
   );
 }
-
-

@@ -8,7 +8,7 @@ import { CheckIcon } from '@heroicons/react/24/outline';
 import { FunnelIcon as FunnelIconSolid } from '@heroicons/react/24/solid';
 import { FunnelIcon } from '@heroicons/react/24/outline';
 import type { TransactionStatus } from '@/types';
-import { useTransactionCache } from '@/components/context/transaction-cache-context';
+import { useTransactionStore } from '@/components/context/transaction-store-context';
 import { ALL_TRANSACTION_STATUS } from '@/constants/transaction-status';
 
 interface StatusFilterDropdownProps {
@@ -20,7 +20,7 @@ export function StatusFilterDropdown({
   statusFilter,
   onStatusFilterChange,
 }: StatusFilterDropdownProps) {
-  const { transactions } = useTransactionCache();
+  const { transactions } = useTransactionStore();
 
   const stats = useMemo(() => {
     const counts: Record<TransactionStatus, number> = {} as Record<TransactionStatus, number>;

@@ -5,7 +5,7 @@ import { Spinner } from '@heroui/spinner';
 import { Button } from '@heroui/button';
 import { CloudArrowDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { TransactionListItem } from './transaction-list-item';
-import { useTransactionCache } from '@/components/context/transaction-cache-context';
+import { useTransactionStore } from '@/components/context/transaction-store-context';
 import { useAppData } from '@/components/context/app-data-context';
 import type { TransactionWithRelations } from '@/types';
 
@@ -38,7 +38,7 @@ function TransactionOverviewList(
 }: TransactionOverviewListProps,
   ref: React.Ref<TransactionOverviewListHandle>
 ) {
-  const { isLoading, error, loadTransactions, transactions} = useTransactionCache();
+  const { isLoading, error, loadTransactions, transactions} = useTransactionStore();
   const { isLoading: appDataLoading, hasLoaded: hasLoadedAppData } = useAppData();
 
   const containerRef = useRef<HTMLDivElement>(null);

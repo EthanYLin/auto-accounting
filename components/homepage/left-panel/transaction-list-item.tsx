@@ -5,7 +5,8 @@ import { Chip } from '@heroui/chip';
 import { LinkIcon, RectangleStackIcon, ScissorsIcon } from '@heroicons/react/24/outline';
 import type { TransactionWithRelations } from '@/types';
 import { TRANSACTION_TYPES, TRANSACTION_STATUS_COLORS } from '@/constants/transaction-type';
-import { formatDateTime } from '@/lib/transaction-funcs';
+import { formatDateTime } from '@/lib/transaction/transaction-display';
+import { useTransactionStore } from '@/components/context/transaction-store-context';
 
 // ========== 工具函数 ==========
 
@@ -29,6 +30,9 @@ export function TransactionListItem({
   isSelected?: boolean;
   onClick?: () => void;
 }) {
+  const store = useTransactionStore();
+  const isDirty = store.isDirty(transaction.id);
+
   // 获取图标和颜色（优先级：子类别 > 主类别 > 交易类型 > 默认）
   const getIconAndColor = () => {
     if (transaction.sub_category) {
@@ -85,6 +89,7 @@ export function TransactionListItem({
   };
 
   const sign = getAmountSign();
+  const isCanceled = transaction.status === '取消';
   const amountColor = 
     transaction.transaction_type ?
     TRANSACTION_TYPES.find(t => t.type === transaction.transaction_type)?.amount_color || 'text-gray-600 dark:text-gray-400' :
@@ -117,8 +122,14 @@ export function TransactionListItem({
         )}
         
         {/* 左侧圆形图标 */}
-        <div className={`${isChild ? 'w-8 h-8 text-base' : 'w-10 h-10 text-lg'} rounded-full ${backColor} ${foreColor} flex items-center justify-center flex-shrink-0`}>
-          {icon}
+        <div className="relative">
+          <div className={`${isChild ? 'w-8 h-8 text-base' : 'w-10 h-10 text-lg'} rounded-full ${backColor} ${foreColor} flex items-center justify-center flex-shrink-0`}>
+            {icon}
+          </div>
+          {/* 未保存指示点 */}
+          {isDirty && (
+            <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-warning border-2 border-white dark:border-gray-900" title="未保存的更改" />
+          )}
         </div>
 
         {/* 右侧内容 */}
@@ -128,8 +139,10 @@ export function TransactionListItem({
             <span className={`${isChild ? 'text-xs' : 'text-sm'} ${isChild ? 'font-normal' : 'font-medium'} text-gray-900 dark:text-gray-100 truncate`}>
               {getDisplayName()}
             </span>
-            <span className={`${isChild ? 'text-xs' : 'text-sm'} ${isChild ? 'font-normal' : 'font-bold'} ml-2 flex-shrink-0 ${amountColor}`}>
-              {formatAmount(transaction.amount, sign)}
+            <span className={`${isChild ? 'text-xs' : 'text-sm'} ${isChild ? 'font-normal' : 'font-bold'} ml-2 flex-shrink-0 ${isCanceled ? 'text-gray-500 dark:text-gray-400' : amountColor}`}>
+              <span className={isCanceled ? 'line-through inline-block decoration-1' : ''}>
+                {formatAmount(transaction.amount, sign)}
+              </span>
             </span>
           </div>
 
@@ -174,8 +187,8 @@ export function TransactionListItem({
               )}
             </div>
 
-            {/* 状态 Chip - 子记录不显示 */}
-            {!isChild && transaction.status && (
+            {/* 状态 Chip - 子记录不显示, 已完成状态不显示 */}
+            {!isChild && transaction.status && transaction.status !== "已完成" && (
               <Chip
                 size="sm"
                 color={TRANSACTION_STATUS_COLORS[transaction.status]}

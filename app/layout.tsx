@@ -6,7 +6,6 @@ import { Providers } from "./providers";
 
 import { siteConfig } from "@/constants/site";
 import { Navbar } from "@/components/navbar/navbar";
-import { DataLoader } from "@/components/context/data-loader";
 
 // Font variables for Tailwind CSS (defined in globals.css)
 const fontSans = { variable: "--font-sans" };
@@ -46,7 +45,6 @@ export default function RootLayout({
         )}
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
-          <DataLoader />
           <div className="relative flex flex-col h-screen">
             <Navbar />
             <main className="w-full flex-grow flex flex-col min-h-0">
