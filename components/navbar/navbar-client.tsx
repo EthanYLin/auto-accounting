@@ -1,5 +1,7 @@
 "use client";
 
+import type { User } from "@supabase/supabase-js";
+
 import { useState } from "react";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,7 +16,6 @@ import {
   NavbarMenuToggle,
 } from "@heroui/react";
 import { Button } from "@heroui/react";
-import type { User } from "@supabase/supabase-js";
 
 import { siteConfig } from "@/constants/site";
 import { ThemeSwitch } from "@/components/navbar/theme-switch";

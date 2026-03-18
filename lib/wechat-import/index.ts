@@ -3,13 +3,13 @@ import type { ExcelData, ImportResult } from "./types";
 
 /**
  * 从微信账单Excel数据导入交易记录
- * 
+ *
  * @param excelData Excel解析后的数据
  * @returns 导入结果，包含成功导入的交易记录数组和数量
  * @throws Error 当数据格式不正确或导入失败时抛出异常
  */
 export async function importFromWeChatExcel(
-  excelData: ExcelData
+  excelData: ExcelData,
 ): Promise<ImportResult & { transactions: Transaction[] }> {
   try {
     // 验证输入数据
@@ -37,9 +37,9 @@ export async function importFromWeChatExcel(
     // 临时实现：这里只是一个占位符
     for (let i = 0; i < excelData.rows.length; i++) {
       const row = excelData.rows[i];
-      
+
       // 跳过空行
-      if (!row || row.every(cell => !cell || cell.toString().trim() === '')) {
+      if (!row || row.every((cell) => !cell || cell.toString().trim() === "")) {
         continue;
       }
 
@@ -50,7 +50,7 @@ export async function importFromWeChatExcel(
     }
 
     // 假装这里有复杂的实现逻辑，停五秒
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
 
     throw new Error("未实现具体的行数据解析逻辑");
 
@@ -58,13 +58,10 @@ export async function importFromWeChatExcel(
       importedCount,
       transactions,
     };
-
   } catch (error) {
     // 重新抛出异常，让调用方处理
     throw new Error(
-      error instanceof Error 
-        ? `导入失败: ${error.message}` 
-        : "导入过程中发生未知错误"
+      error instanceof Error ? `导入失败: ${error.message}` : "导入过程中发生未知错误",
     );
   }
 }

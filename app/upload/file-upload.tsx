@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useCallback } from 'react';
-import { Card, CardBody } from '@heroui/react';
-import { Button } from '@heroui/react';
-import { Spinner } from '@heroui/react';
+import React, { useCallback, useRef, useState } from "react";
+import { Card, CardBody } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Spinner } from "@heroui/react";
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
@@ -21,15 +21,19 @@ export function FileUpload({
   isLoading = false,
   description = "拖拽文件到这里或点击选择文件",
   supportedFormats = "支持.xlsx和.xls格式",
-  logo
+  logo,
 }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = useCallback((files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    const file = files[0];
-    onFileSelect(file);
-  }, [onFileSelect]);
+  const handleFileSelect = useCallback(
+    (files: FileList | null) => {
+      if (!files || files.length === 0) return;
+      const file = files[0];
+      onFileSelect(file);
+    },
+    [onFileSelect],
+  );
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -48,47 +52,70 @@ export function FileUpload({
     e.stopPropagation();
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    
-    const files = e.dataTransfer.files;
-    handleFileSelect(files);
-  }, [handleFileSelect]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFileSelect(e.target.files);
-  }, [handleFileSelect]);
+      const files = e.dataTransfer.files;
+      handleFileSelect(files);
+    },
+    [handleFileSelect],
+  );
+
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      handleFileSelect(e.target.files);
+    },
+    [handleFileSelect],
+  );
+
+  const openFilePicker = useCallback(() => {
+    if (!isLoading) {
+      inputRef.current?.click();
+    }
+  }, [isLoading]);
 
   return (
     <Card>
       <CardBody>
         <div
+          aria-disabled={isLoading}
+          aria-label={description}
           className={`
             border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer
             min-h-[280px] flex flex-col items-center justify-center
-            ${isDragging 
-              ? 'border-primary bg-primary/10' 
-              : 'border-gray-300 hover:border-primary/50'
+            ${
+              isDragging
+                ? "border-primary bg-primary/10"
+                : "border-gray-300 hover:border-primary/50"
             }
-            ${isLoading ? 'pointer-events-none opacity-50' : ''}
+            ${isLoading ? "pointer-events-none opacity-50" : ""}
           `}
+          role="button"
+          tabIndex={isLoading ? -1 : 0}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
-          onClick={() => !isLoading && document.getElementById('file-input')?.click()}
+          onClick={openFilePicker}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              openFilePicker();
+            }
+          }}
         >
           <input
-            id="file-input"
-            type="file"
             accept={accept}
-            onChange={handleInputChange}
             className="hidden"
             disabled={isLoading}
+            ref={inputRef}
+            type="file"
+            onChange={handleInputChange}
           />
-          
+
           {isLoading ? (
             <>
               <Spinner size="lg" className="mb-4" />
@@ -96,19 +123,10 @@ export function FileUpload({
             </>
           ) : (
             <>
-              <div className="mb-4">
-                {logo || <FileIcon />}
-              </div>
+              <div className="mb-4">{logo || <FileIcon />}</div>
               <p className="text-lg mb-2">{description}</p>
               <p className="text-sm text-gray-500">{supportedFormats}</p>
-              <Button 
-                color="primary" 
-                variant="ghost" 
-                className="mt-4"
-                onPress={() => {
-                  document.getElementById('file-input')?.click();
-                }}
-              >
+              <Button color="primary" variant="ghost" className="mt-4" onPress={openFilePicker}>
                 选择文件
               </Button>
             </>
@@ -121,12 +139,7 @@ export function FileUpload({
 
 const FileIcon = () => {
   return (
-    <svg
-      className="w-16 h-16 text-gray-400"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
+    <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"

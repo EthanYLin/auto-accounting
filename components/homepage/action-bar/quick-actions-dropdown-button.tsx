@@ -1,3 +1,5 @@
+import type { DangerConfirm, QuickActionIcon, QuickActionKey } from "./use-action-bar-controller";
+
 import { Button, ButtonGroup } from "@heroui/react";
 import {
   Dropdown,
@@ -8,7 +10,7 @@ import {
 } from "@heroui/react";
 import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/react";
 import { CheckIcon, ChevronDownIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import type { DangerConfirm, QuickActionIcon, QuickActionKey } from "./use-action-bar-controller";
+
 import { QUICK_ACTION_ITEMS } from "./use-action-bar-controller";
 
 interface QuickActionsDropdownButtonProps {
@@ -57,7 +59,10 @@ export function QuickActionsDropdownButton({
           </DropdownTrigger>
           <DropdownMenu
             aria-label="快捷操作"
-            onAction={key => { const item = QUICK_ACTION_ITEMS.find(i => i.key === key); item && onDropdownAction(item.key); }}
+            onAction={(key) => {
+              const item = QUICK_ACTION_ITEMS.find((i) => i.key === key);
+              item && onDropdownAction(item.key);
+            }}
             disallowEmptySelection
             disabledKeys={disabledKeys}
             itemClasses={{ base: "py-2", title: "text-xs font-medium" }}
@@ -110,7 +115,11 @@ export function QuickActionsDropdownButton({
               {DANGER_ACTION_ITEMS.map((item) => {
                 const ItemIcon = item.icon;
                 return (
-                  <DropdownItem key={item.key} color="danger" startContent={<ItemIcon className="h-4 w-4" />}>
+                  <DropdownItem
+                    key={item.key}
+                    color="danger"
+                    startContent={<ItemIcon className="h-4 w-4" />}
+                  >
                     {item.label.replace("$dirtyCount", String(dirtyCount))}
                   </DropdownItem>
                 );
@@ -124,9 +133,7 @@ export function QuickActionsDropdownButton({
         <ModalContent>
           <ModalHeader>{dangerConfirm.title}</ModalHeader>
           <ModalBody>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {dangerConfirm.description}
-            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{dangerConfirm.description}</p>
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={dangerConfirm.onClose}>

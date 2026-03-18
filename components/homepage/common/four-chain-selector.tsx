@@ -1,9 +1,11 @@
 "use client";
 
+import type { TransactionType } from "@/types";
+
 import { useMemo, useEffect, useCallback } from "react";
 import { Listbox, ListboxItem } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/react";
-import type { TransactionType } from "@/types";
+
 import { TRANSACTION_TYPES } from "@/constants/transaction-type";
 import { useAppData } from "@/components/context/app-data-context";
 import { useTransactionEditor } from "@/components/context/transaction-editor-context";
@@ -78,8 +80,18 @@ function fourChainReducer(state: FourChainState, action: FourChainAction): FourC
 // ==================== 组件 ====================
 
 // 图标组件
-const IconComponent = ({ icon, backColor, foreColor }: { icon: string; backColor?: string; foreColor?: string }) => (
-  <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs mr-2 ${backColor || ''} ${foreColor || ''}`}>
+const IconComponent = ({
+  icon,
+  backColor,
+  foreColor,
+}: {
+  icon: string;
+  backColor?: string;
+  foreColor?: string;
+}) => (
+  <span
+    className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs mr-2 ${backColor || ""} ${foreColor || ""}`}
+  >
     {icon}
   </span>
 );
@@ -116,28 +128,31 @@ export function FourChainSelector({
   onChange,
   allowedTxTypes,
   mode = "listbox",
-  className = ""
+  className = "",
 }: FourChainSelectorProps) {
   const { mainCategories, subCategories, budgetTypes } = useAppData();
 
-  const dispatch = useCallback((action: FourChainAction) => {
-    const nextValue = fourChainReducer(value, action);
-    if (isSameFourChainState(value, nextValue)) return;
-    onChange(nextValue);
-  }, [onChange, value]);
+  const dispatch = useCallback(
+    (action: FourChainAction) => {
+      const nextValue = fourChainReducer(value, action);
+      if (isSameFourChainState(value, nextValue)) return;
+      onChange(nextValue);
+    },
+    [onChange, value],
+  );
 
   // 交易类型选项
   const txTypeOptions = useMemo((): ChainOption[] => {
-    const types = allowedTxTypes || TRANSACTION_TYPES.map(item => item.type);
+    const types = allowedTxTypes || TRANSACTION_TYPES.map((item) => item.type);
     return types.map((txType) => {
-      const typeOption = TRANSACTION_TYPES.find(item => item.type === txType);
+      const typeOption = TRANSACTION_TYPES.find((item) => item.type === txType);
       return {
         key: txType,
         label: txType,
         icon: typeOption?.icon || "🔄",
         backColor: typeOption?.back_color || "bg-gray-100 dark:bg-gray-800",
         foreColor: typeOption?.fore_color || "text-gray-800 dark:text-gray-200",
-        textValue: txType
+        textValue: txType,
       };
     });
   }, [allowedTxTypes]);
@@ -207,9 +222,7 @@ export function FourChainSelector({
     if (value.budget_id) return;
 
     const matchedSub = subCategories.find((item) => item.id === Number(value.sub_id));
-    const budgetId = matchedSub?.budget_type_id
-      ? String(matchedSub.budget_type_id)
-      : undefined;
+    const budgetId = matchedSub?.budget_type_id ? String(matchedSub.budget_type_id) : undefined;
 
     if (budgetId !== value.budget_id) {
       dispatch({ type: "SET_BUDGET", budget: budgetId });
@@ -217,10 +230,13 @@ export function FourChainSelector({
   }, [dispatch, value.sub_id, value.budget_id, subCategories]);
 
   // 处理选择变更，支持取消选择
-  const handleSelectionChange = (type: "tx" | "main" | "sub" | "budget", key: string | undefined) => {
+  const handleSelectionChange = (
+    type: "tx" | "main" | "sub" | "budget",
+    key: string | undefined,
+  ) => {
     switch (type) {
       case "tx":
-        const newTx = key === value.txType ? undefined : key as TransactionType;
+        const newTx = key === value.txType ? undefined : (key as TransactionType);
         dispatch({ type: "SET_TX", tx: newTx });
         break;
       case "main":
@@ -245,7 +261,7 @@ export function FourChainSelector({
     selectedKey: string | undefined,
     onChange: (key: string | undefined) => void,
     disabled: boolean = false,
-    placeholder?: string
+    placeholder?: string,
   ) => {
     if (mode === "select") {
       return (
@@ -265,17 +281,17 @@ export function FourChainSelector({
               <SelectItem
                 key={option.key}
                 textValue={option.textValue || option.label}
-                startContent={option.icon ? (
-                  <IconComponent
-                    icon={option.icon}
-                    backColor={option.backColor}
-                    foreColor={option.foreColor}
-                  />
-                ) : null}
+                startContent={
+                  option.icon ? (
+                    <IconComponent
+                      icon={option.icon}
+                      backColor={option.backColor}
+                      foreColor={option.foreColor}
+                    />
+                  ) : null
+                }
               >
-                <span className={option.foreColor || ''}>
-                  {option.label}
-                </span>
+                <span className={option.foreColor || ""}>{option.label}</span>
               </SelectItem>
             ))}
           </Select>
@@ -302,7 +318,7 @@ export function FourChainSelector({
             emptyContent={disabled ? "请先选择上级类别" : "无可用选项"}
             itemClasses={{
               base: "py-1.5 px-2 min-h-unit-9",
-              title: "text-sm"
+              title: "text-sm",
             }}
           >
             {options.map((option) => {
@@ -323,9 +339,7 @@ export function FourChainSelector({
                     ) : null
                   }
                 >
-                  <span className={`font-medium ${option.foreColor || ''}`}>
-                    {option.label}
-                  </span>
+                  <span className={`font-medium ${option.foreColor || ""}`}>{option.label}</span>
                 </ListboxItem>
               );
             })}
@@ -338,13 +352,12 @@ export function FourChainSelector({
   return (
     <div className={`w-full space-y-3 ${className}`}>
       {/* 四联选择器 - 横向排列 */}
-      <div className={`${mode === 'select' ? 'grid grid-cols-2 md:grid-cols-4' : 'flex flex-wrap'} gap-3`}>
+      <div
+        className={`${mode === "select" ? "grid grid-cols-2 md:grid-cols-4" : "flex flex-wrap"} gap-3`}
+      >
         {/* 交易类型选择 */}
-        {renderSelector(
-          "交易类型",
-          txTypeOptions,
-          value.txType,
-          (key) => handleSelectionChange("tx", key)
+        {renderSelector("交易类型", txTypeOptions, value.txType, (key) =>
+          handleSelectionChange("tx", key),
         )}
 
         {/* 主类别选择 */}
@@ -354,7 +367,7 @@ export function FourChainSelector({
           value.main_id,
           (key) => handleSelectionChange("main", key),
           !value.txType,
-          "请先选择交易类型"
+          "请先选择交易类型",
         )}
 
         {/* 子类别选择 */}
@@ -364,18 +377,14 @@ export function FourChainSelector({
           value.sub_id,
           (key) => handleSelectionChange("sub", key),
           !value.main_id,
-          "请先选择主类别"
+          "请先选择主类别",
         )}
 
         {/* 预算计划选择 */}
-        {renderSelector(
-          "预算计划",
-          budgetOptions,
-          value.budget_id,
-          (key) => handleSelectionChange("budget", key)
+        {renderSelector("预算计划", budgetOptions, value.budget_id, (key) =>
+          handleSelectionChange("budget", key),
         )}
       </div>
-
     </div>
   );
 }
@@ -400,9 +409,15 @@ export function TransactionEditorFourChainSelector({
   const value = useMemo(
     () => ({
       txType: currentTransaction?.transaction_type as TransactionType | undefined,
-      main_id: currentTransaction?.main_category ? String(currentTransaction.main_category.id) : undefined,
-      sub_id: currentTransaction?.sub_category ? String(currentTransaction.sub_category.id) : undefined,
-      budget_id: currentTransaction?.budget_type ? String(currentTransaction.budget_type.id) : undefined,
+      main_id: currentTransaction?.main_category
+        ? String(currentTransaction.main_category.id)
+        : undefined,
+      sub_id: currentTransaction?.sub_category
+        ? String(currentTransaction.sub_category.id)
+        : undefined,
+      budget_id: currentTransaction?.budget_type
+        ? String(currentTransaction.budget_type.id)
+        : undefined,
     }),
     [
       currentTransaction?.transaction_type,
@@ -412,14 +427,17 @@ export function TransactionEditorFourChainSelector({
     ],
   );
 
-  const handleChange = useCallback((nextValue: FourChainState) => {
-    updateFields({
-      transaction_type: nextValue.txType || "",
-      main_category: nextValue.main_id,
-      sub_category: nextValue.sub_id,
-      budget_type: nextValue.budget_id,
-    });
-  }, [updateFields]);
+  const handleChange = useCallback(
+    (nextValue: FourChainState) => {
+      updateFields({
+        transaction_type: nextValue.txType || "",
+        main_category: nextValue.main_id,
+        sub_category: nextValue.sub_id,
+        budget_type: nextValue.budget_id,
+      });
+    },
+    [updateFields],
+  );
 
   return (
     <FourChainSelector

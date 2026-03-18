@@ -1,13 +1,16 @@
-'use client';
+"use client";
 
-import React, { forwardRef, useImperativeHandle, useRef } from 'react';
-import { Spinner } from '@heroui/react';
-import { Button } from '@heroui/react';
-import { CloudArrowDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { TransactionListItem } from './transaction-list-item';
-import { useTransactionStore } from '@/components/context/transaction-store-context';
-import { useAppData } from '@/components/context/app-data-context';
-import type { TransactionWithRelations } from '@/types';
+import type { TransactionWithRelations } from "@/types";
+
+import React, { forwardRef, useImperativeHandle, useRef } from "react";
+import { Spinner } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { CloudArrowDownIcon, XMarkIcon } from "@heroicons/react/24/outline";
+
+import { TransactionListItem } from "./transaction-list-item";
+
+import { useTransactionStore } from "@/components/context/transaction-store-context";
+import { useAppData } from "@/components/context/app-data-context";
 
 interface TransactionOverviewListProps {
   /** 当前选中的交易 ID */
@@ -27,18 +30,20 @@ export interface TransactionOverviewListHandle {
   scrollToCurrent: () => void;
 }
 
-export const TransactionOverviewList = forwardRef<TransactionOverviewListHandle, TransactionOverviewListProps>(
-function TransactionOverviewList(
+export const TransactionOverviewList = forwardRef<
+  TransactionOverviewListHandle,
+  TransactionOverviewListProps
+>(function TransactionOverviewList(
   {
-  currentId,
-  onSelectTransaction,
-  filteredTransactions,
-  isFiltered = false,
-  onClearFilters,
-}: TransactionOverviewListProps,
-  ref: React.Ref<TransactionOverviewListHandle>
+    currentId,
+    onSelectTransaction,
+    filteredTransactions,
+    isFiltered = false,
+    onClearFilters,
+  }: TransactionOverviewListProps,
+  ref: React.Ref<TransactionOverviewListHandle>,
 ) {
-  const { isLoading, error, loadTransactions, transactions} = useTransactionStore();
+  const { isLoading, error, loadTransactions, transactions } = useTransactionStore();
   const { isLoading: appDataLoading, hasLoaded: hasLoadedAppData } = useAppData();
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -47,10 +52,9 @@ function TransactionOverviewList(
     scrollToCurrent() {
       if (currentId == null || !containerRef.current) return;
       const el = containerRef.current.querySelector(`[data-tx-id="${currentId}"]`);
-      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     },
   }));
-
 
   // 错误状态
   if (error) {
@@ -90,11 +94,11 @@ function TransactionOverviewList(
               清除过滤器
             </Button>
           ) : (
-            <Button 
-              size="sm" 
-              color="default" 
-              variant="flat" 
-              onPress={loadTransactions} 
+            <Button
+              size="sm"
+              color="default"
+              variant="flat"
+              onPress={loadTransactions}
               isDisabled={isLoading || appDataLoading || !hasLoadedAppData}
               startContent={<CloudArrowDownIcon className="w-4 h-4" />}
             >
@@ -123,4 +127,3 @@ function TransactionOverviewList(
     </div>
   );
 });
-

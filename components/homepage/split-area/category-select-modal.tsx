@@ -1,10 +1,12 @@
 "use client";
 
+import type { FourChainState } from "@/components/homepage/common/four-chain-selector";
+
 import { useState } from "react";
 import { Button } from "@heroui/react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
+
 import { FourChainSelector } from "@/components/homepage/common/four-chain-selector";
-import type { FourChainState } from "@/components/homepage/common/four-chain-selector";
 
 interface CategorySelectModalProps {
   isOpen: boolean;
@@ -31,11 +33,7 @@ export function CategorySelectModal({
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">选择类别</ModalHeader>
         <ModalBody>
-          <FourChainSelector
-            mode="listbox"
-            value={draftChainState}
-            onChange={setDraftChainState}
-          />
+          <FourChainSelector mode="listbox" value={draftChainState} onChange={setDraftChainState} />
         </ModalBody>
         <ModalFooter>
           <Button variant="flat" color="default" onPress={onCancel}>

@@ -25,9 +25,7 @@ export function SettingsSectionCard({
     <Card className={className}>
       <CardHeader className="flex flex-col gap-4 px-6 pb-4 pt-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-wrap items-center gap-3">
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">
-            {title}
-          </h2>
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">{title}</h2>
           {typeof count === "number" && (
             <Chip color="primary" size="sm" variant="flat">
               {count}
@@ -42,11 +40,7 @@ export function SettingsSectionCard({
   );
 }
 
-export function SettingsLoadingState({
-  label = "加载中...",
-}: {
-  label?: string;
-}) {
+export function SettingsLoadingState({ label = "加载中..." }: { label?: string }) {
   return (
     <div className="flex min-h-40 items-center justify-center py-8">
       <Spinner label={label} />

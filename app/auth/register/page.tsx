@@ -1,140 +1,141 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Card, CardHeader, CardBody, CardFooter } from '@heroui/react'
-import { Input } from '@heroui/react'
-import { Button } from '@heroui/react'
-import { Link } from '@heroui/react'
-import { Divider } from '@heroui/react'
-import { InputOtp } from '@heroui/react'
-import { sendSignupOtp, verifySignupOtp } from '@/app/actions/auth'
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardHeader, CardBody, CardFooter } from "@heroui/react";
+import { Input } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Link } from "@heroui/react";
+import { Divider } from "@heroui/react";
+import { InputOtp } from "@heroui/react";
+
+import { sendSignupOtp, verifySignupOtp } from "@/app/actions/auth";
 
 export default function RegisterPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState('')
-  const [nickname, setNickname] = useState('')
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [otp, setOtp] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [step, setStep] = useState<'request' | 'verify'>('request')
-  const [info, setInfo] = useState('')
-  const [cooldown, setCooldown] = useState(0)
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [step, setStep] = useState<"request" | "verify">("request");
+  const [info, setInfo] = useState("");
+  const [cooldown, setCooldown] = useState(0);
 
   const resendOtp = async () => {
-    setError('')
-    setInfo('')
-    setLoading(true)
+    setError("");
+    setInfo("");
+    setLoading(true);
     try {
-      const result = await sendSignupOtp(email, nickname)
+      const result = await sendSignupOtp(email, nickname);
       if (result?.error) {
-        setError(result.error)
+        setError(result.error);
       } else if (result?.success) {
-        setInfo('验证码已重新发送，请查收邮箱')
-        setOtp('')
-        setStep('verify')
-        setCooldown(60)
+        setInfo("验证码已重新发送，请查收邮箱");
+        setOtp("");
+        setStep("verify");
+        setCooldown(60);
       }
     } catch (err) {
-      console.error('重发验证码错误:', err)
+      console.error("重发验证码错误:", err);
       if (err instanceof Error) {
-        setError(`重发失败: ${err.message}`)
+        setError(`重发失败: ${err.message}`);
       } else {
-        setError('重发失败，请重试')
+        setError("重发失败，请重试");
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    if (cooldown <= 0) return
+    if (cooldown <= 0) return;
     const timer = setInterval(() => {
-      setCooldown((prev) => (prev > 0 ? prev - 1 : 0))
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [cooldown])
+      setCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   const verifyCode = async (code: string) => {
-    if (!code || code.length < 6 || loading) return
-    setError('')
-    setSuccess(false)
-    setInfo('')
-    setLoading(true)
+    if (!code || code.length < 6 || loading) return;
+    setError("");
+    setSuccess(false);
+    setInfo("");
+    setLoading(true);
     try {
-      const result = await verifySignupOtp(email, code, password)
+      const result = await verifySignupOtp(email, code, password);
       if (result?.error) {
-        setError(result.error)
+        setError(result.error);
       } else if (result?.success) {
-        setSuccess(true)
-        router.push('/')
-        router.refresh()
+        setSuccess(true);
+        router.push("/");
+        router.refresh();
       }
     } catch (err) {
-      console.error('注册错误:', err)
+      console.error("注册错误:", err);
       if (err instanceof Error) {
-        if (err.message.includes('fetch') || err.message.includes('network')) {
-          setError('网络连接失败，请检查网络后重试')
+        if (err.message.includes("fetch") || err.message.includes("network")) {
+          setError("网络连接失败，请检查网络后重试");
         } else {
-          setError(`注册失败: ${err.message}`)
+          setError(`注册失败: ${err.message}`);
         }
       } else {
-        setError('注册失败，请重试')
+        setError("注册失败，请重试");
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setSuccess(false)
-    setInfo('')
+    e.preventDefault();
+    setError("");
+    setSuccess(false);
+    setInfo("");
 
-    if (step === 'request') {
+    if (step === "request") {
       if (!password || password.length < 6) {
-        setError('密码长度至少为 6 个字符')
-        return
+        setError("密码长度至少为 6 个字符");
+        return;
       }
       if (password !== confirmPassword) {
-        setError('两次输入的密码不一致')
-        return
+        setError("两次输入的密码不一致");
+        return;
       }
     }
 
-    if (step === 'request') {
-      setLoading(true)
+    if (step === "request") {
+      setLoading(true);
       try {
-        const result = await sendSignupOtp(email, nickname)
+        const result = await sendSignupOtp(email, nickname);
         if (result?.error) {
-          setError(result.error)
+          setError(result.error);
         } else if (result?.success) {
-          setStep('verify')
-          setCooldown(60)
-          setInfo('验证码已发送至邮箱，请输入 6 位验证码完成注册')
+          setStep("verify");
+          setCooldown(60);
+          setInfo("验证码已发送至邮箱，请输入 6 位验证码完成注册");
         }
       } catch (err) {
-        console.error('注册错误:', err)
+        console.error("注册错误:", err);
         if (err instanceof Error) {
-          if (err.message.includes('fetch') || err.message.includes('network')) {
-            setError('网络连接失败，请检查网络后重试')
+          if (err.message.includes("fetch") || err.message.includes("network")) {
+            setError("网络连接失败，请检查网络后重试");
           } else {
-            setError(`注册失败: ${err.message}`)
+            setError(`注册失败: ${err.message}`);
           }
         } else {
-          setError('注册失败，请重试')
+          setError("注册失败，请重试");
         }
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     } else {
-      await verifyCode(otp)
+      await verifyCode(otp);
     }
-  }
+  };
 
   if (success) {
     return (
@@ -147,17 +148,15 @@ export default function RegisterPage() {
           <CardBody className="px-6 py-6">
             <div className="flex flex-col gap-4">
               <div className="text-sm text-success-700 dark:text-success-400 bg-success-100 dark:bg-success-900/30 px-4 py-3 rounded-lg">
-              <p>注册成功，已自动登录。</p>
-              <p className="mt-2">现在可以开始使用账户啦！</p>
+                <p>注册成功，已自动登录。</p>
+                <p className="mt-2">现在可以开始使用账户啦！</p>
               </div>
-              <p className="text-sm text-default-500 text-center">
-              页面将跳转至首页。
-              </p>
+              <p className="text-sm text-default-500 text-center">页面将跳转至首页。</p>
             </div>
           </CardBody>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -170,7 +169,7 @@ export default function RegisterPage() {
         <Divider />
         <CardBody className="px-6 py-6">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {step === 'request' ? (
+            {step === "request" ? (
               <>
                 <Input
                   type="text"
@@ -228,9 +227,9 @@ export default function RegisterPage() {
                     length={6}
                     value={otp}
                     onValueChange={(val) => {
-                      setOtp(val)
+                      setOtp(val);
                       if (val.length === 6) {
-                        verifyCode(val)
+                        verifyCode(val);
                       }
                     }}
                     size="lg"
@@ -238,8 +237,8 @@ export default function RegisterPage() {
                     autoComplete="one-time-code"
                     inputMode="numeric"
                     classNames={{
-                      input: 'text-2xl font-semibold',
-                      wrapper: 'w-full',
+                      input: "text-2xl font-semibold",
+                      wrapper: "w-full",
                     }}
                   />
                   <p className="text-xs text-default-500">请输入邮件中的 6 位验证码</p>
@@ -258,16 +257,11 @@ export default function RegisterPage() {
               </div>
             )}
 
-            <Button
-              type="submit"
-              color="primary"
-              isLoading={loading}
-              className="w-full"
-            >
-              {step === 'request' ? '发送验证码' : '验证并注册'}
+            <Button type="submit" color="primary" isLoading={loading} className="w-full">
+              {step === "request" ? "发送验证码" : "验证并注册"}
             </Button>
 
-            {step === 'verify' && (
+            {step === "verify" && (
               <div className="text-xs text-default-500 text-right">
                 {cooldown > 0 ? (
                   <span className="text-default-400">重新发送 ({cooldown}s)</span>
@@ -288,7 +282,7 @@ export default function RegisterPage() {
         <Divider />
         <CardFooter className="px-6 py-4">
           <p className="text-sm text-default-500">
-            已有账号？{' '}
+            已有账号？{" "}
             <Link href="/auth/login" size="sm">
               立即登录
             </Link>
@@ -296,6 +290,5 @@ export default function RegisterPage() {
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }
-

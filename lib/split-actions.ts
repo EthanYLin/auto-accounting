@@ -1,4 +1,7 @@
 import type { ComponentType } from "react";
+import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
+import type { TransactionType } from "@/types";
+
 import {
   ArrowsPointingInIcon,
   ArrowsRightLeftIcon,
@@ -11,9 +14,8 @@ import {
   BoltIcon,
   ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
-import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
+
 import { TRANSACTION_TYPES } from "@/constants/transaction-type";
-import type { TransactionType } from "@/types";
 
 // ==================== 类型定义 ====================
 
@@ -45,9 +47,7 @@ function getSign(txType: TransactionType): number {
 
 /** 获取带符号的金额 */
 function getSignedAmount(entry: SplitEntryData): number {
-  const sign = entry.chainState.txType
-    ? getSign(entry.chainState.txType)
-    : 0;
+  const sign = entry.chainState.txType ? getSign(entry.chainState.txType) : 0;
   const amount = parseFloat(entry.amount) || 0;
   return sign * amount;
 }
@@ -79,16 +79,18 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
     label: "合并记录",
     color: "primary",
     icon: ArrowsPointingInIcon,
-    test: (selected) => 
-      selected.length >= 2 &&
-      !distinctAccounts(selected),
+    test: (selected) => selected.length >= 2 && !distinctAccounts(selected),
     split: (sources) => {
       const result: SplitEntryData[] = [];
       const participating: SplitEntryData[] = [];
 
       // 1. 过滤不参与合并的记录（转出、转入、无类型则原样保留）
       sources.forEach((e) => {
-        if (!e.chainState.txType || e.chainState.txType === "转出" || e.chainState.txType === "转入") {
+        if (
+          !e.chainState.txType ||
+          e.chainState.txType === "转出" ||
+          e.chainState.txType === "转入"
+        ) {
           result.push(e);
         } else {
           participating.push(e);
@@ -106,10 +108,7 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       // 3. 逐组合并
       Array.from(groups.values()).forEach((entries) => {
         // (1) 金额求和
-        const sum = entries.reduce(
-          (acc, e) => acc + getSignedAmount(e),
-          0
-        );
+        const sum = entries.reduce((acc, e) => acc + getSignedAmount(e), 0);
         if (sum === 0) return; // 完全抵消
 
         // (2) 确定名称：第一条有名称的记录
@@ -138,7 +137,7 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
 
         // 类型与 mergedType 一致，且有主分类的
         const typeMatch = entries.find(
-          (e) => e.chainState.txType === mergedType && e.chainState.main_id
+          (e) => e.chainState.txType === mergedType && e.chainState.main_id,
         );
         if (typeMatch) {
           txMain = typeMatch.chainState.main_id;

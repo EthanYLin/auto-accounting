@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from "react";
 
-export type TransactionSaveState = 'idle' | 'single-save' | 'children-selection';
+export type TransactionSaveState = "idle" | "single-save" | "children-selection";
 
 export type SaveQueueResult = { success: boolean; error?: string };
 
@@ -11,12 +11,12 @@ type SaveQueueTask = {
   resolve: (result: SaveQueueResult) => void;
 };
 
-const SAVE_BUSY_ERROR = '当前有保存操作进行中';
-const QUEUED_SAVE_CANCELLED_ERROR = '前序保存失败，后续排队保存已取消，请检查后重试';
+const SAVE_BUSY_ERROR = "当前有保存操作进行中";
+const QUEUED_SAVE_CANCELLED_ERROR = "前序保存失败，后续排队保存已取消，请检查后重试";
 
 export function useSaveQueue() {
-  const [saveState, setSaveState] = useState<TransactionSaveState>('idle');
-  const saveStateRef = useRef<TransactionSaveState>('idle');
+  const [saveState, setSaveState] = useState<TransactionSaveState>("idle");
+  const saveStateRef = useRef<TransactionSaveState>("idle");
   const saveQueueRef = useRef<SaveQueueTask[]>([]);
   const isProcessingSaveQueueRef = useRef(false);
 
@@ -26,14 +26,14 @@ export function useSaveQueue() {
   }, []);
 
   const process = useCallback(() => {
-    if (isProcessingSaveQueueRef.current || saveStateRef.current === 'children-selection') return;
+    if (isProcessingSaveQueueRef.current || saveStateRef.current === "children-selection") return;
     if (saveQueueRef.current.length === 0) {
-      if (saveStateRef.current === 'single-save') setCurrentSaveState('idle');
+      if (saveStateRef.current === "single-save") setCurrentSaveState("idle");
       return;
     }
 
     isProcessingSaveQueueRef.current = true;
-    if (saveStateRef.current !== 'single-save') setCurrentSaveState('single-save');
+    if (saveStateRef.current !== "single-save") setCurrentSaveState("single-save");
 
     void (async () => {
       try {
@@ -43,8 +43,11 @@ export function useSaveQueue() {
           try {
             result = await task.run();
           } catch (error) {
-            console.error('保存任务执行失败:', error);
-            result = { success: false, error: error instanceof Error ? error.message : '保存任务失败' };
+            console.error("保存任务执行失败:", error);
+            result = {
+              success: false,
+              error: error instanceof Error ? error.message : "保存任务失败",
+            };
           }
           saveQueueRef.current.shift();
           task.resolve(result);
@@ -59,40 +62,46 @@ export function useSaveQueue() {
         }
       } finally {
         isProcessingSaveQueueRef.current = false;
-        if (saveStateRef.current === 'single-save') setCurrentSaveState('idle');
+        if (saveStateRef.current === "single-save") setCurrentSaveState("idle");
       }
     })();
   }, [setCurrentSaveState]);
 
-  const offerSingleSave = useCallback((run: () => Promise<SaveQueueResult>): Promise<SaveQueueResult> => {
-    if (saveStateRef.current === 'children-selection') {
-      return Promise.resolve({ success: false, error: SAVE_BUSY_ERROR });
-    }
-
-    return new Promise(resolve => {
-      saveQueueRef.current.push({ run, resolve });
-      if (saveStateRef.current === 'idle') setCurrentSaveState('single-save');
-      process();
-    });
-  }, [process, setCurrentSaveState]);
-
-  const offerExclusiveAction = useCallback(async (run: () => Promise<SaveQueueResult>): Promise<SaveQueueResult> => {
-    if (saveStateRef.current !== 'idle') {
-      return { success: false, error: SAVE_BUSY_ERROR };
-    }
-
-    setCurrentSaveState('children-selection');
-    try {
-      try {
-        return await run();
-      } catch (error) {
-        console.error('保存任务执行失败:', error);
-        return { success: false, error: error instanceof Error ? error.message : '保存任务失败' };
+  const offerSingleSave = useCallback(
+    (run: () => Promise<SaveQueueResult>): Promise<SaveQueueResult> => {
+      if (saveStateRef.current === "children-selection") {
+        return Promise.resolve({ success: false, error: SAVE_BUSY_ERROR });
       }
-    } finally {
-      setCurrentSaveState('idle');
-    }
-  }, [setCurrentSaveState]);
+
+      return new Promise((resolve) => {
+        saveQueueRef.current.push({ run, resolve });
+        if (saveStateRef.current === "idle") setCurrentSaveState("single-save");
+        process();
+      });
+    },
+    [process, setCurrentSaveState],
+  );
+
+  const offerExclusiveAction = useCallback(
+    async (run: () => Promise<SaveQueueResult>): Promise<SaveQueueResult> => {
+      if (saveStateRef.current !== "idle") {
+        return { success: false, error: SAVE_BUSY_ERROR };
+      }
+
+      setCurrentSaveState("children-selection");
+      try {
+        try {
+          return await run();
+        } catch (error) {
+          console.error("保存任务执行失败:", error);
+          return { success: false, error: error instanceof Error ? error.message : "保存任务失败" };
+        }
+      } finally {
+        setCurrentSaveState("idle");
+      }
+    },
+    [setCurrentSaveState],
+  );
 
   return {
     saveState,

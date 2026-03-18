@@ -14,8 +14,8 @@ import type {
   TransactionSplitWithRelations,
   NewTransactionData,
   AppDataValue,
-} from '@/types';
-import type { SplitEntryData } from '@/components/homepage/split-area/split-entry-editor';
+} from "@/types";
+import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
 
 // ==================== 数据库 <==> 业务对象 ====================
 
@@ -30,21 +30,35 @@ export function buildTransactionsWithRelations(
   const { accounts, mainCategories, subCategories, budgetTypes } = appData;
 
   // 第一遍：添加账户、类别、预算等关联数据，以及 splits
-  const txWithRelations: TransactionWithRelations[] = allTransactions.map(tx => {
-    const account = accounts.find(a => a.id === tx.account_id);
-    const mainCategory = mainCategories.find(mc => mc.id === tx.main_category_id);
-    const subCategory = subCategories.find(sc => sc.id === tx.sub_category_id);
-    const budgetType = budgetTypes.find(bt => bt.id === tx.budget_type_id);
+  const txWithRelations: TransactionWithRelations[] = allTransactions.map((tx) => {
+    const account = accounts.find((a) => a.id === tx.account_id);
+    const mainCategory = mainCategories.find((mc) => mc.id === tx.main_category_id);
+    const subCategory = subCategories.find((sc) => sc.id === tx.sub_category_id);
+    const budgetType = budgetTypes.find((bt) => bt.id === tx.budget_type_id);
 
     const txSplitsWithRelations = allSplits
-      .filter(split => split.transaction_id === tx.id)
-      .map(split => {
-        const splitAccount = accounts.find(a => a.id === split.account_id);
-        const splitMainCategory = mainCategories.find(mc => mc.id === split.main_category_id);
-        const splitSubCategory = subCategories.find(sc => sc.id === split.sub_category_id);
-        const splitBudgetType = budgetTypes.find(bt => bt.id === split.budget_type_id);
+      .filter((split) => split.transaction_id === tx.id)
+      .map((split) => {
+        const splitAccount = accounts.find((a) => a.id === split.account_id);
+        const splitMainCategory = mainCategories.find((mc) => mc.id === split.main_category_id);
+        const splitSubCategory = subCategories.find((sc) => sc.id === split.sub_category_id);
+        const splitBudgetType = budgetTypes.find((bt) => bt.id === split.budget_type_id);
 
-        const { account_id, main_category_id, sub_category_id, budget_type_id, transaction_id, ...splitWithoutIds } = split;
+        const {
+          account_id,
+          main_category_id,
+          sub_category_id,
+          budget_type_id,
+          transaction_id,
+          ...splitWithoutIds
+        } = split;
+
+        void account_id;
+        void main_category_id;
+        void sub_category_id;
+        void budget_type_id;
+        void transaction_id;
+
         return {
           ...splitWithoutIds,
           account: splitAccount!,
@@ -55,6 +69,12 @@ export function buildTransactionsWithRelations(
       });
 
     const { account_id, main_category_id, sub_category_id, budget_type_id, ...txWithoutIds } = tx;
+
+    void account_id;
+    void main_category_id;
+    void sub_category_id;
+    void budget_type_id;
+
     return {
       ...txWithoutIds,
       account: account!,
@@ -69,7 +89,7 @@ export function buildTransactionsWithRelations(
   // 第二遍：维护 children_ids 关系
   allTransactions.forEach((tx, index) => {
     if (tx.parent_id) {
-      const parentIndex = allTransactions.findIndex(p => p.id === tx.parent_id);
+      const parentIndex = allTransactions.findIndex((p) => p.id === tx.parent_id);
       if (parentIndex !== -1) {
         txWithRelations[parentIndex].children_ids.push(txWithRelations[index].id);
       }
@@ -86,7 +106,17 @@ export function buildTransactionAndSplits(txWithRelations: TransactionWithRelati
   transaction: Transaction;
   splits: TransactionSplit[];
 } {
-  const { account, main_category, sub_category, budget_type, children_ids, splits: txSplits, ...txData } = txWithRelations;
+  const {
+    account,
+    main_category,
+    sub_category,
+    budget_type,
+    children_ids,
+    splits: txSplits,
+    ...txData
+  } = txWithRelations;
+
+  void children_ids;
 
   const transaction: Transaction = {
     ...txData,
@@ -97,7 +127,7 @@ export function buildTransactionAndSplits(txWithRelations: TransactionWithRelati
     budget_type_id: budget_type?.id ?? null,
   };
 
-  const splits: TransactionSplit[] = (txSplits ?? []).map(splitWithRelations => {
+  const splits: TransactionSplit[] = (txSplits ?? []).map((splitWithRelations) => {
     const { account, main_category, sub_category, budget_type, ...splitData } = splitWithRelations;
     return {
       ...splitData,
@@ -132,11 +162,15 @@ export function mergeContentDraft(
  * NewTransactionData --> TransactionInsert + TransactionSplitInsert[] (可插入数据库)
  */
 export function buildInsertFromNewData(newData: NewTransactionData): {
-  tx: Omit<TransactionInsert, 'user_id'>;
-  splits: Array<Omit<TransactionSplitInsert, 'user_id' | 'transaction_id'>>;
+  tx: Omit<TransactionInsert, "user_id">;
+  splits: Array<Omit<TransactionSplitInsert, "user_id" | "transaction_id">>;
 } {
-  const { account, main_category, sub_category, budget_type, children, splits, ...txFields } = newData;
-  const tx: Omit<TransactionInsert, 'user_id'> = {
+  const { account, main_category, sub_category, budget_type, children, splits, ...txFields } =
+    newData;
+
+  void children;
+
+  const tx: Omit<TransactionInsert, "user_id"> = {
     ...txFields,
     datetime: txFields.datetime || null,
     account_id: account.id,
@@ -144,7 +178,7 @@ export function buildInsertFromNewData(newData: NewTransactionData): {
     sub_category_id: sub_category?.id ?? null,
     budget_type_id: budget_type?.id ?? null,
   };
-  const insertSplits = (splits ?? []).map(split => {
+  const insertSplits = (splits ?? []).map((split) => {
     const { account, main_category, sub_category, budget_type, ...splitFields } = split;
     return {
       ...splitFields,
@@ -162,7 +196,9 @@ export function buildInsertFromNewData(newData: NewTransactionData): {
 /**
  * TransactionSplitWithRelations[] --> SplitEntryData[] (UI)
  */
-export function txSplitsToEntries(splits: TransactionSplitWithRelations[] | undefined): SplitEntryData[] {
+export function txSplitsToEntries(
+  splits: TransactionSplitWithRelations[] | undefined,
+): SplitEntryData[] {
   if (!splits || splits.length === 0) return [];
   return splits.map((split) => ({
     localId: `db-${split.id}`,
@@ -174,7 +210,7 @@ export function txSplitsToEntries(splits: TransactionSplitWithRelations[] | unde
       sub_id: split.sub_category ? String(split.sub_category.id) : undefined,
       budget_id: split.budget_type ? String(split.budget_type.id) : undefined,
     },
-    name: split.name ?? '',
+    name: split.name ?? "",
   }));
 }
 
@@ -187,15 +223,15 @@ export function entriesToTxSplits(
   userId: string,
 ): TransactionSplitWithRelations[] {
   return entries.map((entry, i) => {
-    const splitAccount = appData.accounts.find(a => String(a.id) === entry.accountId)!;
+    const splitAccount = appData.accounts.find((a) => String(a.id) === entry.accountId)!;
     const splitMainCat = entry.chainState.main_id
-      ? appData.mainCategories.find(mc => String(mc.id) === entry.chainState.main_id)
+      ? appData.mainCategories.find((mc) => String(mc.id) === entry.chainState.main_id)
       : undefined;
     const splitSubCat = entry.chainState.sub_id
-      ? appData.subCategories.find(sc => String(sc.id) === entry.chainState.sub_id)
+      ? appData.subCategories.find((sc) => String(sc.id) === entry.chainState.sub_id)
       : undefined;
     const splitBudget = entry.chainState.budget_id
-      ? appData.budgetTypes.find(bt => String(bt.id) === entry.chainState.budget_id)
+      ? appData.budgetTypes.find((bt) => String(bt.id) === entry.chainState.budget_id)
       : undefined;
 
     return {

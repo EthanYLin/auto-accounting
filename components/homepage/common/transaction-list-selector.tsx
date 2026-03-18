@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from "react";
 import { Input } from "@heroui/react";
 import { Button } from "@heroui/react";
 import { Checkbox } from "@heroui/react";
@@ -8,19 +8,32 @@ import { Chip } from "@heroui/react";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/react";
 import { Pagination } from "@heroui/react";
 import { MagnifyingGlassIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
-import { useTransactionStore } from '@/components/context/transaction-store-context';
-import { filterTransactionsBySearch, flattenTransactionsWithChildren } from '@/lib/hooks/use-transaction-filter';
-import { TRANSACTION_STATUS_COLORS } from '@/constants/transaction-type';
-import { calculateAmount, formatDateTime, formatCategoryDisplay } from '@/lib/transaction/transaction-display';
+
+import { useTransactionStore } from "@/components/context/transaction-store-context";
+import {
+  filterTransactionsBySearch,
+  flattenTransactionsWithChildren,
+} from "@/lib/hooks/use-transaction-filter";
+import { TRANSACTION_STATUS_COLORS } from "@/constants/transaction-type";
+import {
+  calculateAmount,
+  formatDateTime,
+  formatCategoryDisplay,
+} from "@/lib/transaction/transaction-display";
 
 interface TransactionListSelectorProps {
-  selectedIds: number[];           // 当前选中的交易ID（受控）
-  currentTransactionId?: number;    // 当前交易ID（高亮显示且不可选）
+  selectedIds: number[]; // 当前选中的交易ID（受控）
+  currentTransactionId?: number; // 当前交易ID（高亮显示且不可选）
   isDisabled?: boolean;
-  onConfirm: (ids: number[]) => void | Promise<void>;  // 点击完成时的回调
+  onConfirm: (ids: number[]) => void | Promise<void>; // 点击完成时的回调
 }
 
-export function TransactionListSelector({ selectedIds, currentTransactionId, isDisabled = false, onConfirm }: TransactionListSelectorProps) {
+export function TransactionListSelector({
+  selectedIds,
+  currentTransactionId,
+  isDisabled = false,
+  onConfirm,
+}: TransactionListSelectorProps) {
   const { transactions } = useTransactionStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [tempSelectedIds, setTempSelectedIds] = useState<number[]>(() => [...selectedIds]);
@@ -34,13 +47,13 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, isD
 
   const orderedTransactions = useMemo(
     () => flattenTransactionsWithChildren(transactions),
-    [transactions]
+    [transactions],
   );
 
   // 使用搜索过滤
   const filteredTransactions = useMemo(
     () => filterTransactionsBySearch(orderedTransactions, searchQuery),
-    [orderedTransactions, searchQuery]
+    [orderedTransactions, searchQuery],
   );
 
   // 计算总页数
@@ -61,7 +74,7 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, isD
   // 如果有 currentTransactionId，自动定位到该交易所在页
   useEffect(() => {
     if (currentTransactionId) {
-      const index = filteredTransactions.findIndex(tx => tx.id === currentTransactionId);
+      const index = filteredTransactions.findIndex((tx) => tx.id === currentTransactionId);
       if (index !== -1) {
         const page = Math.floor(index / itemsPerPage) + 1;
         setCurrentPage(page);
@@ -77,10 +90,10 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, isD
     if (isDisabled || id === currentTransactionId) {
       return;
     }
-    
-    setTempSelectedIds(prev => {
+
+    setTempSelectedIds((prev) => {
       if (prev.includes(id)) {
-        return prev.filter(selectedId => selectedId !== id);
+        return prev.filter((selectedId) => selectedId !== id);
       } else {
         return [...prev, id];
       }
@@ -114,11 +127,7 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, isD
 
       {/* 表格 - 可滚动区域 */}
       <div className="flex-1 min-h-0 overflow-y-auto w-full">
-        <Table 
-          aria-label="交易列表"
-          className="min-w-full"
-          removeWrapper
-        >
+        <Table aria-label="交易列表" className="min-w-full" removeWrapper>
           <TableHeader>
             <TableColumn>选择</TableColumn>
             <TableColumn>ID</TableColumn>
@@ -134,15 +143,15 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, isD
               const isSelected = tempSelectedIds.includes(tx.id);
               const isCurrent = tx.id === currentTransactionId;
               const isChild = !!tx.parent_id;
-              const cellClassName = isChild 
-                ? 'text-xs text-gray-500 dark:text-gray-400' 
-                : isCurrent 
-                ? 'font-bold text-success-600 dark:text-success-400'
-                : '';
+              const cellClassName = isChild
+                ? "text-xs text-gray-500 dark:text-gray-400"
+                : isCurrent
+                  ? "font-bold text-success-600 dark:text-success-400"
+                  : "";
               const rowClassName = `cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${
-                isSelected ? 'bg-primary-50 dark:bg-primary-900/20' : ''
-              } ${isCurrent ? 'cursor-not-allowed bg-success-50 dark:bg-success-900/20' : ''}`;
-              
+                isSelected ? "bg-primary-50 dark:bg-primary-900/20" : ""
+              } ${isCurrent ? "cursor-not-allowed bg-success-50 dark:bg-success-900/20" : ""}`;
+
               return (
                 <TableRow
                   key={tx.id}
@@ -177,13 +186,15 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, isD
                     <span className={cellClassName}>#{tx.id}</span>
                   </TableCell>
                   <TableCell>
-                    <span className={cellClassName}>{short(tx.name) || short(tx.title) || "-"}</span>
+                    <span className={cellClassName}>
+                      {short(tx.name) || short(tx.title) || "-"}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <span className={cellClassName}>¥{calculateAmount(tx).toFixed(2)}</span>
                   </TableCell>
                   <TableCell>
-                    <span className={cellClassName}>{tx.account?.name || '-'}</span>
+                    <span className={cellClassName}>{tx.account?.name || "-"}</span>
                   </TableCell>
                   <TableCell>
                     {(() => {
@@ -207,11 +218,7 @@ export function TransactionListSelector({ selectedIds, currentTransactionId, isD
                   <TableCell>
                     <div className={cellClassName}>
                       {!isChild && tx.status && (
-                        <Chip
-                          size="sm"
-                          color={TRANSACTION_STATUS_COLORS[tx.status]}
-                          variant="flat"
-                        >
+                        <Chip size="sm" color={TRANSACTION_STATUS_COLORS[tx.status]} variant="flat">
                           {tx.status}
                         </Chip>
                       )}

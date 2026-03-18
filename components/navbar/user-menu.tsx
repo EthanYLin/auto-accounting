@@ -1,14 +1,10 @@
-'use client'
+"use client";
 
-import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/react";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
 import { Avatar } from "@heroui/react";
-import { signOut } from "@/app/actions/auth";
 import { useRouter } from "next/navigation";
+
+import { signOut } from "@/app/actions/auth";
 import { useAppData } from "@/components/context/app-data-context";
 
 interface UserMenuProps {
@@ -23,14 +19,14 @@ interface UserMenuProps {
 export function UserMenu({ user }: UserMenuProps) {
   const router = useRouter();
   const { clearData } = useAppData();
-  const displayName = user.user_metadata?.nickname || user.email || '';
+  const displayName = user.user_metadata?.nickname || user.email || "";
 
   const handleSignOut = async () => {
     const result = await signOut();
     if (result?.success) {
       // 清空缓存的数据
       clearData();
-      router.push('/auth/login');
+      router.push("/auth/login");
     }
   };
 
@@ -48,7 +44,7 @@ export function UserMenu({ user }: UserMenuProps) {
       </DropdownTrigger>
       <DropdownMenu aria-label="用户菜单" variant="flat">
         <DropdownItem key="profile" className="h-14 gap-2" textValue="用户信息">
-          <p className="font-semibold">{displayName || '未设置昵称'}</p>
+          <p className="font-semibold">{displayName || "未设置昵称"}</p>
           {user.email && <p className="text-small text-default-500">{user.email}</p>}
         </DropdownItem>
         <DropdownItem key="logout" color="danger" onClick={handleSignOut}>
@@ -58,4 +54,3 @@ export function UserMenu({ user }: UserMenuProps) {
     </Dropdown>
   );
 }
-

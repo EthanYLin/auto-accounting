@@ -8,7 +8,9 @@ interface SaveButtonOverrideContextValue {
   clearSaveButtonOverride: () => void;
 }
 
-const SaveButtonOverrideContext = createContext<SaveButtonOverrideContextValue | undefined>(undefined);
+const SaveButtonOverrideContext = createContext<SaveButtonOverrideContextValue | undefined>(
+  undefined,
+);
 
 export function SaveButtonOverrideProvider({ children }: { children: React.ReactNode }) {
   const [saveButtonOverride, setSaveButtonOverride] = useState(false);
@@ -21,11 +23,14 @@ export function SaveButtonOverrideProvider({ children }: { children: React.React
     setSaveButtonOverride(false);
   }, []);
 
-  const value = useMemo<SaveButtonOverrideContextValue>(() => ({
-    saveButtonOverride,
-    showSaveButtonOverride,
-    clearSaveButtonOverride,
-  }), [saveButtonOverride, showSaveButtonOverride, clearSaveButtonOverride]);
+  const value = useMemo<SaveButtonOverrideContextValue>(
+    () => ({
+      saveButtonOverride,
+      showSaveButtonOverride,
+      clearSaveButtonOverride,
+    }),
+    [saveButtonOverride, showSaveButtonOverride, clearSaveButtonOverride],
+  );
 
   return (
     <SaveButtonOverrideContext.Provider value={value}>

@@ -1,16 +1,14 @@
 "use client";
 
+import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
+
 import { useRef, useState, useMemo, useCallback, useEffect } from "react";
 import { Button } from "@heroui/react";
-import {
-  PlusIcon,
-  EyeIcon,
-  EyeSlashIcon,
-} from "@heroicons/react/24/outline";
+import { PlusIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import { CheckCircleIcon as CheckCircleOutline } from "@heroicons/react/24/outline";
+
 import { SplitEntryEditor } from "@/components/homepage/split-area/split-entry-editor";
-import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
 import { getAvailableActions } from "@/lib/split-actions";
 import { useAppData } from "@/components/context/app-data-context";
 import { useTransactionEditor } from "@/components/context/transaction-editor-context";
@@ -19,7 +17,7 @@ import { defaultMerge, getExitSplits } from "@/lib/transaction/transaction-split
 
 // ==================== 主组件 ====================
 
-/**  
+/**
  * 生成 entries 的签名字符串，用于判断 store 中的拆账内容是否发生了外部回滚。
  */
 function getEntriesSignature(entries: SplitEntryData[]): string {
@@ -93,19 +91,28 @@ export function SplitEntryArea() {
   }, [entries]);
 
   // entries 变更时同步回 store
-  const handleEntriesChange = useCallback((newEntries: SplitEntryData[]) => {
-    lastLocalSignatureRef.current = getEntriesSignature(newEntries);
-    setEntries(newEntries);
-    if (!tx) return;
-    const splits = entriesToTxSplits(newEntries, appData, tx.user_id);
-    editor.updateSplits(splits);
-  }, [tx, appData, editor]);
+  const handleEntriesChange = useCallback(
+    (newEntries: SplitEntryData[]) => {
+      lastLocalSignatureRef.current = getEntriesSignature(newEntries);
+      setEntries(newEntries);
+      if (!tx) return;
+      const splits = entriesToTxSplits(newEntries, appData, tx.user_id);
+      editor.updateSplits(splits);
+    },
+    [tx, appData, editor],
+  );
 
   const handleAdd = useCallback(() => {
     const id = `split-${nextIdRef.current++}`;
     handleEntriesChange([
       ...entries,
-      { localId: id, accountId: appData.accounts[0]?.id.toString() ?? "", amount: "", chainState: {}, name: "" },
+      {
+        localId: id,
+        accountId: appData.accounts[0]?.id.toString() ?? "",
+        amount: "",
+        chainState: {},
+        name: "",
+      },
     ]);
   }, [entries, handleEntriesChange, appData.accounts]);
 
@@ -115,16 +122,19 @@ export function SplitEntryArea() {
     editor.updateSplits(defaultMergedSplits);
   }, [tx, childTransactions, editor]);
 
-  const handleActionSplit = useCallback((actionKey: string) => {
-    const action = availableActions.find((a) => a.key === actionKey);
-    if (!action || !action.split) return;
-    const selectedEntries = entries.filter((e) => selectedIds.has(e.localId));
-    const unselectedEntries = entries.filter((e) => !selectedIds.has(e.localId));
-    const newSelectedEntries = action.split(selectedEntries);
-    const newEntries = [...unselectedEntries, ...newSelectedEntries];
-    handleEntriesChange(newEntries);
-    setSelectedIds(new Set());
-  }, [availableActions, entries, selectedIds, handleEntriesChange]);
+  const handleActionSplit = useCallback(
+    (actionKey: string) => {
+      const action = availableActions.find((a) => a.key === actionKey);
+      if (!action || !action.split) return;
+      const selectedEntries = entries.filter((e) => selectedIds.has(e.localId));
+      const unselectedEntries = entries.filter((e) => !selectedIds.has(e.localId));
+      const newSelectedEntries = action.split(selectedEntries);
+      const newEntries = [...unselectedEntries, ...newSelectedEntries];
+      handleEntriesChange(newEntries);
+      setSelectedIds(new Set());
+    },
+    [availableActions, entries, selectedIds, handleEntriesChange],
+  );
 
   // ==================== 渲染 ====================
 
@@ -159,11 +169,7 @@ export function SplitEntryArea() {
           aria-label={showName ? "隐藏名称列" : "显示名称列"}
           title={showName ? "隐藏名称列" : "显示名称列"}
         >
-          {showName ? (
-            <EyeIcon className="w-4 h-4" />
-          ) : (
-            <EyeSlashIcon className="w-4 h-4" />
-          )}
+          {showName ? <EyeIcon className="w-4 h-4" /> : <EyeSlashIcon className="w-4 h-4" />}
         </Button>
         {/* 增加 */}
         <Button
@@ -189,9 +195,7 @@ export function SplitEntryArea() {
                     color={action.color ?? "default"}
                     className="flex-shrink-0 whitespace-nowrap"
                     startContent={
-                      ActionIcon
-                        ? <ActionIcon className="w-3.5 h-3.5 flex-shrink-0" />
-                        : undefined
+                      ActionIcon ? <ActionIcon className="w-3.5 h-3.5 flex-shrink-0" /> : undefined
                     }
                     onPress={() => handleActionSplit(action.key)}
                   >

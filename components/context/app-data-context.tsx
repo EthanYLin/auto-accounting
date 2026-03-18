@@ -1,12 +1,6 @@
 "use client";
 
-import type {
-  AppDataValue,
-  BudgetType,
-  MainCategory,
-  SubCategory,
-  TransactionType,
-} from "@/types";
+import type { AppDataValue, BudgetType, MainCategory, SubCategory, TransactionType } from "@/types";
 
 import React, {
   createContext,
@@ -56,14 +50,11 @@ async function fetchAllAppData(): Promise<AppDataValue> {
     getMatchingRules(),
   ]);
 
-  if (!accountsResult.success)
-    throw new Error(accountsResult.error || "获取账户失败");
+  if (!accountsResult.success) throw new Error(accountsResult.error || "获取账户失败");
   if (!mainCategoriesResult.success)
     throw new Error(mainCategoriesResult.error || "获取主类别失败");
-  if (!subCategoriesResult.success)
-    throw new Error(subCategoriesResult.error || "获取子类别失败");
-  if (!budgetTypesResult.success)
-    throw new Error(budgetTypesResult.error || "获取预算计划失败");
+  if (!subCategoriesResult.success) throw new Error(subCategoriesResult.error || "获取子类别失败");
+  if (!budgetTypesResult.success) throw new Error(budgetTypesResult.error || "获取预算计划失败");
   if (!matchingRulesResult.success)
     throw new Error(matchingRulesResult.error || "获取匹配规则失败");
 
@@ -93,15 +84,11 @@ interface AppDataContextValue extends AppDataValue {
   mainCategoryMap: Map<number, MainCategory>;
   subCategoryMap: Map<number, SubCategory>;
   budgetTypeMap: Map<number, BudgetType>;
-  getMainCategoriesByType: (
-    transactionType: TransactionType | "",
-  ) => MainCategory[];
+  getMainCategoriesByType: (transactionType: TransactionType | "") => MainCategory[];
   getSubCategoriesByMain: (mainCategoryId: number | null | "") => SubCategory[];
 }
 
-const AppDataContext = createContext<AppDataContextValue | undefined>(
-  undefined,
-);
+const AppDataContext = createContext<AppDataContextValue | undefined>(undefined);
 
 // ==================== Provider ====================
 
@@ -158,8 +145,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         addToast({
           title: "用户状态同步失败",
-          description:
-            error instanceof Error ? error.message : "检查用户状态时出错",
+          description: error instanceof Error ? error.message : "检查用户状态时出错",
           color: "danger",
         });
       }
@@ -173,21 +159,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   }, [pathname, loadData, clearData]);
 
   const appData = query.data ?? emptyAppData;
-  const {
-    accounts,
-    mainCategories,
-    subCategories,
-    budgetTypes,
-    matchingRules,
-  } = appData;
+  const { accounts, mainCategories, subCategories, budgetTypes, matchingRules } = appData;
 
   const lookups = useMemo(() => {
-    const mainCategoryMap = new Map(
-      mainCategories.map((item) => [item.id, item]),
-    );
-    const subCategoryMap = new Map(
-      subCategories.map((item) => [item.id, item]),
-    );
+    const mainCategoryMap = new Map(mainCategories.map((item) => [item.id, item]));
+    const subCategoryMap = new Map(subCategories.map((item) => [item.id, item]));
     const budgetTypeMap = new Map(budgetTypes.map((item) => [item.id, item]));
 
     const mainCategoriesByType = new Map<TransactionType, MainCategory[]>();
@@ -263,9 +239,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     ],
   );
 
-  return (
-    <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>
-  );
+  return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }
 
 // ==================== Hook ====================

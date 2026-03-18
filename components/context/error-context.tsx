@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useCallback } from 'react';
-import { addToast } from '@heroui/react';
+import React, { createContext, useContext, useCallback } from "react";
+import { addToast } from "@heroui/react";
 
 interface ErrorContextValue {
   showError: (title: string, message: string) => void;
@@ -14,21 +14,17 @@ export function ErrorProvider({ children }: { children: React.ReactNode }) {
     addToast({
       title,
       description: message,
-      color: 'danger',
+      color: "danger",
     });
   }, []);
 
-  return (
-    <ErrorContext.Provider value={{ showError }}>
-      {children}
-    </ErrorContext.Provider>
-  );
+  return <ErrorContext.Provider value={{ showError }}>{children}</ErrorContext.Provider>;
 }
 
 export function useError() {
   const context = useContext(ErrorContext);
   if (context === undefined) {
-    throw new Error('useError must be used within an ErrorProvider');
+    throw new Error("useError must be used within an ErrorProvider");
   }
   return context;
 }

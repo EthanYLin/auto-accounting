@@ -9,6 +9,7 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { I18nProvider } from "@react-aria/i18n";
 import { ToastProvider } from "@heroui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 import { AppDataProvider } from "@/components/context/app-data-context";
 import { SaveButtonOverrideProvider } from "@/components/context/save-button-override-context";
 import { TransactionStoreProvider } from "@/components/context/transaction-store-context";
@@ -22,9 +23,7 @@ export interface ProvidersProps {
 
 declare module "@react-types/shared" {
   interface RouterConfig {
-    routerOptions: NonNullable<
-      Parameters<ReturnType<typeof useRouter>["push"]>[1]
-    >;
+    routerOptions: NonNullable<Parameters<ReturnType<typeof useRouter>["push"]>[1]>;
   }
 }
 
@@ -64,9 +63,7 @@ export function Providers({ children, themeProps }: ProvidersProps) {
               <ErrorProvider>
                 <SaveButtonOverrideProvider>
                   <TransactionStoreProvider>
-                    <TransactionEditorProvider>
-                      {children}
-                    </TransactionEditorProvider>
+                    <TransactionEditorProvider>{children}</TransactionEditorProvider>
                   </TransactionStoreProvider>
                 </SaveButtonOverrideProvider>
               </ErrorProvider>

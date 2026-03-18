@@ -14,10 +14,7 @@ import {
 } from "@heroui/react";
 import { useForm } from "react-hook-form";
 
-import {
-  SettingsFormError,
-  getErrorMessage,
-} from "@/components/settings/settings-ui";
+import { SettingsFormError, getErrorMessage } from "@/components/settings/settings-ui";
 
 type UseSettingsDrawerFormOptions<TValues extends FieldValues, TItem> = {
   resolver: Resolver<TValues>;
@@ -29,10 +26,7 @@ type UseSettingsDrawerFormOptions<TValues extends FieldValues, TItem> = {
   submitErrorMessage: string;
 };
 
-export function useSettingsDrawerForm<
-  TValues extends FieldValues,
-  TItem = never,
->({
+export function useSettingsDrawerForm<TValues extends FieldValues, TItem = never>({
   resolver,
   defaultValues,
   item,

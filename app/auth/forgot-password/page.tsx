@@ -44,9 +44,7 @@ function ForgotPasswordContent() {
   const [step, setStep] = useState<"request" | "sent">("request");
   const [cooldown, setCooldown] = useState(0);
   const isSent = step === "sent";
-  const loginHref = email
-    ? `/auth/login?email=${encodeURIComponent(email)}`
-    : "/auth/login";
+  const loginHref = email ? `/auth/login?email=${encodeURIComponent(email)}` : "/auth/login";
   const resendLabel = cooldown > 0 ? `重发邮件（${cooldown}s）` : "重发邮件";
   const submitLabel = isSent ? resendLabel : "发送重置邮件";
 
@@ -78,10 +76,9 @@ function ForgotPasswordContent() {
         ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password`
         : `${window.location.origin}/auth/reset-password`;
 
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-        email,
-        { redirectTo },
-      );
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      });
 
       if (resetError) {
         setError(resetError.message);
@@ -110,9 +107,7 @@ function ForgotPasswordContent() {
       <Card className="w-full">
         <CardHeader className="flex flex-col items-start gap-1 px-6 pt-6">
           <h1 className="text-2xl font-bold">忘记密码</h1>
-          <p className="text-sm text-default-500">
-            输入邮箱，我们会发送重置密码链接到您的邮箱
-          </p>
+          <p className="text-sm text-default-500">输入邮箱，我们会发送重置密码链接到您的邮箱</p>
         </CardHeader>
         <Divider />
         <CardBody className="px-6 py-6">

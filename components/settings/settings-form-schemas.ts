@@ -33,10 +33,7 @@ const optionalIdSchema = z
     message: "请选择有效选项",
   });
 
-const optionalTransactionTypeSchema = z.union([
-  z.enum(transactionTypeValues),
-  z.literal(""),
-]);
+const optionalTransactionTypeSchema = z.union([z.enum(transactionTypeValues), z.literal("")]);
 
 export const accountFormSchema = z.object({
   name: z.string().trim().min(1, "请输入账户名称").max(100, "账户名称过长"),
@@ -57,11 +54,7 @@ export function toAccountPayload(values: AccountFormValues) {
 }
 
 export const budgetFormSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, "请输入预算计划名称")
-    .max(100, "预算计划名称过长"),
+  name: z.string().trim().min(1, "请输入预算计划名称").max(100, "预算计划名称过长"),
   icon: z.string().trim().max(16, "图标过长"),
 });
 
@@ -89,11 +82,7 @@ export function toBudgetPayload(values: BudgetFormValues) {
 }
 
 export const mainCategoryFormSchema = z.object({
-  label: z
-    .string()
-    .trim()
-    .min(1, "请输入主类别名称")
-    .max(100, "主类别名称过长"),
+  label: z.string().trim().min(1, "请输入主类别名称").max(100, "主类别名称过长"),
   transaction_type: z.enum(transactionTypeValues),
   icon: z.string().trim().max(16, "图标过长"),
   back_color: z.string().trim().max(100, "背景色配置过长"),
@@ -110,9 +99,7 @@ export const defaultMainCategoryFormValues: MainCategoryFormValues = {
   fore_color: "",
 };
 
-export function getMainCategoryFormValues(
-  item?: MainCategory,
-): MainCategoryFormValues {
+export function getMainCategoryFormValues(item?: MainCategory): MainCategoryFormValues {
   return item
     ? {
         label: item.label,
@@ -137,11 +124,7 @@ export function toMainCategoryPayload(
 }
 
 export const subCategoryFormSchema = z.object({
-  label: z
-    .string()
-    .trim()
-    .min(1, "请输入子类别名称")
-    .max(100, "子类别名称过长"),
+  label: z.string().trim().min(1, "请输入子类别名称").max(100, "子类别名称过长"),
   main_category_id: z.string().trim().min(1, "请选择主类别"),
   budget_type_id: optionalIdSchema,
   icon: z.string().trim().max(16, "图标过长"),
@@ -177,9 +160,7 @@ export function getSubCategoryFormValues(
 
   return {
     ...defaultSubCategoryFormValues,
-    main_category_id: defaultMainCategoryId
-      ? String(defaultMainCategoryId)
-      : "",
+    main_category_id: defaultMainCategoryId ? String(defaultMainCategoryId) : "",
   };
 }
 
@@ -189,9 +170,7 @@ export function toSubCategoryPayload(
   return {
     label: values.label.trim(),
     main_category_id: Number(values.main_category_id),
-    budget_type_id: values.budget_type_id
-      ? Number(values.budget_type_id)
-      : null,
+    budget_type_id: values.budget_type_id ? Number(values.budget_type_id) : null,
     icon: values.icon.trim() || "📌",
     back_color: values.back_color.trim() || "bg-gray-100 dark:bg-gray-800",
     fore_color: values.fore_color.trim() || "text-gray-800 dark:text-gray-200",
@@ -212,14 +191,8 @@ export const matchingRuleFormSchema = z
     t_merchant: z.string().trim().max(120, "商家过长"),
   })
   .superRefine((values, ctx) => {
-    const min =
-      values.f_original_amount_ge === ""
-        ? null
-        : Number(values.f_original_amount_ge);
-    const max =
-      values.f_original_amount_le === ""
-        ? null
-        : Number(values.f_original_amount_le);
+    const min = values.f_original_amount_ge === "" ? null : Number(values.f_original_amount_ge);
+    const max = values.f_original_amount_le === "" ? null : Number(values.f_original_amount_le);
 
     if (min !== null && max !== null && min > max) {
       ctx.addIssue({
@@ -253,9 +226,7 @@ export const defaultMatchingRuleFormValues: MatchingRuleFormValues = {
   t_merchant: "",
 };
 
-export function getMatchingRuleFormValues(
-  rule?: MatchingRule,
-): MatchingRuleFormValues {
+export function getMatchingRuleFormValues(rule?: MatchingRule): MatchingRuleFormValues {
   return rule
     ? {
         f_title: rule.f_title,
@@ -263,15 +234,9 @@ export function getMatchingRuleFormValues(
         f_original_amount_le: rule.f_original_amount_le?.toString() ?? "",
         f_time: rule.f_time ?? "",
         t_tx_type: rule.t_tx_type ?? "",
-        t_main_category_id: rule.t_main_category_id
-          ? String(rule.t_main_category_id)
-          : "",
-        t_sub_category_id: rule.t_sub_category_id
-          ? String(rule.t_sub_category_id)
-          : "",
-        t_budget_type_id: rule.t_budget_type_id
-          ? String(rule.t_budget_type_id)
-          : "",
+        t_main_category_id: rule.t_main_category_id ? String(rule.t_main_category_id) : "",
+        t_sub_category_id: rule.t_sub_category_id ? String(rule.t_sub_category_id) : "",
+        t_budget_type_id: rule.t_budget_type_id ? String(rule.t_budget_type_id) : "",
         t_name: rule.t_name ?? "",
         t_merchant: rule.t_merchant ?? "",
       }
@@ -284,24 +249,14 @@ export function toMatchingRulePayload(
   return {
     f_title: values.f_title.trim(),
     f_original_amount_ge:
-      values.f_original_amount_ge === ""
-        ? null
-        : Number(values.f_original_amount_ge),
+      values.f_original_amount_ge === "" ? null : Number(values.f_original_amount_ge),
     f_original_amount_le:
-      values.f_original_amount_le === ""
-        ? null
-        : Number(values.f_original_amount_le),
+      values.f_original_amount_le === "" ? null : Number(values.f_original_amount_le),
     f_time: values.f_time.trim() || null,
     t_tx_type: values.t_tx_type || null,
-    t_main_category_id: values.t_main_category_id
-      ? Number(values.t_main_category_id)
-      : null,
-    t_sub_category_id: values.t_sub_category_id
-      ? Number(values.t_sub_category_id)
-      : null,
-    t_budget_type_id: values.t_budget_type_id
-      ? Number(values.t_budget_type_id)
-      : null,
+    t_main_category_id: values.t_main_category_id ? Number(values.t_main_category_id) : null,
+    t_sub_category_id: values.t_sub_category_id ? Number(values.t_sub_category_id) : null,
+    t_budget_type_id: values.t_budget_type_id ? Number(values.t_budget_type_id) : null,
     t_name: values.t_name.trim() || null,
     t_merchant: values.t_merchant.trim() || null,
   };

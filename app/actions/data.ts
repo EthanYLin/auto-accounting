@@ -1,6 +1,5 @@
-'use server';
+"use server";
 
-import { createClient } from '@/lib/supabase/server';
 import type {
   Account,
   AccountInsert,
@@ -21,7 +20,9 @@ import type {
   MatchingRule,
   MatchingRuleInsert,
   MatchingRuleUpdate,
-} from '@/types';
+} from "@/types";
+
+import { createClient } from "@/lib/supabase/server";
 
 type ActionResult<T> = { success: boolean; data?: T; error?: string };
 
@@ -38,12 +39,15 @@ type SupabaseWithUser = {
 async function getSupabaseWithUser(): Promise<SupabaseWithUser> {
   // 创建 Supabase 客户端
   const supabase = await createClient();
-  if (!supabase) return { success: false, error: 'Supabase 客户端创建失败' };
+  if (!supabase) return { success: false, error: "Supabase 客户端创建失败" };
 
   // 获取当前用户
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError) return { success: false, error: '获取用户信息失败' };
-  if (!user) return { success: false, error: '未登录' };
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError) return { success: false, error: "获取用户信息失败" };
+  if (!user) return { success: false, error: "未登录" };
   return { success: true, supabase, user: { id: user.id } };
 }
 
@@ -52,12 +56,15 @@ const fail = (error: string): ActionResult<never> => ({ success: false, error })
 
 async function withSupabaseUser<T>(
   operation: string,
-  fn: (ctx: { supabase: Awaited<ReturnType<typeof createClient>>; userId: string }) => Promise<ActionResult<T>>,
+  fn: (ctx: {
+    supabase: Awaited<ReturnType<typeof createClient>>;
+    userId: string;
+  }) => Promise<ActionResult<T>>,
 ): Promise<ActionResult<T>> {
   try {
     const auth = await getSupabaseWithUser();
     if (!auth.success || !auth.supabase || !auth.user) {
-      return { success: false, error: auth.error ?? '认证失败' };
+      return { success: false, error: auth.error ?? "认证失败" };
     }
 
     return await fn({ supabase: auth.supabase, userId: auth.user.id });
@@ -74,15 +81,15 @@ async function withSupabaseUser<T>(
  * 获取当前用户的所有账户
  */
 export async function getAccounts(): Promise<ActionResult<Account[]>> {
-  return withSupabaseUser('获取账户', async ({ supabase, userId }) => {
+  return withSupabaseUser("获取账户", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('account')
-      .select('*')
-      .eq('user_id', userId)
-      .order('id', { ascending: true });
+      .from("account")
+      .select("*")
+      .eq("user_id", userId)
+      .order("id", { ascending: true });
 
     if (error) {
-      console.error('获取账户失败:', error);
+      console.error("获取账户失败:", error);
       return fail(error.message);
     }
 
@@ -94,9 +101,9 @@ export async function getAccounts(): Promise<ActionResult<Account[]>> {
  * 新增账户
  */
 export async function createAccount(name: string): Promise<ActionResult<Account>> {
-  return withSupabaseUser('新增账户', async ({ supabase, userId }) => {
+  return withSupabaseUser("新增账户", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('account')
+      .from("account")
       .insert({ name, user_id: userId } satisfies AccountInsert)
       .select()
       .single();
@@ -113,12 +120,12 @@ export async function createAccount(name: string): Promise<ActionResult<Account>
  * 更新账户
  */
 export async function updateAccount(id: number, name: string): Promise<ActionResult<Account>> {
-  return withSupabaseUser('更新账户', async ({ supabase, userId }) => {
+  return withSupabaseUser("更新账户", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('account')
+      .from("account")
       .update({ name })
-      .eq('id', id)
-      .eq('user_id', userId)
+      .eq("id", id)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -134,8 +141,8 @@ export async function updateAccount(id: number, name: string): Promise<ActionRes
  * 删除账户
  */
 export async function deleteAccount(id: number): Promise<ActionResult<null>> {
-  return withSupabaseUser('删除账户', async ({ supabase, userId }) => {
-    const { error } = await supabase.from('account').delete().eq('id', id).eq('user_id', userId);
+  return withSupabaseUser("删除账户", async ({ supabase, userId }) => {
+    const { error } = await supabase.from("account").delete().eq("id", id).eq("user_id", userId);
 
     if (error) {
       return fail(error.message);
@@ -152,15 +159,15 @@ export async function deleteAccount(id: number): Promise<ActionResult<null>> {
  * 获取当前用户的所有主类别
  */
 export async function getMainCategories(): Promise<ActionResult<MainCategory[]>> {
-  return withSupabaseUser('获取主类别', async ({ supabase, userId }) => {
+  return withSupabaseUser("获取主类别", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('main_category')
-      .select('*')
-      .eq('user_id', userId)
-      .order('id', { ascending: true });
+      .from("main_category")
+      .select("*")
+      .eq("user_id", userId)
+      .order("id", { ascending: true });
 
     if (error) {
-      console.error('获取主类别失败:', error);
+      console.error("获取主类别失败:", error);
       return fail(error.message);
     }
 
@@ -172,11 +179,11 @@ export async function getMainCategories(): Promise<ActionResult<MainCategory[]>>
  * 新增主类别
  */
 export async function createMainCategory(
-  payload: Omit<MainCategoryInsert, 'user_id'>,
+  payload: Omit<MainCategoryInsert, "user_id">,
 ): Promise<ActionResult<MainCategory>> {
-  return withSupabaseUser('新增主类别', async ({ supabase, userId }) => {
+  return withSupabaseUser("新增主类别", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('main_category')
+      .from("main_category")
       .insert({ ...payload, user_id: userId })
       .select()
       .single();
@@ -194,14 +201,14 @@ export async function createMainCategory(
  */
 export async function updateMainCategory(
   id: number,
-  payload: Partial<Omit<MainCategoryUpdate, 'user_id'>>,
+  payload: Partial<Omit<MainCategoryUpdate, "user_id">>,
 ): Promise<ActionResult<MainCategory>> {
-  return withSupabaseUser('更新主类别', async ({ supabase, userId }) => {
+  return withSupabaseUser("更新主类别", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('main_category')
+      .from("main_category")
       .update(payload)
-      .eq('id', id)
-      .eq('user_id', userId)
+      .eq("id", id)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -217,8 +224,12 @@ export async function updateMainCategory(
  * 删除主类别
  */
 export async function deleteMainCategory(id: number): Promise<ActionResult<null>> {
-  return withSupabaseUser('删除主类别', async ({ supabase, userId }) => {
-    const { error } = await supabase.from('main_category').delete().eq('id', id).eq('user_id', userId);
+  return withSupabaseUser("删除主类别", async ({ supabase, userId }) => {
+    const { error } = await supabase
+      .from("main_category")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", userId);
 
     if (error) {
       return fail(error.message);
@@ -235,15 +246,15 @@ export async function deleteMainCategory(id: number): Promise<ActionResult<null>
  * 获取当前用户的所有子类别
  */
 export async function getSubCategories(): Promise<ActionResult<SubCategory[]>> {
-  return withSupabaseUser('获取子类别', async ({ supabase, userId }) => {
+  return withSupabaseUser("获取子类别", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('sub_category')
-      .select('*')
-      .eq('user_id', userId)
-      .order('id', { ascending: true });
+      .from("sub_category")
+      .select("*")
+      .eq("user_id", userId)
+      .order("id", { ascending: true });
 
     if (error) {
-      console.error('获取子类别失败:', error);
+      console.error("获取子类别失败:", error);
       return fail(error.message);
     }
 
@@ -255,11 +266,11 @@ export async function getSubCategories(): Promise<ActionResult<SubCategory[]>> {
  * 新增子类别
  */
 export async function createSubCategory(
-  payload: Omit<SubCategoryInsert, 'user_id'>,
+  payload: Omit<SubCategoryInsert, "user_id">,
 ): Promise<ActionResult<SubCategory>> {
-  return withSupabaseUser('新增子类别', async ({ supabase, userId }) => {
+  return withSupabaseUser("新增子类别", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('sub_category')
+      .from("sub_category")
       .insert({ ...payload, user_id: userId })
       .select()
       .single();
@@ -277,14 +288,14 @@ export async function createSubCategory(
  */
 export async function updateSubCategory(
   id: number,
-  payload: Partial<Omit<SubCategoryUpdate, 'user_id'>>,
+  payload: Partial<Omit<SubCategoryUpdate, "user_id">>,
 ): Promise<ActionResult<SubCategory>> {
-  return withSupabaseUser('更新子类别', async ({ supabase, userId }) => {
+  return withSupabaseUser("更新子类别", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('sub_category')
+      .from("sub_category")
       .update(payload)
-      .eq('id', id)
-      .eq('user_id', userId)
+      .eq("id", id)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -300,8 +311,12 @@ export async function updateSubCategory(
  * 删除子类别
  */
 export async function deleteSubCategory(id: number): Promise<ActionResult<null>> {
-  return withSupabaseUser('删除子类别', async ({ supabase, userId }) => {
-    const { error } = await supabase.from('sub_category').delete().eq('id', id).eq('user_id', userId);
+  return withSupabaseUser("删除子类别", async ({ supabase, userId }) => {
+    const { error } = await supabase
+      .from("sub_category")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", userId);
 
     if (error) {
       return fail(error.message);
@@ -318,15 +333,15 @@ export async function deleteSubCategory(id: number): Promise<ActionResult<null>>
  * 获取当前用户的所有预算计划
  */
 export async function getBudgetTypes(): Promise<ActionResult<BudgetType[]>> {
-  return withSupabaseUser('获取预算计划', async ({ supabase, userId }) => {
+  return withSupabaseUser("获取预算计划", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('budget_type')
-      .select('*')
-      .eq('user_id', userId)
-      .order('id', { ascending: true });
+      .from("budget_type")
+      .select("*")
+      .eq("user_id", userId)
+      .order("id", { ascending: true });
 
     if (error) {
-      console.error('获取预算计划失败:', error);
+      console.error("获取预算计划失败:", error);
       return fail(error.message);
     }
 
@@ -334,14 +349,16 @@ export async function getBudgetTypes(): Promise<ActionResult<BudgetType[]>> {
   });
 }
 
-
 /**
  * 新增预算计划
  */
-export async function createBudgetType(name: string, icon?: string): Promise<ActionResult<BudgetType>> {
-  return withSupabaseUser('新增预算计划', async ({ supabase, userId }) => {
+export async function createBudgetType(
+  name: string,
+  icon?: string,
+): Promise<ActionResult<BudgetType>> {
+  return withSupabaseUser("新增预算计划", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('budget_type')
+      .from("budget_type")
       .insert({ name, icon: icon ?? null, user_id: userId } satisfies BudgetTypeInsert)
       .select()
       .single();
@@ -357,13 +374,17 @@ export async function createBudgetType(name: string, icon?: string): Promise<Act
 /**
  * 更新预算计划
  */
-export async function updateBudgetType(id: number, name: string, icon?: string): Promise<ActionResult<BudgetType>> {
-  return withSupabaseUser('更新预算计划', async ({ supabase, userId }) => {
+export async function updateBudgetType(
+  id: number,
+  name: string,
+  icon?: string,
+): Promise<ActionResult<BudgetType>> {
+  return withSupabaseUser("更新预算计划", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('budget_type')
+      .from("budget_type")
       .update({ name, icon: icon ?? null } satisfies BudgetTypeUpdate)
-      .eq('id', id)
-      .eq('user_id', userId)
+      .eq("id", id)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -379,8 +400,12 @@ export async function updateBudgetType(id: number, name: string, icon?: string):
  * 删除预算计划
  */
 export async function deleteBudgetType(id: number): Promise<ActionResult<null>> {
-  return withSupabaseUser('删除预算计划', async ({ supabase, userId }) => {
-    const { error } = await supabase.from('budget_type').delete().eq('id', id).eq('user_id', userId);
+  return withSupabaseUser("删除预算计划", async ({ supabase, userId }) => {
+    const { error } = await supabase
+      .from("budget_type")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", userId);
 
     if (error) {
       return fail(error.message);
@@ -390,7 +415,6 @@ export async function deleteBudgetType(id: number): Promise<ActionResult<null>> 
   });
 }
 
-
 // ========================================================
 // 交易记录相关
 // ========================================================
@@ -399,12 +423,12 @@ export async function deleteBudgetType(id: number): Promise<ActionResult<null>> 
  * 获取当前用户的所有交易记录
  */
 export async function getAllTransactions(): Promise<ActionResult<Transaction[]>> {
-  return withSupabaseUser('获取所有交易记录', async ({ supabase, userId }) => {
+  return withSupabaseUser("获取所有交易记录", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('transaction')
-      .select('*')
-      .eq('user_id', userId)
-      .order('datetime', { ascending: false });
+      .from("transaction")
+      .select("*")
+      .eq("user_id", userId)
+      .order("datetime", { ascending: false });
 
     if (error) {
       return fail(error.message);
@@ -414,14 +438,15 @@ export async function getAllTransactions(): Promise<ActionResult<Transaction[]>>
   });
 }
 
-
 /**
  * 插入交易记录
  */
-export async function insertTransaction(payload: Omit<TransactionInsert, 'user_id'>): Promise<ActionResult<Transaction>> {
-  return withSupabaseUser('插入交易记录', async ({ supabase, userId }) => {
+export async function insertTransaction(
+  payload: Omit<TransactionInsert, "user_id">,
+): Promise<ActionResult<Transaction>> {
+  return withSupabaseUser("插入交易记录", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('transaction')
+      .from("transaction")
       .insert({ ...payload, user_id: userId })
       .select()
       .single();
@@ -438,14 +463,14 @@ export async function insertTransaction(payload: Omit<TransactionInsert, 'user_i
  * 批量插入交易记录
  */
 export async function bulkInsertTransactions(
-  transactions: Array<Omit<TransactionInsert, 'user_id'>>
+  transactions: Array<Omit<TransactionInsert, "user_id">>,
 ): Promise<ActionResult<Transaction[]>> {
-    return withSupabaseUser('批量插入交易记录', async ({ supabase, userId }) => {
+  return withSupabaseUser("批量插入交易记录", async ({ supabase, userId }) => {
     // 为所有交易添加 user_id
-    const transactionsWithUserId = transactions.map(tx => ({ ...tx, user_id: userId }));
+    const transactionsWithUserId = transactions.map((tx) => ({ ...tx, user_id: userId }));
 
     const { data, error } = await supabase
-      .from('transaction')
+      .from("transaction")
       .insert(transactionsWithUserId)
       .select();
 
@@ -462,14 +487,14 @@ export async function bulkInsertTransactions(
  */
 export async function updateTransaction(
   id: number,
-  payload: Partial<Omit<TransactionUpdate, 'user_id'>>
+  payload: Partial<Omit<TransactionUpdate, "user_id">>,
 ): Promise<ActionResult<Transaction>> {
-  return withSupabaseUser('更新交易记录', async ({ supabase, userId }) => {
+  return withSupabaseUser("更新交易记录", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('transaction')
+      .from("transaction")
       .update(payload)
-      .eq('id', id)
-      .eq('user_id', userId)
+      .eq("id", id)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -485,8 +510,12 @@ export async function updateTransaction(
  * 批量删除交易记录
  */
 export async function bulkDeleteTransactions(ids: number[]): Promise<ActionResult<null>> {
-  return withSupabaseUser('批量删除交易记录', async ({ supabase, userId }) => {
-    const { error } = await supabase.from('transaction').delete().in('id', ids).eq('user_id', userId);
+  return withSupabaseUser("批量删除交易记录", async ({ supabase, userId }) => {
+    const { error } = await supabase
+      .from("transaction")
+      .delete()
+      .in("id", ids)
+      .eq("user_id", userId);
 
     if (error) {
       return fail(error.message);
@@ -500,11 +529,8 @@ export async function bulkDeleteTransactions(ids: number[]): Promise<ActionResul
  * 删除当前用户的所有交易记录
  */
 export async function deleteAllTransactions(): Promise<ActionResult<null>> {
-  return withSupabaseUser('删除所有交易记录', async ({ supabase, userId }) => {
-    const { error } = await supabase
-      .from('transaction')
-      .delete()
-      .eq('user_id', userId);
+  return withSupabaseUser("删除所有交易记录", async ({ supabase, userId }) => {
+    const { error } = await supabase.from("transaction").delete().eq("user_id", userId);
 
     if (error) {
       return fail(error.message);
@@ -522,12 +548,12 @@ export async function deleteAllTransactions(): Promise<ActionResult<null>> {
  * 获取当前用户的所有拆账记录
  */
 export async function getAllTransactionSplits(): Promise<ActionResult<TransactionSplit[]>> {
-  return withSupabaseUser('获取拆账记录', async ({ supabase, userId }) => {
+  return withSupabaseUser("获取拆账记录", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('transaction_split')
-      .select('*')
-      .eq('user_id', userId)
-      .order('id', { ascending: true });
+      .from("transaction_split")
+      .select("*")
+      .eq("user_id", userId)
+      .order("id", { ascending: true });
 
     if (error) {
       return fail(error.message);
@@ -541,21 +567,24 @@ export async function getAllTransactionSplits(): Promise<ActionResult<Transactio
  * 批量插入交易拆账记录
  */
 export async function bulkInsertTransactionSplits(
-  splits: Array<Omit<TransactionSplitInsert, 'user_id'>>
+  splits: Array<Omit<TransactionSplitInsert, "user_id">>,
 ): Promise<ActionResult<TransactionSplit[]>> {
-  return withSupabaseUser('批量插入拆账记录', async ({ supabase, userId }) => {
+  return withSupabaseUser("批量插入拆账记录", async ({ supabase, userId }) => {
     if (splits.length === 0) {
       return ok([]);
     }
 
     // 为所有拆账记录添加 user_id，并排除 id 字段（让数据库自动生成）
-    const splitsWithUserId = splits.map(split => {
+    const splitsWithUserId = splits.map((split) => {
       const { id, ...splitWithoutId } = split;
+
+      void id;
+
       return { ...splitWithoutId, user_id: userId };
     });
 
     const { data, error } = await supabase
-      .from('transaction_split')
+      .from("transaction_split")
       .insert(splitsWithUserId)
       .select();
 
@@ -571,9 +600,13 @@ export async function bulkInsertTransactionSplits(
  * 删除指定交易的所有拆账记录
  */
 export async function deleteTransactionSplits(transactionId: number): Promise<ActionResult<null>> {
-  return withSupabaseUser('删除指定交易的所有拆账记录', async ({ supabase, userId }) => {
-    const { error } = await supabase.from('transaction_split').delete().eq('transaction_id', transactionId).eq('user_id', userId);
-    
+  return withSupabaseUser("删除指定交易的所有拆账记录", async ({ supabase, userId }) => {
+    const { error } = await supabase
+      .from("transaction_split")
+      .delete()
+      .eq("transaction_id", transactionId)
+      .eq("user_id", userId);
+
     if (error) {
       return fail(error.message);
     }
@@ -586,8 +619,8 @@ export async function deleteTransactionSplits(transactionId: number): Promise<Ac
  * 删除当前用户的所有拆账记录
  */
 export async function deleteAllTransactionSplits(): Promise<ActionResult<null>> {
-  return withSupabaseUser('删除当前用户的所有拆账记录', async ({ supabase, userId }) => {
-    const { error } = await supabase.from('transaction_split').delete().eq('user_id', userId);
+  return withSupabaseUser("删除当前用户的所有拆账记录", async ({ supabase, userId }) => {
+    const { error } = await supabase.from("transaction_split").delete().eq("user_id", userId);
 
     if (error) {
       return fail(error.message);
@@ -605,15 +638,15 @@ export async function deleteAllTransactionSplits(): Promise<ActionResult<null>> 
  * 获取当前用户的所有匹配规则
  */
 export async function getMatchingRules(): Promise<ActionResult<MatchingRule[]>> {
-  return withSupabaseUser('获取匹配规则', async ({ supabase, userId }) => {
+  return withSupabaseUser("获取匹配规则", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('matching_rule')
-      .select('*')
-      .eq('user_id', userId)
-      .order('id', { ascending: true });
+      .from("matching_rule")
+      .select("*")
+      .eq("user_id", userId)
+      .order("id", { ascending: true });
 
     if (error) {
-      console.error('获取匹配规则失败:', error);
+      console.error("获取匹配规则失败:", error);
       return fail(error.message);
     }
 
@@ -625,11 +658,11 @@ export async function getMatchingRules(): Promise<ActionResult<MatchingRule[]>> 
  * 新增匹配规则
  */
 export async function createMatchingRule(
-  payload: Omit<MatchingRuleInsert, 'user_id'>
+  payload: Omit<MatchingRuleInsert, "user_id">,
 ): Promise<ActionResult<MatchingRule>> {
-  return withSupabaseUser('新增匹配规则', async ({ supabase, userId }) => {
+  return withSupabaseUser("新增匹配规则", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('matching_rule')
+      .from("matching_rule")
       .insert({ ...payload, user_id: userId })
       .select()
       .single();
@@ -647,14 +680,14 @@ export async function createMatchingRule(
  */
 export async function updateMatchingRule(
   id: number,
-  payload: Partial<Omit<MatchingRuleUpdate, 'user_id'>>
+  payload: Partial<Omit<MatchingRuleUpdate, "user_id">>,
 ): Promise<ActionResult<MatchingRule>> {
-  return withSupabaseUser('更新匹配规则', async ({ supabase, userId }) => {
+  return withSupabaseUser("更新匹配规则", async ({ supabase, userId }) => {
     const { data, error } = await supabase
-      .from('matching_rule')
+      .from("matching_rule")
       .update(payload)
-      .eq('id', id)
-      .eq('user_id', userId)
+      .eq("id", id)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -670,8 +703,12 @@ export async function updateMatchingRule(
  * 删除匹配规则
  */
 export async function deleteMatchingRule(id: number): Promise<ActionResult<null>> {
-  return withSupabaseUser('删除匹配规则', async ({ supabase, userId }) => {
-    const { error } = await supabase.from('matching_rule').delete().eq('id', id).eq('user_id', userId);
+  return withSupabaseUser("删除匹配规则", async ({ supabase, userId }) => {
+    const { error } = await supabase
+      .from("matching_rule")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", userId);
 
     if (error) {
       return fail(error.message);

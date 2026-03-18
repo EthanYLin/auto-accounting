@@ -154,12 +154,7 @@ function ResetPasswordContent() {
             <Alert color="danger" title="重置链接无效或已过期">
               {linkError}
             </Alert>
-            <Button
-              as={Link}
-              className="w-full"
-              color="primary"
-              href="/auth/forgot-password"
-            >
+            <Button as={Link} className="w-full" color="primary" href="/auth/forgot-password">
               重新获取重置邮件
             </Button>
           </CardBody>
@@ -181,12 +176,7 @@ function ResetPasswordContent() {
               <div className="text-sm text-success-700 dark:text-success-400 bg-success-100 dark:bg-success-900/30 px-4 py-3 rounded-lg">
                 <p>您的密码已更新。</p>
               </div>
-              <Button
-                as={Link}
-                className="w-full"
-                color="primary"
-                href="/auth/login"
-              >
+              <Button as={Link} className="w-full" color="primary" href="/auth/login">
                 继续
               </Button>
             </div>
@@ -234,12 +224,7 @@ function ResetPasswordContent() {
               </div>
             )}
 
-            <Button
-              className="w-full"
-              color="primary"
-              isLoading={loading}
-              type="submit"
-            >
+            <Button className="w-full" color="primary" isLoading={loading} type="submit">
               更新密码
             </Button>
           </form>

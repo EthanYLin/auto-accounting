@@ -1,4 +1,5 @@
 import type { SplitHint } from "./use-action-bar-controller";
+
 import { ExclamationTriangleIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
 
 interface SplitHintBadgeProps {

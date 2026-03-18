@@ -6,10 +6,7 @@ import { addToast } from "@heroui/react";
 import { Tab, Tabs } from "@heroui/react";
 import { useIsFetching } from "@tanstack/react-query";
 
-import {
-  appDataQueryKey,
-  useAppData,
-} from "@/components/context/app-data-context";
+import { appDataQueryKey, useAppData } from "@/components/context/app-data-context";
 import { AccountSection } from "@/components/settings/account-section";
 import { BudgetSection } from "@/components/settings/budget-section";
 import {
@@ -22,8 +19,7 @@ import { SubCategorySection } from "@/components/settings/sub-category-section";
 import { getErrorMessage } from "@/components/settings/settings-ui";
 
 export default function SettingsPage() {
-  const [deleteRequest, setDeleteRequest] =
-    useState<SettingsDeleteRequest | null>(null);
+  const [deleteRequest, setDeleteRequest] = useState<SettingsDeleteRequest | null>(null);
   const {
     accounts,
     budgetTypes,
@@ -120,10 +116,7 @@ export default function SettingsPage() {
         </Tabs>
       )}
 
-      <DeleteConfirmDialog
-        request={deleteRequest}
-        onClose={() => setDeleteRequest(null)}
-      />
+      <DeleteConfirmDialog request={deleteRequest} onClose={() => setDeleteRequest(null)} />
     </div>
   );
 }

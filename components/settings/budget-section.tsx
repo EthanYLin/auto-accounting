@@ -7,14 +7,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@heroui/react";
 import { Input } from "@heroui/react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from "@heroui/react";
+import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
 import { Controller } from "react-hook-form";
 
 import {
@@ -159,8 +152,7 @@ function BudgetDrawer({
     defaultValues: defaultBudgetFormValues,
     item: budget,
     isOpen,
-    getResetValues: (nextBudget) =>
-      getBudgetFormValues(nextBudget ?? undefined),
+    getResetValues: (nextBudget) => getBudgetFormValues(nextBudget ?? undefined),
     onSubmit,
     submitErrorMessage: "预算计划保存失败",
   });

@@ -8,14 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@heroui/react";
 import { Input } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from "@heroui/react";
+import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
 import { Controller } from "react-hook-form";
 
 import { TRANSACTION_TYPES } from "@/constants/transaction-type";
@@ -48,11 +41,8 @@ export function MainCategorySection({
   onRequestDelete: (request: SettingsDeleteRequest) => void;
 }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<MainCategory | null>(
-    null,
-  );
-  const { saveMainCategory, deleteMainCategory, isSaving } =
-    useMainCategoryMutations();
+  const [editingCategory, setEditingCategory] = useState<MainCategory | null>(null);
+  const { saveMainCategory, deleteMainCategory, isSaving } = useMainCategoryMutations();
 
   const closeDrawer = () => {
     setIsDrawerOpen(false);
@@ -141,10 +131,7 @@ export function MainCategorySection({
         isSaving={isSaving}
         onClose={closeDrawer}
         onSubmit={async (values) => {
-          await saveMainCategory(
-            toMainCategoryPayload(values),
-            editingCategory?.id,
-          );
+          await saveMainCategory(toMainCategoryPayload(values), editingCategory?.id);
           closeDrawer();
         }}
       />
@@ -170,8 +157,7 @@ function MainCategoryDrawer({
     defaultValues: defaultMainCategoryFormValues,
     item: category,
     isOpen,
-    getResetValues: (nextCategory) =>
-      getMainCategoryFormValues(nextCategory ?? undefined),
+    getResetValues: (nextCategory) => getMainCategoryFormValues(nextCategory ?? undefined),
     onSubmit,
     submitErrorMessage: "主类别保存失败",
   });
@@ -211,9 +197,7 @@ function MainCategoryDrawer({
             isInvalid={Boolean(fieldState.error)}
             label="交易类型"
             selectedKeys={[field.value]}
-            onSelectionChange={(keys) =>
-              field.onChange(getSingleSelectionValue(keys))
-            }
+            onSelectionChange={(keys) => field.onChange(getSingleSelectionValue(keys))}
           >
             {TRANSACTION_TYPES.map((type) => (
               <SelectItem key={type.type}>{type.type}</SelectItem>

@@ -1,5 +1,8 @@
 "use client";
 
+import type { TransactionNavigation } from "@/lib/hooks/use-transaction-navigation";
+import type { TransactionStatus } from "@/types";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDisclosure } from "@heroui/react";
 import { addToast } from "@heroui/react";
@@ -16,25 +19,34 @@ import {
   TrashIcon,
   XCircleIcon,
 } from "@heroicons/react/24/outline";
+
 import { ALL_TRANSACTION_STATUS } from "@/constants/transaction-status";
 import { useSaveButtonOverride } from "@/components/context/save-button-override-context";
 import { useTransactionEditor } from "@/components/context/transaction-editor-context";
 import { useTransactionStore } from "@/components/context/transaction-store-context";
-import type { TransactionNavigation } from "@/lib/hooks/use-transaction-navigation";
 import { getExitSplits } from "@/lib/transaction/transaction-split-merge";
-import type { TransactionStatus } from "@/types";
 
 export const QUICK_ACTION_ITEMS = [
   { key: "auto-switch", label: "保存后自动切换", section: 1, icon: CheckIcon },
   { key: "save", label: "保存交易", section: 1, icon: BookmarkIcon },
   { key: "save-cancel", label: "保存并设为取消", section: 1, icon: XCircleIcon },
   { key: "save-later", label: "保存并稍后处理", section: 1, icon: ClockIcon },
-  { key: "cloud-upload", label: "保存所有未提交更改($dirtyCount)", section: 1, icon: CloudArrowUpIcon },
+  {
+    key: "cloud-upload",
+    label: "保存所有未提交更改($dirtyCount)",
+    section: 1,
+    icon: CloudArrowUpIcon,
+  },
   { key: "new", label: "新建交易", section: 2, icon: PlusIcon },
   { key: "next-pending", label: "跳转到下一条待处理的交易", section: 2, icon: ForwardIcon },
   { key: "locate-current", label: "定位到当前交易", section: 2, icon: MapPinIcon },
   { key: "discard-current", label: "丢弃当前更改", section: 3, icon: ArrowUturnLeftIcon },
-  { key: "discard-all", label: "丢弃所有未提交更改($dirtyCount)", section: 3, icon: ArchiveBoxIcon },
+  {
+    key: "discard-all",
+    label: "丢弃所有未提交更改($dirtyCount)",
+    section: 3,
+    icon: ArchiveBoxIcon,
+  },
   { key: "delete", label: "删除交易", section: 3, icon: TrashIcon },
 ] as const;
 
@@ -50,10 +62,17 @@ const QUICK_ACTION_SECTIONS: Record<QuickActionKey, QuickActionSection> = QUICK_
   {} as Record<QuickActionKey, QuickActionSection>,
 );
 const SINGLE_SAVE_DISABLED_KEYS: QuickActionKey[] = [
-  "cloud-upload", "new", "discard-current", "discard-all", "delete"
+  "cloud-upload",
+  "new",
+  "discard-current",
+  "discard-all",
+  "delete",
 ];
 const CHILDREN_SELECTION_DISABLED_KEYS: QuickActionKey[] = [
-  "save", "save-cancel", "save-later", ...SINGLE_SAVE_DISABLED_KEYS
+  "save",
+  "save-cancel",
+  "save-later",
+  ...SINGLE_SAVE_DISABLED_KEYS,
 ];
 
 export interface DangerConfirm {
@@ -70,20 +89,22 @@ export type SplitHint = { type: "info" | "warn"; message: string } | null;
 export function useActionBarController({ navigation }: { navigation: TransactionNavigation }) {
   const store = useTransactionStore();
   const editor = useTransactionEditor();
-  const { saveButtonOverride, showSaveButtonOverride, clearSaveButtonOverride } = useSaveButtonOverride();
+  const { saveButtonOverride, showSaveButtonOverride, clearSaveButtonOverride } =
+    useSaveButtonOverride();
 
   const [quickActionKey, setQuickActionKey] = useState<QuickActionKey>(DEFAULT_QUICK_ACTION);
   const [autoSwitch, setAutoSwitch] = useState(true);
-  const [dangerConfirmConfig, setDangerConfirmConfig] = useState<
-    Pick<DangerConfirm, "title" | "description" | "confirmLabel" | "onConfirm"> | null
-  >(null);
+  const [dangerConfirmConfig, setDangerConfirmConfig] = useState<Pick<
+    DangerConfirm,
+    "title" | "description" | "confirmLabel" | "onConfirm"
+  > | null>(null);
   const dangerConfirmModal = useDisclosure();
 
   const { currentIndex, totalCount, currentTransaction, currentChildTransactions } = editor;
   const dirtyCount = store.getDirtyIds().length;
   const status = useMemo(
-    () => ALL_TRANSACTION_STATUS.find(s => s.name === currentTransaction?.status) ?? null,
-    [currentTransaction?.status]
+    () => ALL_TRANSACTION_STATUS.find((s) => s.name === currentTransaction?.status) ?? null,
+    [currentTransaction?.status],
   );
   const splitHint = useMemo<SplitHint>(() => {
     if (!currentTransaction || currentTransaction.parent_id) {
@@ -180,7 +201,7 @@ export function useActionBarController({ navigation }: { navigation: Transaction
   const quickActionHandlers = useMemo<Record<QuickActionKey, () => Promise<void>>>(
     () => ({
       "auto-switch": async () => setAutoSwitch((value) => !value),
-      "save": async () => handleSave(undefined, false),
+      save: async () => handleSave(undefined, false),
       "save-cancel": async () => handleSave("取消", autoSwitch),
       "save-later": async () => handleSave("稍后处理", autoSwitch),
       "cloud-upload": async () => {
@@ -195,7 +216,7 @@ export function useActionBarController({ navigation }: { navigation: Transaction
           });
         }
       },
-      "new": async () => {
+      new: async () => {
         const result = await store.createEmptyTransaction();
         if (!result.success) {
           addToast({
@@ -233,7 +254,7 @@ export function useActionBarController({ navigation }: { navigation: Transaction
           },
         });
       },
-      "delete": async () => {
+      delete: async () => {
         openDangerConfirm({
           title: "确认要删除吗？",
           description: '若不想导出该交易，可将状态设置为"取消"。',
@@ -257,8 +278,9 @@ export function useActionBarController({ navigation }: { navigation: Transaction
 
   const currentQuickActionItem = useMemo(
     () =>
-      QUICK_ACTION_ITEMS.find((item) => item.key === quickActionKey && item.key !== "auto-switch") ??
-      QUICK_ACTION_ITEMS.find((item) => item.key === DEFAULT_QUICK_ACTION)!,
+      QUICK_ACTION_ITEMS.find(
+        (item) => item.key === quickActionKey && item.key !== "auto-switch",
+      ) ?? QUICK_ACTION_ITEMS.find((item) => item.key === DEFAULT_QUICK_ACTION)!,
     [quickActionKey],
   );
 
@@ -323,7 +345,12 @@ export function useActionBarController({ navigation }: { navigation: Transaction
       onClose: dangerConfirmModal.onClose,
       onConfirm: handleDangerConfirm,
     }),
-    [dangerConfirmConfig, dangerConfirmModal.isOpen, dangerConfirmModal.onClose, handleDangerConfirm],
+    [
+      dangerConfirmConfig,
+      dangerConfirmModal.isOpen,
+      dangerConfirmModal.onClose,
+      handleDangerConfirm,
+    ],
   );
 
   return {
@@ -340,7 +367,10 @@ export function useActionBarController({ navigation }: { navigation: Transaction
     saveButtonOverride,
     // 主操作按钮
     currentQuickActionIcon: currentQuickActionItem.icon,
-    currentQuickActionLabel: currentQuickActionItem.label.replace("$dirtyCount", String(dirtyCount)),
+    currentQuickActionLabel: currentQuickActionItem.label.replace(
+      "$dirtyCount",
+      String(dirtyCount),
+    ),
     isCurrentQuickActionDisabled: disabledKeys.includes(currentQuickActionItem.key),
     handleCurrentQuickAction,
     // 操作按钮下拉
@@ -351,6 +381,6 @@ export function useActionBarController({ navigation }: { navigation: Transaction
     // 其他状态
     dirtyCount,
     splitHint,
-    status
+    status,
   };
 }

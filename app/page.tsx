@@ -1,5 +1,7 @@
 "use client";
 
+import type { TransactionOverviewListHandle } from "@/components/homepage/left-panel/transaction-overview-list";
+
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Spinner } from "@heroui/react";
@@ -7,7 +9,12 @@ import { Button } from "@heroui/react";
 import { Input } from "@heroui/react";
 import { Alert } from "@heroui/react";
 import { Divider } from "@heroui/react";
-import { MagnifyingGlassIcon, DocumentPlusIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import {
+  MagnifyingGlassIcon,
+  DocumentPlusIcon,
+  ArrowDownTrayIcon,
+} from "@heroicons/react/24/outline";
+
 import { ActionBar } from "@/components/homepage/action-bar";
 import { useAppData } from "@/components/context/app-data-context";
 import { useTransactionStore } from "@/components/context/transaction-store-context";
@@ -16,7 +23,6 @@ import { useError } from "@/components/context/error-context";
 import { TxFieldInputs } from "@/components/homepage/tx-field-inputs";
 import { TransactionEditorFourChainSelector } from "@/components/homepage/common/four-chain-selector";
 import { TransactionOverviewList } from "@/components/homepage/left-panel/transaction-overview-list";
-import type { TransactionOverviewListHandle } from "@/components/homepage/left-panel/transaction-overview-list";
 import { StatusFilterDropdown } from "@/components/homepage/left-panel/status-filter-dropdown";
 import { TxParentArea } from "@/components/homepage/tx-parent-area";
 import { SplitEntryArea } from "@/components/homepage/split-area/split-entry-area";
@@ -24,7 +30,6 @@ import { useTransactionFilter } from "@/lib/hooks/use-transaction-filter";
 import { useTransactionNavigation } from "@/lib/hooks/use-transaction-navigation";
 
 export default function Home() {
-
   const router = useRouter();
   const { showError } = useError();
   const transactionListRef = useRef<TransactionOverviewListHandle>(null);
@@ -39,13 +44,16 @@ export default function Home() {
 
   useEffect(() => {
     if (appData.error) {
-      showError('数据加载失败', `${appData.error}\n\n请检查您的网络连接或重新登录。如果问题持续存在，请联系管理员。`);
+      showError(
+        "数据加载失败",
+        `${appData.error}\n\n请检查您的网络连接或重新登录。如果问题持续存在，请联系管理员。`,
+      );
     }
   }, [appData.error, showError]);
 
   useEffect(() => {
     if (store.error) {
-      showError('交易数据错误', store.error);
+      showError("交易数据错误", store.error);
     }
   }, [store.error, showError]);
 
@@ -81,13 +89,13 @@ export default function Home() {
   }, []);
 
   // 事件处理
-  const handleImport = () => router.push('/upload');
+  const handleImport = () => router.push("/upload");
   const handleCreate = async () => {
     const result = await store.createEmptyTransaction();
     if (result.success && result.data) {
       editor.selectTransaction(result.data.id);
     } else {
-      showError('操作失败', result.error || '未知错误');
+      showError("操作失败", result.error || "未知错误");
     }
   };
 
@@ -96,10 +104,8 @@ export default function Home() {
   return (
     <>
       <div className="flex h-full w-full min-h-0 overflow-hidden">
-
         {/* 左侧 Sidebar */}
         <aside className="w-80 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col h-full min-h-0">
-
           {/* 搜索框和状态过滤 */}
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
             <div className="flex gap-2 items-center">
@@ -134,13 +140,8 @@ export default function Home() {
 
         {/* 右侧主要区域 */}
         <main className="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
-
           {/* ActionBar */}
-          {currentTransaction !== null && currentIndex > 0 && (
-            <ActionBar
-              navigation={navigation}
-            />
-          )}
+          {currentTransaction !== null && currentIndex > 0 && <ActionBar navigation={navigation} />}
 
           {/* 主内容区域 */}
           <div ref={mainContentRef} className="flex-1 min-h-0 overflow-y-auto">
@@ -153,7 +154,9 @@ export default function Home() {
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <p className="text-lg text-gray-500 dark:text-gray-400 mb-2">暂无账单</p>
-                  <p className="text-sm text-gray-400 dark:text-gray-500 mb-6">请先新建或导入账单</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mb-6">
+                    请先新建或导入账单
+                  </p>
                   <div className="flex gap-3 justify-center">
                     <Button
                       size="sm"
@@ -181,7 +184,9 @@ export default function Home() {
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <p className="text-lg text-gray-500 dark:text-gray-400 mb-2">未选择账单</p>
-                  <p className="text-sm text-gray-400 dark:text-gray-500 mb-6">请先在左侧选择一个账单</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mb-6">
+                    请先在左侧选择一个账单
+                  </p>
                   <div className="flex gap-3 justify-center">
                     <Button
                       size="sm"
@@ -255,19 +260,23 @@ export default function Home() {
                 <div>
                   <h2 className="text-xs font-semibold mb-3">调试信息 - selectedTxWithRelations</h2>
                   <pre className="text-xs bg-gray-100 dark:bg-gray-800 p-3 rounded overflow-auto max-h-80">
-                    {JSON.stringify(currentTransaction ? {
-                      ...currentTransaction,
-                      children_ids: currentTransaction.children_ids,
-                    } : null, null, 2)}
+                    {JSON.stringify(
+                      currentTransaction
+                        ? {
+                            ...currentTransaction,
+                            children_ids: currentTransaction.children_ids,
+                          }
+                        : null,
+                      null,
+                      2,
+                    )}
                   </pre>
                 </div>
-
               </div>
             )}
           </div>
         </main>
       </div>
-
     </>
   );
 }

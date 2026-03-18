@@ -8,14 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@heroui/react";
 import { Input } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from "@heroui/react";
+import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
 import { Controller } from "react-hook-form";
 
 import { useAppData } from "@/components/context/app-data-context";
@@ -52,14 +45,10 @@ export function SubCategorySection({
   onRequestDelete: (request: SettingsDeleteRequest) => void;
 }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [selectedMainCategoryFilter, setSelectedMainCategoryFilter] =
-    useState("all");
-  const [editingCategory, setEditingCategory] = useState<SubCategory | null>(
-    null,
-  );
+  const [selectedMainCategoryFilter, setSelectedMainCategoryFilter] = useState("all");
+  const [editingCategory, setEditingCategory] = useState<SubCategory | null>(null);
   const { mainCategoryMap, budgetTypeMap } = useAppData();
-  const { saveSubCategory, deleteSubCategory, isSaving } =
-    useSubCategoryMutations();
+  const { saveSubCategory, deleteSubCategory, isSaving } = useSubCategoryMutations();
 
   const closeDrawer = () => {
     setIsDrawerOpen(false);
@@ -69,9 +58,7 @@ export function SubCategorySection({
   useEffect(() => {
     if (
       selectedMainCategoryFilter !== "all" &&
-      !mainCategories.some(
-        (item) => String(item.id) === selectedMainCategoryFilter,
-      )
+      !mainCategories.some((item) => String(item.id) === selectedMainCategoryFilter)
     ) {
       setSelectedMainCategoryFilter("all");
     }
@@ -215,10 +202,7 @@ export function SubCategorySection({
         mainCategories={mainCategories}
         onClose={closeDrawer}
         onSubmit={async (values) => {
-          await saveSubCategory(
-            toSubCategoryPayload(values),
-            editingCategory?.id,
-          );
+          await saveSubCategory(toSubCategoryPayload(values), editingCategory?.id);
           closeDrawer();
         }}
       />
@@ -248,8 +232,7 @@ function SubCategoryDrawer({
     defaultValues: defaultSubCategoryFormValues,
     item: category,
     isOpen,
-    getResetValues: (nextCategory) =>
-      getSubCategoryFormValues(nextCategory ?? undefined, null),
+    getResetValues: (nextCategory) => getSubCategoryFormValues(nextCategory ?? undefined, null),
     onSubmit,
     submitErrorMessage: "子类别保存失败",
   });
@@ -290,9 +273,7 @@ function SubCategoryDrawer({
             label="所属主类别"
             placeholder="请选择"
             selectedKeys={field.value ? [field.value] : []}
-            onSelectionChange={(keys) =>
-              field.onChange(getSingleSelectionValue(keys))
-            }
+            onSelectionChange={(keys) => field.onChange(getSingleSelectionValue(keys))}
           >
             {mainCategories.map((item) => (
               <SelectItem
@@ -315,9 +296,7 @@ function SubCategoryDrawer({
             label="预算计划"
             placeholder="可留空"
             selectedKeys={field.value ? [field.value] : []}
-            onSelectionChange={(keys) =>
-              field.onChange(getSingleSelectionValue(keys))
-            }
+            onSelectionChange={(keys) => field.onChange(getSingleSelectionValue(keys))}
           >
             {budgetTypes.map((item) => (
               <SelectItem key={String(item.id)}>{item.name}</SelectItem>

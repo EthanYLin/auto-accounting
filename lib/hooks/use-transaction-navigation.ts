@@ -1,6 +1,7 @@
-import { useCallback } from 'react';
-import type { TransactionWithRelations } from '@/types';
-import { addToast } from '@heroui/react';
+import type { TransactionWithRelations } from "@/types";
+
+import { useCallback } from "react";
+import { addToast } from "@heroui/react";
 
 // ==================== 类型定义 ====================
 
@@ -24,7 +25,6 @@ export function useTransactionNavigation({
   onSelectTransaction,
   onLocateCurrent,
 }: UseTransactionNavigationOptions) {
-
   const goToPrevious = useCallback(() => {
     if (currentIndex > 1) {
       const prevTx = filteredTransactions[currentIndex - 2];
@@ -39,33 +39,36 @@ export function useTransactionNavigation({
     }
   }, [currentIndex, totalCount, filteredTransactions, onSelectTransaction]);
 
-  const goToIndex = useCallback((index: number) => {
-    if (!Number.isInteger(index)) return;
-    if (index < 1 || index > totalCount) return;
-    const targetTx = filteredTransactions[index - 1];
-    if (targetTx) {
-      onSelectTransaction(targetTx.id);
-    }
-  }, [totalCount, filteredTransactions, onSelectTransaction]);
+  const goToIndex = useCallback(
+    (index: number) => {
+      if (!Number.isInteger(index)) return;
+      if (index < 1 || index > totalCount) return;
+      const targetTx = filteredTransactions[index - 1];
+      if (targetTx) {
+        onSelectTransaction(targetTx.id);
+      }
+    },
+    [totalCount, filteredTransactions, onSelectTransaction],
+  );
 
   const goToNextPending = useCallback(() => {
     const startIndex = currentIndex; // currentIndex 是 1-based
     for (let i = startIndex; i < filteredTransactions.length; i++) {
-      if (filteredTransactions[i].status === '待处理') {
+      if (filteredTransactions[i].status === "待处理") {
         onSelectTransaction(filteredTransactions[i].id);
         return;
       }
     }
     for (let i = 0; i < startIndex; i++) {
-      if (filteredTransactions[i].status === '待处理') {
+      if (filteredTransactions[i].status === "待处理") {
         onSelectTransaction(filteredTransactions[i].id);
         return;
       }
     }
     addToast({
-      title: '无更多待处理的交易',
-      description: '当前列表中没有更多待处理的交易。',
-      color: 'primary',
+      title: "无更多待处理的交易",
+      description: "当前列表中没有更多待处理的交易。",
+      color: "primary",
     });
   }, [currentIndex, filteredTransactions, onSelectTransaction]);
 

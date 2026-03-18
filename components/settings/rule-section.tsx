@@ -9,14 +9,7 @@ import { Button } from "@heroui/react";
 import { Divider } from "@heroui/react";
 import { Input } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from "@heroui/react";
+import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
 import { Controller } from "react-hook-form";
 
 import { TRANSACTION_TYPES } from "@/constants/transaction-type";
@@ -41,10 +34,7 @@ import {
 } from "@/components/settings/settings-ui";
 
 function formatAmountRule(rule: MatchingRule) {
-  if (
-    rule.f_original_amount_ge === null &&
-    rule.f_original_amount_le === null
-  ) {
+  if (rule.f_original_amount_ge === null && rule.f_original_amount_le === null) {
     return null;
   } else {
     return `金额限制: ${rule.f_original_amount_ge || "不限"} - ${rule.f_original_amount_le || "不限"}`;
@@ -67,8 +57,7 @@ export function RuleSection({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<MatchingRule | null>(null);
   const { mainCategoryMap, subCategoryMap, budgetTypeMap } = useAppData();
-  const { saveMatchingRule, deleteMatchingRule, isSaving } =
-    useMatchingRuleMutations();
+  const { saveMatchingRule, deleteMatchingRule, isSaving } = useMatchingRuleMutations();
 
   const closeDrawer = () => {
     setIsDrawerOpen(false);
@@ -118,34 +107,23 @@ export function RuleSection({
                       `${rule.t_sub_category_id}`)
                     : null,
                   rule.t_budget_type_id
-                    ? (budgetTypeMap.get(rule.t_budget_type_id)?.name ??
-                      `${rule.t_budget_type_id}`)
+                    ? (budgetTypeMap.get(rule.t_budget_type_id)?.name ?? `${rule.t_budget_type_id}`)
                     : null,
                 ]);
-                const namingSummary = joinRuleTarget([
-                  rule.t_name,
-                  rule.t_merchant,
-                ]);
+                const namingSummary = joinRuleTarget([rule.t_name, rule.t_merchant]);
 
                 return (
                   <TableRow key={rule.id}>
                     <TableCell>#{rule.id}</TableCell>
                     <TableCell>
                       <div className="space-y-2">
-                        <p className="font-mono text-xs text-foreground">
-                          {rule.f_title}
-                        </p>
+                        <p className="font-mono text-xs text-foreground">{rule.f_title}</p>
                         {rule.f_time && (
                           <p className="text-xs text-default-500">
-                            时间规则:{" "}
-                            <span className="font-mono">{rule.f_time}</span>
+                            时间规则: <span className="font-mono">{rule.f_time}</span>
                           </p>
                         )}
-                        {amountRule && (
-                          <p className="text-xs text-default-500">
-                            {amountRule}
-                          </p>
-                        )}
+                        {amountRule && <p className="text-xs text-default-500">{amountRule}</p>}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -174,8 +152,7 @@ export function RuleSection({
                             onRequestDelete({
                               title: "删除匹配规则",
                               description: `确定删除匹配规则 #${rule.id} 吗？`,
-                              onConfirm: () =>
-                                deleteMatchingRule({ id: rule.id }),
+                              onConfirm: () => deleteMatchingRule({ id: rule.id }),
                             });
                           }}
                         >
@@ -197,10 +174,7 @@ export function RuleSection({
         rule={editingRule}
         onClose={closeDrawer}
         onSubmit={async (values) => {
-          await saveMatchingRule(
-            toMatchingRulePayload(values),
-            editingRule?.id,
-          );
+          await saveMatchingRule(toMatchingRulePayload(values), editingRule?.id);
           closeDrawer();
         }}
       />
@@ -226,13 +200,11 @@ function RuleDrawer({
     defaultValues: defaultMatchingRuleFormValues,
     item: rule,
     isOpen,
-    getResetValues: (nextRule) =>
-      getMatchingRuleFormValues(nextRule ?? undefined),
+    getResetValues: (nextRule) => getMatchingRuleFormValues(nextRule ?? undefined),
     onSubmit,
     submitErrorMessage: "匹配规则保存失败",
   });
-  const { budgetTypes, getMainCategoriesByType, getSubCategoriesByMain } =
-    useAppData();
+  const { budgetTypes, getMainCategoriesByType, getSubCategoriesByMain } = useAppData();
 
   const selectedTransactionType = form.watch("t_tx_type");
   const selectedMainCategoryId = form.watch("t_main_category_id");
@@ -242,10 +214,7 @@ function RuleDrawer({
     [getMainCategoriesByType, selectedTransactionType],
   );
   const filteredSubCategories = useMemo(
-    () =>
-      getSubCategoriesByMain(
-        selectedMainCategoryId ? Number(selectedMainCategoryId) : "",
-      ),
+    () => getSubCategoriesByMain(selectedMainCategoryId ? Number(selectedMainCategoryId) : ""),
     [getSubCategoriesByMain, selectedMainCategoryId],
   );
 
@@ -254,9 +223,7 @@ function RuleDrawer({
 
     if (
       currentMainCategoryId &&
-      !filteredMainCategories.some(
-        (item) => String(item.id) === currentMainCategoryId,
-      )
+      !filteredMainCategories.some((item) => String(item.id) === currentMainCategoryId)
     ) {
       form.setValue("t_main_category_id", "", { shouldDirty: true });
       form.setValue("t_sub_category_id", "", { shouldDirty: true });
@@ -268,9 +235,7 @@ function RuleDrawer({
 
     if (
       currentSubCategoryId &&
-      !filteredSubCategories.some(
-        (item) => String(item.id) === currentSubCategoryId,
-      )
+      !filteredSubCategories.some((item) => String(item.id) === currentSubCategoryId)
     ) {
       form.setValue("t_sub_category_id", "", { shouldDirty: true });
     }
@@ -291,9 +256,7 @@ function RuleDrawer({
       <section className="space-y-4 rounded-3xl border border-default-200 bg-default-50/30 p-4">
         <div>
           <h3 className="font-medium">过滤条件</h3>
-          <p className="mt-1 text-sm text-default-500">
-            定义导入账单在什么条件下命中当前规则。
-          </p>
+          <p className="mt-1 text-sm text-default-500">定义导入账单在什么条件下命中当前规则。</p>
         </div>
         <Controller
           control={form.control}
@@ -371,9 +334,7 @@ function RuleDrawer({
       <section className="space-y-4 rounded-3xl border border-default-200 bg-white p-4">
         <div>
           <h3 className="font-medium">目标赋值</h3>
-          <p className="mt-1 text-sm text-default-500">
-            规则命中后，把这些信息写入交易。
-          </p>
+          <p className="mt-1 text-sm text-default-500">规则命中后，把这些信息写入交易。</p>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
           <Controller
@@ -386,9 +347,7 @@ function RuleDrawer({
                 label="交易类型"
                 placeholder="不设置则不修改"
                 selectedKeys={field.value ? [field.value] : []}
-                onSelectionChange={(keys) =>
-                  field.onChange(getSingleSelectionValue(keys))
-                }
+                onSelectionChange={(keys) => field.onChange(getSingleSelectionValue(keys))}
               >
                 {TRANSACTION_TYPES.map((type) => (
                   <SelectItem key={type.type}>{type.type}</SelectItem>
@@ -405,15 +364,9 @@ function RuleDrawer({
                 isDisabled={!selectedTransactionType}
                 isInvalid={Boolean(fieldState.error)}
                 label="主类别"
-                placeholder={
-                  selectedTransactionType
-                    ? "不设置则不修改"
-                    : "请先选择交易类型"
-                }
+                placeholder={selectedTransactionType ? "不设置则不修改" : "请先选择交易类型"}
                 selectedKeys={field.value ? [field.value] : []}
-                onSelectionChange={(keys) =>
-                  field.onChange(getSingleSelectionValue(keys))
-                }
+                onSelectionChange={(keys) => field.onChange(getSingleSelectionValue(keys))}
               >
                 {filteredMainCategories.map((item) => (
                   <SelectItem key={String(item.id)}>{item.label}</SelectItem>
@@ -432,13 +385,9 @@ function RuleDrawer({
                 isDisabled={!selectedMainCategoryId}
                 isInvalid={Boolean(fieldState.error)}
                 label="子类别"
-                placeholder={
-                  selectedMainCategoryId ? "不设置则不修改" : "请先选择主类别"
-                }
+                placeholder={selectedMainCategoryId ? "不设置则不修改" : "请先选择主类别"}
                 selectedKeys={field.value ? [field.value] : []}
-                onSelectionChange={(keys) =>
-                  field.onChange(getSingleSelectionValue(keys))
-                }
+                onSelectionChange={(keys) => field.onChange(getSingleSelectionValue(keys))}
               >
                 {filteredSubCategories.map((item) => (
                   <SelectItem key={String(item.id)}>{item.label}</SelectItem>
@@ -456,9 +405,7 @@ function RuleDrawer({
                 label="预算计划"
                 placeholder="不设置则不修改"
                 selectedKeys={field.value ? [field.value] : []}
-                onSelectionChange={(keys) =>
-                  field.onChange(getSingleSelectionValue(keys))
-                }
+                onSelectionChange={(keys) => field.onChange(getSingleSelectionValue(keys))}
               >
                 {budgetTypes.map((item) => (
                   <SelectItem key={String(item.id)}>{item.name}</SelectItem>

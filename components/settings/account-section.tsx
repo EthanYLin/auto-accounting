@@ -7,14 +7,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@heroui/react";
 import { Input } from "@heroui/react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from "@heroui/react";
+import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
 import { Controller } from "react-hook-form";
 
 import {
@@ -157,8 +150,7 @@ function AccountDrawer({
     defaultValues: defaultAccountFormValues,
     item: account,
     isOpen,
-    getResetValues: (nextAccount) =>
-      getAccountFormValues(nextAccount ?? undefined),
+    getResetValues: (nextAccount) => getAccountFormValues(nextAccount ?? undefined),
     onSubmit,
     submitErrorMessage: "账户保存失败",
   });

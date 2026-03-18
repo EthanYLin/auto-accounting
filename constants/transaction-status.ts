@@ -13,7 +13,7 @@ export const ALL_TRANSACTION_STATUS: Array<TransactionStatusConfig> = [
   {
     name: "待处理",
     chipColor: "primary",
-    color: "text-blue-700 dark:text-blue-400",  
+    color: "text-blue-700 dark:text-blue-400",
     dotColor: "bg-blue-500",
     bgColor: "bg-blue-50 dark:bg-blue-500/10",
   },

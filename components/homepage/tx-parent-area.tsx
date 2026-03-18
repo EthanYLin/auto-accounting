@@ -5,12 +5,25 @@ import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/react";
 import { useDisclosure } from "@heroui/react";
 import { Chip } from "@heroui/react";
 import { addToast } from "@heroui/react";
-import { PlusIcon, XMarkIcon, ArrowUpRightIcon, PencilSquareIcon, CalculatorIcon } from "@heroicons/react/24/outline";
+import {
+  PlusIcon,
+  XMarkIcon,
+  ArrowUpRightIcon,
+  PencilSquareIcon,
+  CalculatorIcon,
+} from "@heroicons/react/24/outline";
+
 import { TransactionListSelector } from "@/components/homepage/common/transaction-list-selector";
 import { useTransactionStore } from "@/components/context/transaction-store-context";
 import { useTransactionEditor } from "@/components/context/transaction-editor-context";
-import { TRANSACTION_STATUS_COLORS } from '@/constants/transaction-type';
-import { calculateAmount, getAmountColorClass, getAmountSymbol, formatDateTime, formatCategoryText } from '@/lib/transaction/transaction-display';
+import { TRANSACTION_STATUS_COLORS } from "@/constants/transaction-type";
+import {
+  calculateAmount,
+  getAmountColorClass,
+  getAmountSymbol,
+  formatDateTime,
+  formatCategoryText,
+} from "@/lib/transaction/transaction-display";
 
 export function TxParentArea() {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -19,20 +32,16 @@ export function TxParentArea() {
   const currentTransaction = editor.currentTransaction;
   const childTransactions = editor.currentChildTransactions;
   const parentTransaction = editor.currentParentTransaction;
-  const isBusy = store.saveState !== 'idle';
+  const isBusy = store.saveState !== "idle";
 
   // 如果没有选中交易，不显示任何内容
   if (!currentTransaction) {
-    return (
-      <div className="text-xs text-gray-500 dark:text-gray-500">
-        请先选择一个交易
-      </div>
-    );
+    return <div className="text-xs text-gray-500 dark:text-gray-500">请先选择一个交易</div>;
   }
 
   // 获取已附加的账单ID列表
   const childrenIds = currentTransaction.children_ids;
-  const selectorKey = `${currentTransaction.id}:${childrenIds.join(',')}`;
+  const selectorKey = `${currentTransaction.id}:${childrenIds.join(",")}`;
 
   // 计算账户金额汇总
   const calculateAccountSummary = () => {
@@ -42,11 +51,11 @@ export function TxParentArea() {
 
     // 收集所有交易（根账单 + 子账单）
     const allTransactions = [currentTransaction, ...childTransactions];
-    
+
     // 按账户分组求和
     const accountMap = new Map<string, { name: string; amount: number }>();
-    allTransactions.forEach(tx => {
-      const accountName = tx.account?.name || '未知账户';
+    allTransactions.forEach((tx) => {
+      const accountName = tx.account?.name || "未知账户";
       const amount = calculateAmount(tx);
       if (accountMap.has(accountName)) {
         accountMap.get(accountName)!.amount += amount;
@@ -56,8 +65,8 @@ export function TxParentArea() {
     });
 
     // 转换为数组并按金额绝对值降序排序
-    const accounts = Array.from(accountMap.values()).sort((a, b) => 
-      Math.abs(b.amount) - Math.abs(a.amount)
+    const accounts = Array.from(accountMap.values()).sort(
+      (a, b) => Math.abs(b.amount) - Math.abs(a.amount),
     );
     return accounts;
   };
@@ -68,17 +77,17 @@ export function TxParentArea() {
     onClose();
     const result = await editor.updateChildrenIds(selectedIds);
     if (!result.success) {
-      addToast({ title: '附加账单失败', description: result.error || '未知错误', color: 'danger' });
+      addToast({ title: "附加账单失败", description: result.error || "未知错误", color: "danger" });
     }
   };
 
   // 处理取消附加单个账单
   const handleRemoveChild = async (childId: number) => {
     if (!currentTransaction) return;
-    const newIds = currentTransaction.children_ids.filter(id => id !== childId);
+    const newIds = currentTransaction.children_ids.filter((id) => id !== childId);
     const result = await editor.updateChildrenIds(newIds);
     if (!result.success) {
-      addToast({ title: '取消附加失败', description: result.error || '未知错误', color: 'danger' });
+      addToast({ title: "取消附加失败", description: result.error || "未知错误", color: "danger" });
     }
   };
 
@@ -94,52 +103,54 @@ export function TxParentArea() {
             variant="flat"
             isDisabled={isBusy}
             startContent={
-              childTransactions.length > 0 
-                ? <PencilSquareIcon className="w-4 h-4" />
-                : <PlusIcon className="w-4 h-4" />
+              childTransactions.length > 0 ? (
+                <PencilSquareIcon className="w-4 h-4" />
+              ) : (
+                <PlusIcon className="w-4 h-4" />
+              )
             }
             onPress={() => onOpen()}
           >
-            {childTransactions.length > 0 ? '选择附加账单' : '添加附加账单'}
+            {childTransactions.length > 0 ? "选择附加账单" : "添加附加账单"}
           </Button>
 
           {/* 账户汇总信息 */}
-          {childTransactions.length > 0 && (() => {
-            const accountSummary = calculateAccountSummary();
-            if (!accountSummary || accountSummary.length === 0) return null;
+          {childTransactions.length > 0 &&
+            (() => {
+              const accountSummary = calculateAccountSummary();
+              if (!accountSummary || accountSummary.length === 0) return null;
 
-            const displayAccounts = accountSummary.slice(0, 2);
-            const remainingCount = accountSummary.length - 2;
+              const displayAccounts = accountSummary.slice(0, 2);
+              const remainingCount = accountSummary.length - 2;
 
-            return (
-              <div className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800">
-                <CalculatorIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                <span className="text-gray-700 dark:text-gray-300 font-bold">汇总</span>
-                {displayAccounts.map((account, index) => (
-                  <div key={index} className="flex items-center gap-1">
-                    <span className="text-gray-700 dark:text-gray-300">{account.name}</span>
-                    <span className="font-semibold">
-                      {account.amount > 0 ? '+' : ''}{account.amount.toFixed(2)}
+              return (
+                <div className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800">
+                  <CalculatorIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                  <span className="text-gray-700 dark:text-gray-300 font-bold">汇总</span>
+                  {displayAccounts.map((account, index) => (
+                    <div key={index} className="flex items-center gap-1">
+                      <span className="text-gray-700 dark:text-gray-300">{account.name}</span>
+                      <span className="font-semibold">
+                        {account.amount > 0 ? "+" : ""}
+                        {account.amount.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                  {remainingCount > 0 && (
+                    <span className="text-gray-500 dark:text-gray-400">
+                      （还有{remainingCount}个账户）
                     </span>
-                  </div>
-                ))}
-                {remainingCount > 0 && (
-                  <span className="text-gray-500 dark:text-gray-400">
-                    （还有{remainingCount}个账户）
-                  </span>
-                )}
-              </div>
-            );
-          })()}
+                  )}
+                </div>
+              );
+            })()}
         </div>
       )}
 
       {!isRootTransaction && parentTransaction && (
         <div className="space-y-2">
-          <div className="text-sm font-bold">
-            该账单已被附加到以下账单
-          </div>
-          
+          <div className="text-sm font-bold">该账单已被附加到以下账单</div>
+
           <div className="flex items-center gap-2 p-2 rounded-lg text-xs">
             {/* 状态 */}
             <div className="flex-shrink-0">
@@ -158,15 +169,18 @@ export function TxParentArea() {
             <div className="flex-shrink-0 w-28 truncate text-gray-500 dark:text-gray-400">
               {formatDateTime(parentTransaction.datetime)}
             </div>
-            
+
             {/* 账户 */}
             <div className="flex-shrink-0 w-18 truncate">
-              {parentTransaction.account?.name || '-'}
+              {parentTransaction.account?.name || "-"}
             </div>
 
             {/* 金额 */}
-            <div className={`flex-shrink-0 w-20 font-semibold ${getAmountColorClass(parentTransaction.transaction_type)}`}>
-              ¥ {getAmountSymbol(parentTransaction.transaction_type)}{Math.abs(calculateAmount(parentTransaction)).toFixed(2)}
+            <div
+              className={`flex-shrink-0 w-20 font-semibold ${getAmountColorClass(parentTransaction.transaction_type)}`}
+            >
+              ¥ {getAmountSymbol(parentTransaction.transaction_type)}
+              {Math.abs(calculateAmount(parentTransaction)).toFixed(2)}
             </div>
 
             {/* 类别 */}
@@ -176,7 +190,7 @@ export function TxParentArea() {
 
             {/* 名称 */}
             <div className="flex-1 truncate">
-              {parentTransaction.name || parentTransaction.title || '-'}
+              {parentTransaction.name || parentTransaction.title || "-"}
             </div>
 
             {/* 跳转按钮 */}
@@ -205,13 +219,14 @@ export function TxParentArea() {
               className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-xs"
             >
               {/* 账户 */}
-              <div className="flex-shrink-0 w-18 truncate">
-                {child.account?.name || '-'}
-              </div>
+              <div className="flex-shrink-0 w-18 truncate">{child.account?.name || "-"}</div>
 
               {/* 金额 */}
-              <div className={`flex-shrink-0 w-20 font-semibold ${getAmountColorClass(child.transaction_type)}`}>
-                ¥ {getAmountSymbol(child.transaction_type)}{Math.abs(calculateAmount(child)).toFixed(2)}
+              <div
+                className={`flex-shrink-0 w-20 font-semibold ${getAmountColorClass(child.transaction_type)}`}
+              >
+                ¥ {getAmountSymbol(child.transaction_type)}
+                {Math.abs(calculateAmount(child)).toFixed(2)}
               </div>
 
               {/* 类别 */}
@@ -220,9 +235,7 @@ export function TxParentArea() {
               </div>
 
               {/* 名称 */}
-              <div className="flex-1 truncate">
-                {child.name || child.title || '-'}
-              </div>
+              <div className="flex-1 truncate">{child.name || child.title || "-"}</div>
 
               {/* 操作按钮 */}
               <div className="flex-shrink-0 flex gap-1">
@@ -265,9 +278,7 @@ export function TxParentArea() {
         }}
       >
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            选择要附加的账单
-          </ModalHeader>
+          <ModalHeader className="flex flex-col gap-1">选择要附加的账单</ModalHeader>
           <ModalBody>
             <TransactionListSelector
               key={selectorKey}

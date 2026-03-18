@@ -1,6 +1,7 @@
 "use client";
 
 import type { TransactionNavigation } from "@/lib/hooks/use-transaction-navigation";
+
 import { NavigationControls } from "./navigation-controls";
 import { PrimarySaveButton } from "./primary-save-button";
 import { QuickActionsDropdownButton } from "./quick-actions-dropdown-button";
@@ -50,9 +51,7 @@ export function ActionBar({ navigation }: ActionBarProps) {
             <SplitHintBadge splitHint={controller.splitHint} />
           </div>
 
-          <TransactionStatusBadge
-            status={controller.status}
-          />
+          <TransactionStatusBadge status={controller.status} />
         </div>
       </div>
     </div>

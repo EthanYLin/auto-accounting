@@ -17,4 +17,3 @@ export interface ImportResult {
   /** 错误信息（如果有） */
   error?: string;
 }
-

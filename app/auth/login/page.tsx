@@ -130,12 +130,7 @@ function LoginPageContent() {
               </Link>
             </div>
 
-            <Button
-              className="w-full"
-              color="primary"
-              isLoading={loading}
-              type="submit"
-            >
+            <Button className="w-full" color="primary" isLoading={loading} type="submit">
               登录
             </Button>
           </form>
