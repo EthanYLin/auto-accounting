@@ -1,4 +1,4 @@
-import { Button } from "@heroui/button";
+import { Button } from "@heroui/react";
 import { CheckCircleIcon, ForwardIcon } from "@heroicons/react/24/outline";
 
 interface PrimarySaveButtonProps {

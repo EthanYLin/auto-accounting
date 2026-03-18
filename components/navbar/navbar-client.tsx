@@ -12,9 +12,8 @@ import {
   NavbarMenu,
   NavbarMenuItem,
   NavbarMenuToggle,
-} from "@heroui/navbar";
-import { Button } from "@heroui/button";
-import { link as linkStyles } from "@heroui/theme";
+} from "@heroui/react";
+import { Button } from "@heroui/react";
 import type { User } from "@supabase/supabase-js";
 
 import { siteConfig } from "@/constants/site";
@@ -60,8 +59,7 @@ export function NavbarClient({ user }: NavbarClientProps) {
             <NavbarItem key={item.href} isActive={isItemActive(item.href)}>
               <NextLink
                 className={clsx(
-                  linkStyles({ color: "foreground" }),
-                  "relative",
+                  "relative inline-flex items-center tap-highlight-transparent outline-solid outline-transparent data-[focus-visible=true]:z-10 data-[focus-visible=true]:outline-2 data-[focus-visible=true]:outline-focus data-[focus-visible=true]:outline-offset-2 text-medium text-foreground no-underline hover:opacity-hover active:opacity-disabled transition-opacity",
                   isItemActive(item.href)
                     ? "text-primary font-semibold after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-1 after:h-[2px] after:bg-primary after:rounded-full"
                     : "text-foreground",
@@ -154,4 +152,3 @@ export function NavbarClient({ user }: NavbarClientProps) {
     </HeroUINavbar>
   );
 }
-

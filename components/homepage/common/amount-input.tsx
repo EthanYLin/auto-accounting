@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Input } from "@heroui/input";
+import { Input } from "@heroui/react";
 import type { TransactionType } from "@/types";
 import { getAmountColorClass, getAmountSymbol } from '@/lib/transaction/transaction-display';
 

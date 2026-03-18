@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import type { TransactionWithRelations } from '@/types';
-import { addToast } from '@heroui/toast';
+import { addToast } from '@heroui/react';
 
 // ==================== 类型定义 ====================
 

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Button } from '@heroui/button';
-import { Chip } from '@heroui/chip';
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@heroui/dropdown';
+import { Button } from '@heroui/react';
+import { Chip } from '@heroui/react';
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@heroui/react';
 import { CheckIcon } from '@heroicons/react/24/outline';
 import { FunnelIcon as FunnelIconSolid } from '@heroicons/react/24/solid';
 import { FunnelIcon } from '@heroicons/react/24/outline';

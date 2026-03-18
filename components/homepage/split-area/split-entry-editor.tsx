@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Button } from "@heroui/button";
-import { Checkbox } from "@heroui/checkbox";
-import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
+import { Button } from "@heroui/react";
+import { Checkbox } from "@heroui/react";
+import { Input } from "@heroui/react";
+import { Select, SelectItem } from "@heroui/react";
 import { AmountInput } from "@/components/homepage/common/amount-input";
 import {
   XMarkIcon,

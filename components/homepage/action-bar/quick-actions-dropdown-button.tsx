@@ -1,12 +1,12 @@
-import { Button, ButtonGroup } from "@heroui/button";
+import { Button, ButtonGroup } from "@heroui/react";
 import {
   Dropdown,
   DropdownItem,
   DropdownMenu,
   DropdownSection,
   DropdownTrigger,
-} from "@heroui/dropdown";
-import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/modal";
+} from "@heroui/react";
+import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/react";
 import { CheckIcon, ChevronDownIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import type { DangerConfirm, QuickActionIcon, QuickActionKey } from "./use-action-bar-controller";
 import { QUICK_ACTION_ITEMS } from "./use-action-bar-controller";

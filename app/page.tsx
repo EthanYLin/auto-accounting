@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Spinner } from "@heroui/spinner";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Alert } from "@heroui/alert";
-import { Divider } from "@heroui/divider";
+import { Spinner } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Input } from "@heroui/react";
+import { Alert } from "@heroui/react";
+import { Divider } from "@heroui/react";
 import { MagnifyingGlassIcon, DocumentPlusIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { ActionBar } from "@/components/homepage/action-bar";
 import { useAppData } from "@/components/context/app-data-context";

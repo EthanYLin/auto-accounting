@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Input } from "@heroui/input";
-import { Button } from "@heroui/button";
-import { Checkbox } from "@heroui/checkbox";
-import { Chip } from "@heroui/chip";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
-import { Pagination } from "@heroui/pagination";
+import { Input } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Checkbox } from "@heroui/react";
+import { Chip } from "@heroui/react";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/react";
+import { Pagination } from "@heroui/react";
 import { MagnifyingGlassIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import { useTransactionStore } from '@/components/context/transaction-store-context';
 import { filterTransactionsBySearch, flattenTransactionsWithChildren } from '@/lib/hooks/use-transaction-filter';

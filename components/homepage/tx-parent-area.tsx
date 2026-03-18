@@ -1,10 +1,10 @@
 "use client";
 
-import { Button } from "@heroui/button";
-import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/modal";
-import { useDisclosure } from "@heroui/use-disclosure";
-import { Chip } from "@heroui/chip";
-import { addToast } from "@heroui/toast";
+import { Button } from "@heroui/react";
+import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/react";
+import { useDisclosure } from "@heroui/react";
+import { Chip } from "@heroui/react";
+import { addToast } from "@heroui/react";
 import { PlusIcon, XMarkIcon, ArrowUpRightIcon, PencilSquareIcon, CalculatorIcon } from "@heroicons/react/24/outline";
 import { TransactionListSelector } from "@/components/homepage/common/transaction-list-selector";
 import { useTransactionStore } from "@/components/context/transaction-store-context";

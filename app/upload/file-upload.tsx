@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useCallback } from 'react';
-import { Card, CardBody } from '@heroui/card';
-import { Button } from '@heroui/button';
-import { Spinner } from '@heroui/spinner';
+import { Card, CardBody } from '@heroui/react';
+import { Button } from '@heroui/react';
+import { Spinner } from '@heroui/react';
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;

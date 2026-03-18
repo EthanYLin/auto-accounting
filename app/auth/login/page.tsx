@@ -2,11 +2,11 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
-import { Input } from "@heroui/input";
-import { Button } from "@heroui/button";
-import { Link } from "@heroui/link";
-import { Divider } from "@heroui/divider";
+import { Card, CardHeader, CardBody, CardFooter } from "@heroui/react";
+import { Input } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Link } from "@heroui/react";
+import { Divider } from "@heroui/react";
 
 import { signIn } from "@/app/actions/auth";
 

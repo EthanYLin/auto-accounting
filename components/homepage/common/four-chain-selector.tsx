@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useEffect, useCallback } from "react";
-import { Listbox, ListboxItem } from "@heroui/listbox";
-import { Select, SelectItem } from "@heroui/select";
+import { Listbox, ListboxItem } from "@heroui/react";
+import { Select, SelectItem } from "@heroui/react";
 import type { TransactionType } from "@/types";
 import { TRANSACTION_TYPES } from "@/constants/transaction-type";
 import { useAppData } from "@/components/context/app-data-context";

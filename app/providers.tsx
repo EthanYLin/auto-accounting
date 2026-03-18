@@ -3,11 +3,11 @@
 import type { ThemeProviderProps } from "next-themes";
 
 import * as React from "react";
-import { HeroUIProvider } from "@heroui/system";
+import { HeroUIProvider } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { I18nProvider } from "@react-aria/i18n";
-import { ToastProvider } from "@heroui/toast";
+import { ToastProvider } from "@heroui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppDataProvider } from "@/components/context/app-data-context";
 import { SaveButtonOverrideProvider } from "@/components/context/save-button-override-context";

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useCallback } from 'react';
-import { addToast } from '@heroui/toast';
+import { addToast } from '@heroui/react';
 
 interface ErrorContextValue {
   showError: (title: string, message: string) => void;

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
-import { Spinner } from '@heroui/spinner';
-import { Button } from '@heroui/button';
+import { Spinner } from '@heroui/react';
+import { Button } from '@heroui/react';
 import { CloudArrowDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { TransactionListItem } from './transaction-list-item';
 import { useTransactionStore } from '@/components/context/transaction-store-context';

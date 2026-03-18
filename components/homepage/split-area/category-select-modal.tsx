@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@heroui/button";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
+import { Button } from "@heroui/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 import { FourChainSelector } from "@/components/homepage/common/four-chain-selector";
 import type { FourChainState } from "@/components/homepage/common/four-chain-selector";
 

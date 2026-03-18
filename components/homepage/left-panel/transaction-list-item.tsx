@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Chip } from '@heroui/chip';
+import { Chip } from '@heroui/react';
 import { LinkIcon, RectangleStackIcon, ScissorsIcon } from '@heroicons/react/24/outline';
 import type { TransactionWithRelations } from '@/types';
 import { TRANSACTION_TYPES, TRANSACTION_STATUS_COLORS } from '@/constants/transaction-type';

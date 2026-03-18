@@ -5,8 +5,8 @@ import {
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
-} from "@heroui/dropdown";
-import { Avatar } from "@heroui/avatar";
+} from "@heroui/react";
+import { Avatar } from "@heroui/react";
 import { signOut } from "@/app/actions/auth";
 import { useRouter } from "next/navigation";
 import { useAppData } from "@/components/context/app-data-context";

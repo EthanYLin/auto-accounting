@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useDisclosure } from "@heroui/modal";
-import { addToast } from "@heroui/toast";
+import { useDisclosure } from "@heroui/react";
+import { addToast } from "@heroui/react";
 import {
   ArchiveBoxIcon,
   ArrowUturnLeftIcon,

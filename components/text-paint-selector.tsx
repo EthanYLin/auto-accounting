@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Input } from "@heroui/react";
 
 interface TextPaintSelectorProps {
   isOpen: boolean;

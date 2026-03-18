@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Tabs, Tab } from '@heroui/tabs';
+import { Tabs, Tab } from '@heroui/react';
 
 import { WeChatImport } from '@/app/upload/wechat-import';
 import { AlipayImport } from '@/app/upload/alipay-import';

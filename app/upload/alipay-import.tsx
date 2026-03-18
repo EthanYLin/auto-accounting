@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from 'react';
-import { Alert } from '@heroui/alert';
+import { Alert } from '@heroui/react';
 
 import { FileUpload } from '@/app/upload/file-upload';
 import type { ImportResult } from '@/lib/wechat-import/types';
