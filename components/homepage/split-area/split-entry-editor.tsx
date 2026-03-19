@@ -17,7 +17,7 @@ import { CategorySelectModal } from "@/components/homepage/split-area/category-s
 // ==================== 类型定义 ====================
 
 export interface SplitEntryData {
-  localId: string;
+  localId: number;
   accountId: string;
   amount: string;
   chainState: FourChainState;
@@ -38,9 +38,9 @@ export interface SplitEntryEditorProps {
   /** 无数据时的主按钮回调 */
   onEmptyAction?: () => void;
   /** 当前选中 ID 集合（受控） */
-  selectedIds: Set<string>;
+  selectedIds: Set<number>;
   /** 选中状态变化回调（受控） */
-  onSelectedIdsChange: (ids: Set<string>) => void;
+  onSelectedIdsChange: (ids: Set<number>) => void;
   /** 是否显示名称列（受控） */
   showName: boolean;
 }
@@ -77,18 +77,18 @@ export function SplitEntryEditor({
   const canDragRef = useRef(false);
 
   // 类别 Modal 状态
-  const [editingLocalId, setEditingLocalId] = useState<string | null>(null);
+  const [editingLocalId, setEditingLocalId] = useState<number | null>(null);
 
   // ==================== 操作回调 ====================
 
-  const handleDelete = (localId: string) => {
+  const handleDelete = (localId: number) => {
     onEntriesChange(entries.filter((e) => e.localId !== localId));
     const next = new Set(selectedIds);
     next.delete(localId);
     onSelectedIdsChange(next);
   };
 
-  const handleToggleSelect = (localId: string) => {
+  const handleToggleSelect = (localId: number) => {
     const next = new Set(selectedIds);
     if (next.has(localId)) next.delete(localId);
     else next.add(localId);
@@ -96,7 +96,7 @@ export function SplitEntryEditor({
   };
 
   const handleUpdateEntry = (
-    localId: string,
+    localId: number,
     field: keyof Omit<SplitEntryData, "localId">,
     value: unknown,
   ) => {
@@ -105,12 +105,12 @@ export function SplitEntryEditor({
 
   // ==================== 类别 Modal ====================
 
-  const openCategoryModal = (localId: string) => {
+  const openCategoryModal = (localId: number) => {
     setEditingLocalId(localId);
   };
 
   const confirmCategoryModal = (chainState: FourChainState) => {
-    if (!editingLocalId) return;
+    if (editingLocalId === null) return;
     handleUpdateEntry(editingLocalId, "chainState", chainState);
     setEditingLocalId(null);
   };

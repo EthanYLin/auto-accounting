@@ -201,7 +201,7 @@ export function txSplitsToEntries(
 ): SplitEntryData[] {
   if (!splits || splits.length === 0) return [];
   return splits.map((split) => ({
-    localId: `db-${split.id}`,
+    localId: split.id,
     accountId: String(split.account.id),
     amount: Math.abs(split.amount).toFixed(2),
     chainState: {
@@ -222,7 +222,7 @@ export function entriesToTxSplits(
   appData: AppDataValue,
   userId: string,
 ): TransactionSplitWithRelations[] {
-  return entries.map((entry, i) => {
+  return entries.map((entry) => {
     const splitAccount = appData.accounts.find((a) => String(a.id) === entry.accountId)!;
     const splitMainCat = entry.chainState.main_id
       ? appData.mainCategories.find((mc) => String(mc.id) === entry.chainState.main_id)
@@ -235,7 +235,7 @@ export function entriesToTxSplits(
       : undefined;
 
     return {
-      id: i,
+      id: entry.localId,
       amount: parseFloat(entry.amount) || 0,
       name: entry.name || null,
       transaction_type: entry.chainState.txType ?? null,

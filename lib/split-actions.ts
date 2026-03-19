@@ -4,7 +4,6 @@ import type { TransactionType } from "@/types";
 
 import {
   ArrowsPointingInIcon,
-  ArrowsRightLeftIcon,
   UsersIcon,
   UserGroupIcon,
   ChartPieIcon,
@@ -162,17 +161,6 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       return result;
     },
   },
-  {
-    key: "offset",
-    label: "抵消记录",
-    color: "warning",
-    icon: ArrowsRightLeftIcon,
-    test: (selected) =>
-      selected.length >= 2 &&
-      allHaveTxType(selected) &&
-      sameAccount(selected) &&
-      sumSignedAmounts(selected) == 0,
-  },
 
   // ---- 社交分账 ----
   {
@@ -270,7 +258,7 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
 /** 根据当前条目列表和选中 ID 集合，返回可用的操作列表 */
 export function getAvailableActions(
   entries: SplitEntryData[],
-  selectedIds: Set<string>,
+  selectedIds: Set<number>,
 ): SplitActionRule[] {
   if (selectedIds.size === 0) return [];
   const selected = entries.filter((e) => selectedIds.has(e.localId));

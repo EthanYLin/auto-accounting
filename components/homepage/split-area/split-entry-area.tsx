@@ -34,6 +34,10 @@ function getEntriesSignature(entries: SplitEntryData[]): string {
   );
 }
 
+function getNextLocalId(entries: SplitEntryData[]): number {
+  return entries.reduce((maxId, entry) => Math.max(maxId, entry.localId), 0) + 1;
+}
+
 export function SplitEntryArea() {
   const editor = useTransactionEditor();
   const appData = useAppData();
@@ -44,7 +48,7 @@ export function SplitEntryArea() {
   const nextIdRef = useRef(1);
   const lastLocalSignatureRef = useRef("[]");
   const [entries, setEntries] = useState<SplitEntryData[]>([]);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showName, setShowName] = useState(false);
   const txEntries = useMemo(() => txSplitsToEntries(tx?.splits), [tx?.splits]);
   const txEntriesSignature = useMemo(() => getEntriesSignature(txEntries), [txEntries]);
@@ -56,6 +60,7 @@ export function SplitEntryArea() {
   // 切换交易时，直接用当前交易的拆账初始化本地 UI 状态。
   useEffect(() => {
     lastLocalSignatureRef.current = txEntriesSignature;
+    nextIdRef.current = getNextLocalId(txEntries);
     setEntries(txEntries);
     setSelectedIds(new Set());
     setShowName(tx?.splits?.some((s) => s.name && s.name.trim() !== "") ?? false);
@@ -66,6 +71,7 @@ export function SplitEntryArea() {
     if (!tx) return;
     if (txEntriesSignature === lastLocalSignatureRef.current) return;
     lastLocalSignatureRef.current = txEntriesSignature;
+    nextIdRef.current = getNextLocalId(txEntries);
     setEntries(txEntries);
     setSelectedIds(new Set());
     setShowName(txEntries.some((entry) => entry.name.trim() !== ""));
@@ -103,7 +109,7 @@ export function SplitEntryArea() {
   );
 
   const handleAdd = useCallback(() => {
-    const id = `split-${nextIdRef.current++}`;
+    const id = nextIdRef.current++;
     handleEntriesChange([
       ...entries,
       {
