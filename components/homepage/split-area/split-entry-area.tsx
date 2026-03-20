@@ -2,18 +2,26 @@
 
 import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
 
-import { useRef, useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Button } from "@heroui/react";
 import { PlusIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import { CheckCircleIcon as CheckCircleOutline } from "@heroicons/react/24/outline";
 
+import {
+  SplitEntryDialogs,
+  type SplitDialogKey,
+} from "@/components/homepage/split-area/split-entry-dialogs";
 import { SplitEntryEditor } from "@/components/homepage/split-area/split-entry-editor";
-import { getAvailableActions } from "@/lib/split-actions";
+import {
+  getAvailableActions,
+  type SplitActionKey,
+  type SplitActionPayload,
+} from "@/lib/split-actions";
 import { useAppData } from "@/components/context/app-data-context";
 import { useTransactionEditor } from "@/components/context/transaction-editor-context";
 import { txSplitsToEntries, entriesToTxSplits } from "@/lib/transaction/transaction-convert";
-import { defaultMerge, getExitSplits } from "@/lib/transaction/transaction-split-merge";
+import { getDefaultSplit } from "@/lib/transaction/transaction-split-merge";
 
 // ==================== 主组件 ====================
 
@@ -45,25 +53,21 @@ export function SplitEntryArea() {
   const childTransactions = editor.currentChildTransactions;
   const selectedTransactionId = tx?.id ?? null;
 
-  const nextIdRef = useRef(1);
   const lastLocalSignatureRef = useRef("[]");
   const [entries, setEntries] = useState<SplitEntryData[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showName, setShowName] = useState(false);
+  const [activeDialog, setActiveDialog] = useState<SplitDialogKey | null>(null);
   const txEntries = useMemo(() => txSplitsToEntries(tx?.splits), [tx?.splits]);
   const txEntriesSignature = useMemo(() => getEntriesSignature(txEntries), [txEntries]);
-  const canMergeByDefault = useMemo(() => {
-    if (!tx || tx.children_ids.length === 0) return false;
-    return getExitSplits(tx, childTransactions).length !== 0;
-  }, [tx, childTransactions]);
 
   // 切换交易时，直接用当前交易的拆账初始化本地 UI 状态。
   useEffect(() => {
     lastLocalSignatureRef.current = txEntriesSignature;
-    nextIdRef.current = getNextLocalId(txEntries);
     setEntries(txEntries);
     setSelectedIds(new Set());
     setShowName(tx?.splits?.some((s) => s.name && s.name.trim() !== "") ?? false);
+    setActiveDialog(null);
   }, [editor.currentId, selectedTransactionId]);
 
   // 同一条交易下，如果 store 中的拆账内容和本地签名不一致，说明发生了外部回滚，同步回本地 entries。
@@ -71,10 +75,10 @@ export function SplitEntryArea() {
     if (!tx) return;
     if (txEntriesSignature === lastLocalSignatureRef.current) return;
     lastLocalSignatureRef.current = txEntriesSignature;
-    nextIdRef.current = getNextLocalId(txEntries);
     setEntries(txEntries);
     setSelectedIds(new Set());
     setShowName(txEntries.some((entry) => entry.name.trim() !== ""));
+    setActiveDialog(null);
   }, [tx, txEntries, txEntriesSignature]);
 
   // ==================== 派生状态 ====================
@@ -82,10 +86,27 @@ export function SplitEntryArea() {
   const allSelected = entries.length > 0 && selectedIds.size === entries.length;
   const someSelected = selectedIds.size > 0 && selectedIds.size < entries.length;
 
-  const availableActions = useMemo(
-    () => getAvailableActions(entries, selectedIds),
-    [entries, selectedIds],
-  );
+  /**
+   * 当前交易没有分账时，默认将入口交易作为出口，方便用户直接选择分账方式。
+   * 当前交易有分账时，defaultEntries为空。
+   */
+  const defaultEntries = useMemo(() => {
+    if (entries.length > 0 || !tx) return null;
+    return txSplitsToEntries([getDefaultSplit(tx), ...childTransactions.map(getDefaultSplit)]);
+  }, [entries.length, tx, childTransactions]);
+
+  const availableActions = useMemo(() => {
+    const currentEntries = defaultEntries ?? entries;
+    const currentSelectedIds = defaultEntries
+      ? new Set(currentEntries.map((e) => e.localId))
+      : selectedIds;
+    return getAvailableActions(currentEntries, currentSelectedIds);
+  }, [entries, selectedIds, defaultEntries]);
+
+  const selectedEntries = useMemo(() => {
+    if (defaultEntries) return defaultEntries;
+    return entries.filter((entry) => selectedIds.has(entry.localId));
+  }, [entries, selectedIds, defaultEntries]);
 
   // ==================== 工具栏回调 ====================
 
@@ -109,11 +130,10 @@ export function SplitEntryArea() {
   );
 
   const handleAdd = useCallback(() => {
-    const id = nextIdRef.current++;
     handleEntriesChange([
       ...entries,
       {
-        localId: id,
+        localId: getNextLocalId(entries),
         accountId: appData.accounts[0]?.id.toString() ?? "",
         amount: "",
         chainState: {},
@@ -122,25 +142,50 @@ export function SplitEntryArea() {
     ]);
   }, [entries, handleEntriesChange, appData.accounts]);
 
-  const handleDefaultMerge = useCallback(() => {
-    if (!tx) return;
-    const defaultMergedSplits = defaultMerge(tx, childTransactions);
-    editor.updateSplits(defaultMergedSplits);
-  }, [tx, childTransactions, editor]);
-
-  const handleActionSplit = useCallback(
-    (actionKey: string) => {
-      const action = availableActions.find((a) => a.key === actionKey);
-      if (!action || !action.split) return;
-      const selectedEntries = entries.filter((e) => selectedIds.has(e.localId));
-      const unselectedEntries = entries.filter((e) => !selectedIds.has(e.localId));
-      const newSelectedEntries = action.split(selectedEntries);
-      const newEntries = [...unselectedEntries, ...newSelectedEntries];
-      handleEntriesChange(newEntries);
+  const replaceSelectedEntries = useCallback(
+    (nextSelectedEntries: SplitEntryData[]) => {
+      const unselectedEntries = entries.filter((entry) => !selectedIds.has(entry.localId));
+      const nextEntries = [...unselectedEntries, ...nextSelectedEntries];
+      handleEntriesChange(nextEntries);
       setSelectedIds(new Set());
     },
-    [availableActions, entries, selectedIds, handleEntriesChange],
+    [entries, selectedIds, handleEntriesChange],
   );
+
+  const handleActionPress = useCallback(
+    (actionKey: SplitActionKey) => {
+      const action = availableActions.find((a) => a.key === actionKey);
+      if (!action) return;
+      const nextLocalId = getNextLocalId(defaultEntries ?? entries);
+      switch (actionKey) {
+        case "merge": {
+          const updatedSelectedEntries = action.split(selectedEntries, nextLocalId);
+          replaceSelectedEntries(updatedSelectedEntries);
+          break;
+        }
+        case "ratio-split":
+          setActiveDialog("ratio-split");
+          break;
+      }
+    },
+    [availableActions, entries, defaultEntries, replaceSelectedEntries, selectedEntries],
+  );
+
+  const handleDialogSubmit = useCallback(
+    (payload: SplitActionPayload) => {
+      setActiveDialog(null);
+      const nextLocalId = getNextLocalId(defaultEntries ?? entries);
+      const action = availableActions.find((item) => item.key === payload.actionKey);
+      if (!action) return;
+      const updatedSelectedEntries = action.split(selectedEntries, nextLocalId, payload);
+      replaceSelectedEntries(updatedSelectedEntries);
+    },
+    [availableActions, entries, defaultEntries, replaceSelectedEntries, selectedEntries],
+  );
+
+  const handleDialogClose = useCallback(() => {
+    setActiveDialog(null);
+  }, []);
 
   // ==================== 渲染 ====================
 
@@ -203,7 +248,7 @@ export function SplitEntryArea() {
                     startContent={
                       ActionIcon ? <ActionIcon className="w-3.5 h-3.5 flex-shrink-0" /> : undefined
                     }
-                    onPress={() => handleActionSplit(action.key)}
+                    onPress={() => handleActionPress(action.key)}
                   >
                     {action.label}
                   </Button>
@@ -219,13 +264,21 @@ export function SplitEntryArea() {
         entries={entries}
         onEntriesChange={handleEntriesChange}
         emptyMessage="暂无拆账记录"
-        emptyActionLabel={canMergeByDefault ? "按默认方式合并" : undefined}
-        onEmptyAction={canMergeByDefault ? handleDefaultMerge : undefined}
         placeholderName={tx?.name ?? undefined}
         selectedIds={selectedIds}
         onSelectedIdsChange={setSelectedIds}
         showName={showName}
       />
+
+      {tx ? (
+        <SplitEntryDialogs
+          activeDialog={activeDialog}
+          rootTransaction={tx}
+          selectedEntries={selectedEntries}
+          onSubmit={handleDialogSubmit}
+          onClose={handleDialogClose}
+        />
+      ) : null}
     </div>
   );
 }

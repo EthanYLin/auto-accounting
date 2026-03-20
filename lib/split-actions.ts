@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import type { FourChainState } from "@/components/homepage/common/four-chain-selector";
 import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
 import type { TransactionType } from "@/types";
 
@@ -18,10 +19,33 @@ import { TRANSACTION_TYPES } from "@/constants/transaction-type";
 
 // ==================== 类型定义 ====================
 
+export type SplitActionKey =
+  | "merge"
+  | "social-split-2"
+  | "social-split-3"
+  | "ratio-split"
+  | "amount-split"
+  | "transfer-to"
+  | "transfer-from"
+  | "recharge-to"
+  | "recharge-from";
+
+export interface SplitActionPayload {
+  actionKey: SplitActionKey;
+}
+
+export interface RatioSplitPayload extends SplitActionPayload {
+  actionKey: "ratio-split";
+  count: number;
+  ratio: number[];
+  chainStates: FourChainState[];
+  name: string;
+}
+
 /** 一条拆账操作规则 */
 export interface SplitActionRule {
   /** 唯一标识 */
-  key: string;
+  key: SplitActionKey;
   /** 按钮文案 */
   label: string;
   /** 按钮颜色 */
@@ -33,8 +57,11 @@ export interface SplitActionRule {
   /** 判断当前选中状态是否满足此规则 */
   test: (selected: SplitEntryData[]) => boolean;
   /** 执行拆账操作，返回新的条目列表 */
-  // TODO: 去掉问号
-  split?: (sources: SplitEntryData[]) => SplitEntryData[];
+  split: (
+    sources: SplitEntryData[],
+    nextLocalId: number,
+    payload?: SplitActionPayload,
+  ) => SplitEntryData[];
 }
 
 // ==================== 辅助函数 ====================
@@ -51,7 +78,7 @@ function getSignedAmount(entry: SplitEntryData): number {
   return sign * amount;
 }
 
-function sumSignedAmounts(entries: SplitEntryData[]): number {
+export function sumSignedAmounts(entries: SplitEntryData[]): number {
   return entries.reduce((sum, e) => sum + getSignedAmount(e), 0);
 }
 
@@ -79,7 +106,7 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
     color: "primary",
     icon: ArrowsPointingInIcon,
     test: (selected) => selected.length >= 2 && !distinctAccounts(selected),
-    split: (sources) => {
+    split: (sources, _nextLocalId, _payload) => {
       const result: SplitEntryData[] = [];
       const participating: SplitEntryData[] = [];
 
@@ -173,6 +200,7 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       sameAccount(selected) &&
       allHaveTxType(selected) &&
       sumSignedAmounts(selected) < 0,
+    split: (sources, _nextLocalId, _payload) => sources,
   },
   {
     key: "social-split-3",
@@ -184,6 +212,7 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       sameAccount(selected) &&
       allHaveTxType(selected) &&
       sumSignedAmounts(selected) < 0,
+    split: (sources, _nextLocalId, _payload) => sources,
   },
 
   // ---- 金额/比例分账 ----
@@ -197,6 +226,43 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       sameAccount(selected) &&
       allHaveTxType(selected) &&
       sumSignedAmounts(selected) !== 0,
+    split: (sources, nextLocalId, payload) => {
+      if (!payload || payload.actionKey !== "ratio-split") return sources;
+      if (sources.length === 0) return sources;
+
+      const ratioPayload = payload as RatioSplitPayload;
+      const count = Math.max(1, Math.trunc(ratioPayload.count));
+      const ratios = ratioPayload.ratio;
+
+      if (
+        ratios.length !== count ||
+        ratioPayload.chainStates.length !== count ||
+        ratios.some((value) => !Number.isFinite(value) || value <= 0)
+      ) {
+        return sources;
+      }
+
+      const totalCents = Math.round(Math.abs(sumSignedAmounts(sources)) * 100);
+      const ratioSum = ratios.reduce((sum, value) => sum + value, 0);
+      let assignedCents = 0;
+
+      return ratios.map((ratio, index) => {
+        const cents =
+          index === ratios.length - 1
+            ? totalCents - assignedCents
+            : Math.floor((totalCents * ratio) / ratioSum);
+
+        assignedCents += cents;
+
+        return {
+          localId: nextLocalId + index,
+          accountId: sources[0].accountId,
+          amount: (cents / 100).toFixed(2),
+          name: ratioPayload.name.trim(),
+          chainState: ratioPayload.chainStates[index],
+        };
+      });
+    },
   },
   {
     key: "amount-split",
@@ -208,6 +274,7 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       sameAccount(selected) &&
       allHaveTxType(selected) &&
       sumSignedAmounts(selected) !== 0,
+    split: (sources, _nextLocalId, _payload) => sources,
   },
 
   // ---- 转账和充值 ----
@@ -220,6 +287,7 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       selected.length === 1 &&
       !!selected[0].chainState.txType &&
       ["支出", "应收款项"].includes(selected[0].chainState.txType),
+    split: (sources, _nextLocalId, _payload) => sources,
   },
   {
     key: "transfer-from",
@@ -230,6 +298,7 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       selected.length === 1 &&
       !!selected[0].chainState.txType &&
       ["收入", "应付款项"].includes(selected[0].chainState.txType),
+    split: (sources, _nextLocalId, _payload) => sources,
   },
   {
     key: "recharge-to",
@@ -240,6 +309,7 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       selected.length === 1 &&
       !!selected[0].chainState.txType &&
       ["支出", "应收款项"].includes(selected[0].chainState.txType),
+    split: (sources, _nextLocalId, _payload) => sources,
   },
   {
     key: "recharge-from",
@@ -250,6 +320,7 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       selected.length === 1 &&
       !!selected[0].chainState.txType &&
       ["收入", "应付款项"].includes(selected[0].chainState.txType),
+    split: (sources, _nextLocalId, _payload) => sources,
   },
 ];
 

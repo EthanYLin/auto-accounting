@@ -47,3 +47,6 @@ supabase/config.local.toml
 
 .shared
 .cursor
+
+.github/prompts
+.codex

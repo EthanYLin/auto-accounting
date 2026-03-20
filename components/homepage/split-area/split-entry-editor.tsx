@@ -33,10 +33,6 @@ export interface SplitEntryEditorProps {
   placeholderName?: string;
   /** 无数据时的提示文案 */
   emptyMessage?: string;
-  /** 无数据时的主按钮文案 */
-  emptyActionLabel?: string;
-  /** 无数据时的主按钮回调 */
-  onEmptyAction?: () => void;
   /** 当前选中 ID 集合（受控） */
   selectedIds: Set<number>;
   /** 选中状态变化回调（受控） */
@@ -63,8 +59,6 @@ export function SplitEntryEditor({
   onEntriesChange,
   placeholderName,
   emptyMessage = "暂无拆账记录",
-  emptyActionLabel,
-  onEmptyAction,
   selectedIds,
   onSelectedIdsChange,
   showName,
@@ -188,13 +182,8 @@ export function SplitEntryEditor({
     <div>
       {/* 数据区 */}
       {entries.length === 0 ? (
-        <div className="flex flex-col items-start gap-2 px-1 py-1">
+        <div className="px-1 py-1">
           <div className="text-xs text-gray-400 dark:text-gray-500">{emptyMessage}</div>
-          {emptyActionLabel && onEmptyAction ? (
-            <Button size="sm" color="primary" onPress={onEmptyAction}>
-              {emptyActionLabel}
-            </Button>
-          ) : null}
         </div>
       ) : (
         <div className="space-y-1.5">

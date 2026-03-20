@@ -17,7 +17,7 @@ import { calculateAmount } from "@/lib/transaction/transaction-display";
 /**
  * 在没有附加交易且用户未分账时，出口=入口交易。
  */
-function getDefaultSplit(
+export function getDefaultSplit(
   tx: TransactionWithRelations | TransactionSplitWithRelations,
 ): TransactionSplitWithRelations {
   return {

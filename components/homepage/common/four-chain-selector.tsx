@@ -84,13 +84,17 @@ const IconComponent = ({
   icon,
   backColor,
   foreColor,
+  sizeClassName = "w-6 h-6 text-xs",
+  className = "",
 }: {
   icon: string;
   backColor?: string;
   foreColor?: string;
+  sizeClassName?: string;
+  className?: string;
 }) => (
   <span
-    className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs mr-2 ${backColor || ""} ${foreColor || ""}`}
+    className={`inline-flex shrink-0 items-center justify-center rounded-full ${sizeClassName} ${backColor || ""} ${foreColor || ""} ${className}`}
   >
     {icon}
   </span>
@@ -108,6 +112,63 @@ export interface ChainOption {
 
 // 选择器模式
 export type SelectorMode = "listbox" | "select";
+export type SelectFieldSize = "sm" | "md" | "lg";
+export type SelectTextSize = "sm" | "md" | "lg";
+
+export interface FourChainSelectModeOptions {
+  size?: SelectFieldSize;
+  textSize?: SelectTextSize;
+}
+
+const SELECT_FIELD_SIZE_STYLES: Record<
+  SelectFieldSize,
+  {
+    container: string;
+    icon: string;
+    itemBase: string;
+  }
+> = {
+  sm: {
+    container: "min-w-[128px]",
+    icon: "w-5 h-5 text-[11px]",
+    itemBase: "min-h-unit-9 px-2 py-1.5",
+  },
+  md: {
+    container: "min-w-[150px]",
+    icon: "w-6 h-6 text-xs",
+    itemBase: "min-h-unit-10 px-2.5 py-2",
+  },
+  lg: {
+    container: "min-w-[176px]",
+    icon: "w-7 h-7 text-sm",
+    itemBase: "min-h-unit-11 px-3 py-2.5",
+  },
+};
+
+const SELECT_TEXT_SIZE_STYLES: Record<
+  SelectTextSize,
+  {
+    label: string;
+    value: string;
+    item: string;
+  }
+> = {
+  sm: {
+    label: "text-[11px]",
+    value: "text-xs",
+    item: "text-xs",
+  },
+  md: {
+    label: "text-xs",
+    value: "text-sm",
+    item: "text-sm",
+  },
+  lg: {
+    label: "text-sm",
+    value: "text-base",
+    item: "text-base",
+  },
+};
 
 // FourChainSelector 组件属性
 interface FourChainSelectorProps {
@@ -119,6 +180,8 @@ interface FourChainSelectorProps {
   allowedTxTypes?: TransactionType[];
   // 显示模式
   mode?: SelectorMode;
+  // select 模式外观
+  selectModeOptions?: FourChainSelectModeOptions;
   // 样式
   className?: string;
 }
@@ -128,9 +191,14 @@ export function FourChainSelector({
   onChange,
   allowedTxTypes,
   mode = "listbox",
+  selectModeOptions,
   className = "",
 }: FourChainSelectorProps) {
   const { mainCategories, subCategories, budgetTypes } = useAppData();
+  const resolvedSelectFieldSize = selectModeOptions?.size ?? "md";
+  const resolvedSelectTextSize = selectModeOptions?.textSize ?? "md";
+  const selectFieldStyles = SELECT_FIELD_SIZE_STYLES[resolvedSelectFieldSize];
+  const selectTextStyles = SELECT_TEXT_SIZE_STYLES[resolvedSelectTextSize];
 
   const dispatch = useCallback(
     (action: FourChainAction) => {
@@ -264,9 +332,14 @@ export function FourChainSelector({
     placeholder?: string,
   ) => {
     if (mode === "select") {
+      const selectedOption = selectedKey
+        ? options.find((option) => option.key === selectedKey)
+        : undefined;
+
       return (
-        <div className="flex-1 min-w-[150px]">
+        <div className={`flex-1 ${selectFieldStyles.container}`}>
           <Select
+            size={resolvedSelectFieldSize}
             label={title}
             placeholder={placeholder || `选择${title}`}
             selectedKeys={selectedKey ? [selectedKey] : []}
@@ -276,6 +349,37 @@ export function FourChainSelector({
             }}
             isDisabled={disabled}
             className="w-full"
+            classNames={{
+              label: selectTextStyles.label,
+              value: selectTextStyles.value,
+            }}
+            listboxProps={{
+              itemClasses: {
+                base: selectFieldStyles.itemBase,
+                title: selectTextStyles.item,
+              },
+            }}
+            renderValue={() => {
+              if (!selectedOption) return null;
+
+              return (
+                <div className="flex min-w-0 items-center gap-2">
+                  {selectedOption.icon ? (
+                    <IconComponent
+                      icon={selectedOption.icon}
+                      backColor={selectedOption.backColor}
+                      foreColor={selectedOption.foreColor}
+                      sizeClassName={selectFieldStyles.icon}
+                    />
+                  ) : null}
+                  <span
+                    className={`truncate font-medium ${selectTextStyles.value} ${selectedOption.foreColor || ""}`}
+                  >
+                    {selectedOption.label}
+                  </span>
+                </div>
+              );
+            }}
           >
             {options.map((option) => (
               <SelectItem
@@ -287,11 +391,14 @@ export function FourChainSelector({
                       icon={option.icon}
                       backColor={option.backColor}
                       foreColor={option.foreColor}
+                      sizeClassName={selectFieldStyles.icon}
                     />
                   ) : null
                 }
               >
-                <span className={option.foreColor || ""}>{option.label}</span>
+                <span className={`font-medium ${selectTextStyles.item} ${option.foreColor || ""}`}>
+                  {option.label}
+                </span>
               </SelectItem>
             ))}
           </Select>
@@ -395,6 +502,8 @@ export interface TransactionEditorFourChainSelectorProps {
   allowedTxTypes?: TransactionType[];
   // 显示模式
   mode?: SelectorMode;
+  // select 模式外观
+  selectModeOptions?: FourChainSelectModeOptions;
   // 样式
   className?: string;
 }
@@ -402,6 +511,7 @@ export interface TransactionEditorFourChainSelectorProps {
 export function TransactionEditorFourChainSelector({
   allowedTxTypes,
   mode = "listbox",
+  selectModeOptions,
   className = "",
 }: TransactionEditorFourChainSelectorProps) {
   const { currentTransaction, updateFields } = useTransactionEditor();
@@ -445,6 +555,7 @@ export function TransactionEditorFourChainSelector({
       onChange={handleChange}
       allowedTxTypes={allowedTxTypes}
       mode={mode}
+      selectModeOptions={selectModeOptions}
       className={className}
     />
   );
