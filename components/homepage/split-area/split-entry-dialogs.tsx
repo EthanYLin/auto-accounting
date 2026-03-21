@@ -3,12 +3,22 @@
 import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
 import type { SplitActionPayload } from "@/lib/split-actions";
 
-import { SocialSplitModal } from "@/components/homepage/split-area/social-split-modal";
-import { AmountSplitModal } from "@/components/homepage/split-area/amount-split-modal";
-import { RatioSplitModal } from "@/components/homepage/split-area/ratio-split-modal";
+import { SocialSplitModal } from "@/components/homepage/split-area/drawers/social-split-modal";
+import { AmountSplitModal } from "@/components/homepage/split-area/drawers/amount-split-modal";
+import { RatioSplitModal } from "@/components/homepage/split-area/drawers/ratio-split-modal";
+import { AccountTargetModal } from "@/components/homepage/split-area/drawers/account-target-modal";
 import { TransactionWithRelations } from "@/types";
+import { useAppData } from "@/components/context/app-data-context";
 
-export type SplitDialogKey = "ratio-split" | "amount-split" | "social-split-2" | "social-split-3";
+export type SplitDialogKey =
+  | "ratio-split"
+  | "amount-split"
+  | "social-split-2"
+  | "social-split-3"
+  | "transfer-to"
+  | "transfer-from"
+  | "recharge-to"
+  | "recharge-from";
 
 interface SplitEntryDialogsProps {
   activeDialog: SplitDialogKey | null;
@@ -25,6 +35,13 @@ export function SplitEntryDialogs({
   onSubmit,
   onClose,
 }: SplitEntryDialogsProps) {
+  const { accounts, mainCategories, subCategories } = useAppData();
+  const isAccountAction =
+    activeDialog === "transfer-to" ||
+    activeDialog === "transfer-from" ||
+    activeDialog === "recharge-to" ||
+    activeDialog === "recharge-from";
+
   return (
     <>
       <RatioSplitModal
@@ -57,6 +74,17 @@ export function SplitEntryDialogs({
         isOpen={activeDialog === "amount-split"}
         rootTransaction={rootTransaction}
         selectedEntries={selectedEntries}
+        onConfirm={onSubmit}
+        onCancel={onClose}
+      />
+
+      <AccountTargetModal
+        isOpen={isAccountAction}
+        actionKey={isAccountAction ? activeDialog : null}
+        sourceAccountId={selectedEntries[0]?.accountId}
+        accounts={accounts}
+        mainCategories={mainCategories}
+        subCategories={subCategories}
         onConfirm={onSubmit}
         onCancel={onClose}
       />

@@ -1,7 +1,7 @@
 import type { ComponentType } from "react";
 import type { FourChainState } from "@/components/homepage/common/four-chain-selector";
 import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
-import type { TransactionType } from "@/types";
+import type { MainCategory, SubCategory, TransactionType } from "@/types";
 
 import {
   ArrowsPointingInIcon,
@@ -57,6 +57,13 @@ export interface AmountSplitPayload extends SplitActionPayload {
   partialAbsCents: number[];
   chainStates: FourChainState[];
   name: string;
+}
+
+export interface AccountTargetPayload extends SplitActionPayload {
+  actionKey: "transfer-to" | "transfer-from" | "recharge-to" | "recharge-from";
+  account_id: string;
+  mainCategories: MainCategory[];
+  subCategories: SubCategory[];
 }
 
 /** 一条拆账操作规则 */
@@ -132,6 +139,88 @@ function distinctAccounts(entries: SplitEntryData[]): boolean {
 
 function allHaveTxType(entries: SplitEntryData[]): boolean {
   return entries.every((e) => !!e.chainState.txType);
+}
+
+function buildTransferLikeEntry(
+  localId: number,
+  accountId: string,
+  amount: string,
+  txType: "转出" | "转入",
+  mainCategories: MainCategory[],
+  subCategories: SubCategory[],
+): SplitEntryData {
+  const matchedMain = mainCategories.find((item) => item.transaction_type === txType);
+  const matchedSub = matchedMain
+    ? subCategories.find((item) => item.main_category_id === matchedMain.id)
+    : undefined;
+
+  return {
+    localId,
+    accountId,
+    amount,
+    name: txType,
+    chainState: {
+      txType,
+      main_id: matchedMain ? String(matchedMain.id) : undefined,
+      sub_id: matchedSub ? String(matchedSub.id) : undefined,
+      budget_id: undefined,
+    },
+  };
+}
+
+function buildCrossAccountSplitEntries(
+  mode: "transfer-to" | "transfer-from" | "recharge-to" | "recharge-from",
+  sources: SplitEntryData[],
+  nextLocalId: number,
+  payload?: SplitActionPayload,
+): SplitEntryData[] {
+  if (!payload || payload.actionKey !== mode) return sources;
+  const accountPayload = payload as AccountTargetPayload;
+  if (sources.length !== 1) return sources;
+
+  const source = sources[0];
+  const sourceAccountId = source.accountId;
+  const targetAccountId = accountPayload.account_id;
+  const mainCategories = accountPayload.mainCategories;
+  const subCategories = accountPayload.subCategories;
+  if (!Array.isArray(mainCategories) || !Array.isArray(subCategories)) return sources;
+  if (!sourceAccountId || !targetAccountId) return sources;
+
+  const amount = source.amount;
+  const sourceToOut = mode === "transfer-to" || mode === "recharge-to";
+  const sourceTxType: "转出" | "转入" = sourceToOut ? "转出" : "转入";
+  const targetTxType: "转出" | "转入" = sourceToOut ? "转入" : "转出";
+
+  const result: SplitEntryData[] = [
+    buildTransferLikeEntry(
+      nextLocalId,
+      sourceAccountId,
+      amount,
+      sourceTxType,
+      mainCategories,
+      subCategories,
+    ),
+    buildTransferLikeEntry(
+      nextLocalId + 1,
+      targetAccountId,
+      amount,
+      targetTxType,
+      mainCategories,
+      subCategories,
+    ),
+  ];
+
+  if (mode === "transfer-to" || mode === "transfer-from") {
+    result.push({
+      localId: nextLocalId + 2,
+      accountId: targetAccountId,
+      amount,
+      name: source.name,
+      chainState: { ...source.chainState },
+    });
+  }
+
+  return result;
 }
 
 // ==================== 规则注册表 ====================
@@ -394,7 +483,8 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       selected.length === 1 &&
       !!selected[0].chainState.txType &&
       ["支出", "应收款项"].includes(selected[0].chainState.txType),
-    split: (sources, _nextLocalId, _payload) => sources,
+    split: (sources, nextLocalId, payload) =>
+      buildCrossAccountSplitEntries("transfer-to", sources, nextLocalId, payload),
   },
   {
     key: "transfer-from",
@@ -405,7 +495,8 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       selected.length === 1 &&
       !!selected[0].chainState.txType &&
       ["收入", "应付款项"].includes(selected[0].chainState.txType),
-    split: (sources, _nextLocalId, _payload) => sources,
+    split: (sources, nextLocalId, payload) =>
+      buildCrossAccountSplitEntries("transfer-from", sources, nextLocalId, payload),
   },
   {
     key: "recharge-to",
@@ -416,7 +507,8 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       selected.length === 1 &&
       !!selected[0].chainState.txType &&
       ["支出", "应收款项"].includes(selected[0].chainState.txType),
-    split: (sources, _nextLocalId, _payload) => sources,
+    split: (sources, nextLocalId, payload) =>
+      buildCrossAccountSplitEntries("recharge-to", sources, nextLocalId, payload),
   },
   {
     key: "recharge-from",
@@ -427,7 +519,8 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       selected.length === 1 &&
       !!selected[0].chainState.txType &&
       ["收入", "应付款项"].includes(selected[0].chainState.txType),
-    split: (sources, _nextLocalId, _payload) => sources,
+    split: (sources, nextLocalId, payload) =>
+      buildCrossAccountSplitEntries("recharge-from", sources, nextLocalId, payload),
   },
 ];
 

@@ -4,7 +4,7 @@ import type { SplitEntryData } from "@/components/homepage/split-area/split-entr
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Button } from "@heroui/react";
-import { PlusIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, EyeIcon, EyeSlashIcon, InboxArrowDownIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import { CheckCircleIcon as CheckCircleOutline } from "@heroicons/react/24/outline";
 
@@ -163,17 +163,8 @@ export function SplitEntryArea() {
           replaceSelectedEntries(updatedSelectedEntries);
           break;
         }
-        case "ratio-split":
-          setActiveDialog("ratio-split");
-          break;
-        case "social-split-2":
-          setActiveDialog("social-split-2");
-          break;
-        case "social-split-3":
-          setActiveDialog("social-split-3");
-          break;
-        case "amount-split":
-          setActiveDialog("amount-split");
+        default:
+          setActiveDialog(actionKey);
           break;
       }
     },
@@ -240,6 +231,18 @@ export function SplitEntryArea() {
         >
           增加
         </Button>
+
+        {entries.length === 0 && (
+          <Button
+            size="sm"
+            variant="flat"
+            color={availableActions.length > 0 ? "default" : "primary"}
+            startContent={<InboxArrowDownIcon className="w-3.5 h-3.5" />}
+            onPress={() => replaceSelectedEntries(selectedEntries)}
+          >
+            打开分账
+          </Button>
+        )}
 
         {/* 操作按钮组（可横向滚动） */}
         {availableActions.length > 0 && (
