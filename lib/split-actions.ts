@@ -42,6 +42,23 @@ export interface RatioSplitPayload extends SplitActionPayload {
   name: string;
 }
 
+export interface SocialSplitPayload extends SplitActionPayload {
+  actionKey: "social-split-2" | "social-split-3";
+  count: number;
+  ratio: number[];
+  chainStates: FourChainState[];
+  name: string;
+}
+
+export interface AmountSplitPayload extends SplitActionPayload {
+  actionKey: "amount-split";
+  count: number;
+  /** 绝对值 cents，仅包含前 count-1 笔；最后一笔由系统计算得到 */
+  partialAbsCents: number[];
+  chainStates: FourChainState[];
+  name: string;
+}
+
 /** 一条拆账操作规则 */
 export interface SplitActionRule {
   /** 唯一标识 */
@@ -80,6 +97,27 @@ function getSignedAmount(entry: SplitEntryData): number {
 
 export function sumSignedAmounts(entries: SplitEntryData[]): number {
   return entries.reduce((sum, e) => sum + getSignedAmount(e), 0);
+}
+
+/**
+ * 将绝对总额（cents）按比例拆分成每一行的 cents。
+ * 规则：前 n-1 行向下取整，最后一行取剩余值，避免累计误差。
+ */
+export function computeSplitCentsPerRow(totalAbsCents: number, ratios: number[]): number[] {
+  const ratioSum = ratios.reduce((s, r) => s + r, 0);
+  if (ratios.length === 0 || ratioSum <= 0) {
+    return ratios.map(() => 0);
+  }
+  let assigned = 0;
+  return ratios.map((ratio, index) => {
+    if (index === ratios.length - 1) {
+      return Math.max(0, totalAbsCents - assigned);
+    } else {
+      const c = Math.floor((totalAbsCents * ratio) / ratioSum);
+      assigned += c;
+      return c;
+    }
+  });
 }
 
 function sameAccount(entries: SplitEntryData[]): boolean {
@@ -200,7 +238,33 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       sameAccount(selected) &&
       allHaveTxType(selected) &&
       sumSignedAmounts(selected) < 0,
-    split: (sources, _nextLocalId, _payload) => sources,
+    split: (sources, nextLocalId, payload) => {
+      if (!payload || payload.actionKey !== "social-split-2") return sources;
+      if (sources.length === 0) return sources;
+
+      const socialPayload = payload as SocialSplitPayload;
+      const count = Math.max(2, Math.trunc(socialPayload.count));
+      const ratios = socialPayload.ratio;
+
+      if (
+        ratios.length !== count ||
+        socialPayload.chainStates.length !== count ||
+        ratios.some((value) => !Number.isFinite(value) || value <= 0)
+      ) {
+        return sources;
+      }
+
+      const totalAbsCents = Math.round(Math.abs(sumSignedAmounts(sources)) * 100);
+      const centsPerRow = computeSplitCentsPerRow(totalAbsCents, ratios);
+
+      return centsPerRow.map((cents, index) => ({
+        localId: nextLocalId + index,
+        accountId: sources[0].accountId,
+        amount: (cents / 100).toFixed(2),
+        name: socialPayload.name.trim(),
+        chainState: socialPayload.chainStates[index],
+      }));
+    },
   },
   {
     key: "social-split-3",
@@ -212,7 +276,33 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       sameAccount(selected) &&
       allHaveTxType(selected) &&
       sumSignedAmounts(selected) < 0,
-    split: (sources, _nextLocalId, _payload) => sources,
+    split: (sources, nextLocalId, payload) => {
+      if (!payload || payload.actionKey !== "social-split-3") return sources;
+      if (sources.length === 0) return sources;
+
+      const socialPayload = payload as SocialSplitPayload;
+      const count = Math.max(2, Math.trunc(socialPayload.count));
+      const ratios = socialPayload.ratio;
+
+      if (
+        ratios.length !== count ||
+        socialPayload.chainStates.length !== count ||
+        ratios.some((value) => !Number.isFinite(value) || value <= 0)
+      ) {
+        return sources;
+      }
+
+      const totalAbsCents = Math.round(Math.abs(sumSignedAmounts(sources)) * 100);
+      const centsPerRow = computeSplitCentsPerRow(totalAbsCents, ratios);
+
+      return centsPerRow.map((cents, index) => ({
+        localId: nextLocalId + index,
+        accountId: sources[0].accountId,
+        amount: (cents / 100).toFixed(2),
+        name: socialPayload.name.trim(),
+        chainState: socialPayload.chainStates[index],
+      }));
+    },
   },
 
   // ---- 金额/比例分账 ----
@@ -242,26 +332,15 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
         return sources;
       }
 
-      const totalCents = Math.round(Math.abs(sumSignedAmounts(sources)) * 100);
-      const ratioSum = ratios.reduce((sum, value) => sum + value, 0);
-      let assignedCents = 0;
-
-      return ratios.map((ratio, index) => {
-        const cents =
-          index === ratios.length - 1
-            ? totalCents - assignedCents
-            : Math.floor((totalCents * ratio) / ratioSum);
-
-        assignedCents += cents;
-
-        return {
-          localId: nextLocalId + index,
-          accountId: sources[0].accountId,
-          amount: (cents / 100).toFixed(2),
-          name: ratioPayload.name.trim(),
-          chainState: ratioPayload.chainStates[index],
-        };
-      });
+      const totalAbsCents = Math.round(Math.abs(sumSignedAmounts(sources)) * 100);
+      const centsPerRow = computeSplitCentsPerRow(totalAbsCents, ratios);
+      return centsPerRow.map((cents, index) => ({
+        localId: nextLocalId + index,
+        accountId: sources[0].accountId,
+        amount: (cents / 100).toFixed(2),
+        name: ratioPayload.name.trim(),
+        chainState: ratioPayload.chainStates[index],
+      }));
     },
   },
   {
@@ -274,7 +353,35 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       sameAccount(selected) &&
       allHaveTxType(selected) &&
       sumSignedAmounts(selected) !== 0,
-    split: (sources, _nextLocalId, _payload) => sources,
+    split: (sources, nextLocalId, payload) => {
+      if (!payload || payload.actionKey !== "amount-split") return sources;
+      if (sources.length === 0) return sources;
+
+      const amountPayload = payload as AmountSplitPayload;
+      const count = Math.max(2, Math.trunc(amountPayload.count));
+
+      if (
+        amountPayload.chainStates.length !== count ||
+        amountPayload.partialAbsCents.length !== count - 1 ||
+        amountPayload.partialAbsCents.some((c) => !Number.isFinite(c) || c < 0)
+      ) {
+        return sources;
+      }
+
+      const totalAbsCents = Math.round(Math.abs(sumSignedAmounts(sources)) * 100);
+      const assigned = amountPayload.partialAbsCents.reduce((s, v) => s + v, 0);
+      const lastAbsCents = totalAbsCents - assigned;
+      if (lastAbsCents < 0) return sources;
+
+      const absCents = [...amountPayload.partialAbsCents, lastAbsCents];
+      return absCents.map((cents, index) => ({
+        localId: nextLocalId + index,
+        accountId: sources[0].accountId,
+        amount: (cents / 100).toFixed(2),
+        name: amountPayload.name.trim(),
+        chainState: amountPayload.chainStates[index],
+      }));
+    },
   },
 
   // ---- 转账和充值 ----

@@ -3,6 +3,8 @@
 import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
 import type { SplitActionPayload } from "@/lib/split-actions";
 
+import { SocialSplitModal } from "@/components/homepage/split-area/social-split-modal";
+import { AmountSplitModal } from "@/components/homepage/split-area/amount-split-modal";
 import { RatioSplitModal } from "@/components/homepage/split-area/ratio-split-modal";
 import { TransactionWithRelations } from "@/types";
 
@@ -24,12 +26,40 @@ export function SplitEntryDialogs({
   onClose,
 }: SplitEntryDialogsProps) {
   return (
-    <RatioSplitModal
-      isOpen={activeDialog === "ratio-split"}
-      rootTransaction={rootTransaction}
-      selectedEntries={selectedEntries}
-      onConfirm={onSubmit}
-      onCancel={onClose}
-    />
+    <>
+      <RatioSplitModal
+        isOpen={activeDialog === "ratio-split"}
+        rootTransaction={rootTransaction}
+        selectedEntries={selectedEntries}
+        onConfirm={onSubmit}
+        onCancel={onClose}
+      />
+
+      <SocialSplitModal
+        isOpen={activeDialog === "social-split-2"}
+        variant="social-split-2"
+        rootTransaction={rootTransaction}
+        selectedEntries={selectedEntries}
+        onConfirm={onSubmit}
+        onCancel={onClose}
+      />
+
+      <SocialSplitModal
+        isOpen={activeDialog === "social-split-3"}
+        variant="social-split-3"
+        rootTransaction={rootTransaction}
+        selectedEntries={selectedEntries}
+        onConfirm={onSubmit}
+        onCancel={onClose}
+      />
+
+      <AmountSplitModal
+        isOpen={activeDialog === "amount-split"}
+        rootTransaction={rootTransaction}
+        selectedEntries={selectedEntries}
+        onConfirm={onSubmit}
+        onCancel={onClose}
+      />
+    </>
   );
 }

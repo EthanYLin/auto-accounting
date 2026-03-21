@@ -11,6 +11,8 @@ interface AmountInputProps {
   value: string;
   onChange: (value: string) => void;
   transactionType?: TransactionType;
+  /** 是否禁用输入，默认 false */
+  isDisabled?: boolean;
   /** 金额数字与符号的字体大小，默认 "text-2xl" */
   textSize?: string;
   /** inputWrapper 的最小高度，默认 "min-h-[106px]" */
@@ -23,6 +25,7 @@ export function AmountInput({
   value,
   onChange,
   transactionType,
+  isDisabled = false,
   textSize = "text-2xl",
   minHeight = "min-h-[106px]",
   className = "h-full",
@@ -101,6 +104,7 @@ export function AmountInput({
       type="text"
       placeholder="0.00"
       value={amountInput}
+      isDisabled={isDisabled}
       onValueChange={setAmountInput}
       onFocus={handleAmountFocus}
       onBlur={handleAmountBlur}

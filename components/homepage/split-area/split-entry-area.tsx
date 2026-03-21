@@ -166,6 +166,15 @@ export function SplitEntryArea() {
         case "ratio-split":
           setActiveDialog("ratio-split");
           break;
+        case "social-split-2":
+          setActiveDialog("social-split-2");
+          break;
+        case "social-split-3":
+          setActiveDialog("social-split-3");
+          break;
+        case "amount-split":
+          setActiveDialog("amount-split");
+          break;
       }
     },
     [availableActions, entries, defaultEntries, replaceSelectedEntries, selectedEntries],
