@@ -8,7 +8,7 @@ import { Alert } from "@heroui/react";
 import Image from "next/image";
 import * as XLSX from "xlsx";
 
-import { FileUpload } from "@/app/upload/file-upload";
+import { FileUpload } from "@/components/upload/file-upload";
 import { importFromWeChatExcel } from "@/lib/wechat-import";
 
 interface WeChatImportProps {

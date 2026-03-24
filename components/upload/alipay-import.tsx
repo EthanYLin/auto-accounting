@@ -7,7 +7,7 @@ import React, { useState, useCallback } from "react";
 import { Alert } from "@heroui/react";
 import Image from "next/image";
 
-import { FileUpload } from "@/app/upload/file-upload";
+import { FileUpload } from "@/components/upload/file-upload";
 
 interface AlipayImportProps {
   onImportSuccess: (transactions: Transaction[]) => void;

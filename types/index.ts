@@ -1,4 +1,4 @@
-import type { Database, Tables, TablesInsert, TablesUpdate, Enums } from "@/types/database.types";
+import type { Database, Json, Tables, TablesInsert, TablesUpdate, Enums } from "@/types/database.types";
 
 import { SVGProps } from "react";
 
@@ -7,7 +7,7 @@ export type IconSvgProps = SVGProps<SVGSVGElement> & {
 };
 
 // ========== 导出 Database 相关类型 ==========
-export type { Database, Tables, TablesInsert, TablesUpdate, Enums };
+export type { Database, Json, Tables, TablesInsert, TablesUpdate, Enums };
 
 // ========== 类型别名 ==========
 // 交易相关

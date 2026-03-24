@@ -6,8 +6,9 @@ import React, { useState } from "react";
 import { Tabs, Tab } from "@heroui/react";
 import Image from "next/image";
 
-import { WeChatImport } from "@/app/upload/wechat-import";
-import { AlipayImport } from "@/app/upload/alipay-import";
+import { AlipayImport } from "@/components/upload/alipay-import";
+import { FudanImport } from "@/components/upload/fudan-import";
+import { WeChatImport } from "@/components/upload/wechat-import";
 
 export default function ExcelUploadPage() {
   // 存储导入的交易记录
@@ -58,7 +59,9 @@ export default function ExcelUploadPage() {
               <span>复旦校园卡</span>
             </div>
           }
-        ></Tab>
+        >
+          <FudanImport />
+        </Tab>
       </Tabs>
     </div>
   );

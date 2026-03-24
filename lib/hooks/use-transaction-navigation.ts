@@ -52,15 +52,16 @@ export function useTransactionNavigation({
   );
 
   const goToNextPending = useCallback(() => {
+    const pendingStatuses = new Set(["待处理", "经自动处理取消", "经自动处理填写"]);
     const startIndex = currentIndex; // currentIndex 是 1-based
     for (let i = startIndex; i < filteredTransactions.length; i++) {
-      if (filteredTransactions[i].status === "待处理") {
+      if (pendingStatuses.has(filteredTransactions[i].status ?? "")) {
         onSelectTransaction(filteredTransactions[i].id);
         return;
       }
     }
     for (let i = 0; i < startIndex; i++) {
-      if (filteredTransactions[i].status === "待处理") {
+      if (pendingStatuses.has(filteredTransactions[i].status ?? "")) {
         onSelectTransaction(filteredTransactions[i].id);
         return;
       }
