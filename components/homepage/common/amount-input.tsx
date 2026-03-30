@@ -9,7 +9,8 @@ import { getAmountColorClass, getAmountSymbol } from "@/lib/transaction/transact
 
 interface AmountInputProps {
   value: string;
-  onChange: (value: string) => void;
+  /** 失焦确认金额时回调；默认无操作 */
+  onChange?: (value: string) => void;
   transactionType?: TransactionType;
   /** 是否禁用输入，默认 false */
   isDisabled?: boolean;
@@ -23,7 +24,7 @@ interface AmountInputProps {
 
 export function AmountInput({
   value,
-  onChange,
+  onChange = () => {},
   transactionType,
   isDisabled = false,
   textSize = "text-2xl",
@@ -89,6 +90,22 @@ export function AmountInput({
     }
   };
 
+  const colorClass = getAmountColorClass(transactionType);
+
+  if (isDisabled) {
+    return (
+      <div className={`${className} ${minHeight} flex items-center px-3`}>
+        <span className={`${textSize} whitespace-nowrap`}>
+          <span className="text-default-400">¥ </span>
+          <span className={colorClass}>{getAmountSymbol(transactionType)}</span>
+        </span>
+        <span className={`flex-1 ${textSize} font-bold text-right pr-3 ${colorClass}`}>
+          {value}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <Input
       ref={amountInputRef}
@@ -96,7 +113,7 @@ export function AmountInput({
       startContent={
         <span className={`${textSize} whitespace-nowrap`}>
           <span className="text-default-400">¥ </span>
-          <span className={getAmountColorClass(transactionType)}>
+          <span className={colorClass}>
             {getAmountSymbol(transactionType)}
           </span>
         </span>
@@ -104,15 +121,13 @@ export function AmountInput({
       type="text"
       placeholder="0.00"
       value={amountInput}
-      isDisabled={isDisabled}
       onValueChange={setAmountInput}
       onFocus={handleAmountFocus}
       onBlur={handleAmountBlur}
       onKeyDown={handleAmountKeyDown}
       classNames={{
-        base: className,
         inputWrapper: `h-full ${minHeight} flex items-center`,
-        input: `${textSize} font-bold text-right pr-3 ${getAmountColorClass(transactionType)}`,
+        input: `${textSize} font-bold text-right pr-3 ${colorClass}`,
       }}
       size="sm"
       variant="bordered"

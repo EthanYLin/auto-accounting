@@ -217,13 +217,15 @@ export function useActionBarController({ navigation }: { navigation: Transaction
         }
       },
       new: async () => {
-        const result = await store.createEmptyTransaction();
+        const result = await editor.createEmptyTransaction();
         if (!result.success) {
           addToast({
             title: "新建记录失败",
             description: result.error || "未知错误",
             color: "danger",
           });
+        } else if (result.data) {
+          editor.selectTransaction(result.data.id);
         }
       },
       "next-pending": async () => {

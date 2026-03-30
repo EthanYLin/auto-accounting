@@ -1,8 +1,6 @@
 "use client";
 
-import type { Transaction } from "@/types";
-
-import React, { useState } from "react";
+import React from "react";
 import { Tabs, Tab } from "@heroui/react";
 import Image from "next/image";
 
@@ -11,8 +9,6 @@ import { FudanImport } from "@/components/upload/fudan-import";
 import { WeChatImport } from "@/components/upload/wechat-import";
 
 export default function ExcelUploadPage() {
-  // 存储导入的交易记录
-  const [, setTransactions] = useState<Transaction[]>([]);
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -28,11 +24,7 @@ export default function ExcelUploadPage() {
             </div>
           }
         >
-          <WeChatImport
-            onImportSuccess={(importedTransactions) =>
-              setTransactions((prev) => [...prev, ...importedTransactions])
-            }
-          />
+          <WeChatImport />
         </Tab>
 
         <Tab
@@ -44,11 +36,7 @@ export default function ExcelUploadPage() {
             </div>
           }
         >
-          <AlipayImport
-            onImportSuccess={(importedTransactions) =>
-              setTransactions((prev) => [...prev, ...importedTransactions])
-            }
-          />
+          <AlipayImport onImportSuccess={() => {}} />
         </Tab>
 
         <Tab

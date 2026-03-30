@@ -36,7 +36,7 @@ const SAVE_BUSY_ERROR = "当前有保存操作进行中";
 
 interface TransactionStoreContextValue {
   transactions: TransactionWithRelations[];
-  isLoading: boolean;
+  isFetching: boolean;
   error: string | null;
   hasLoaded: boolean;
   saveState: TransactionSaveState;
@@ -510,7 +510,7 @@ export function TransactionStoreProvider({ children }: { children: React.ReactNo
   const value: TransactionStoreContextValue = useMemo(
     () => ({
       transactions,
-      isLoading: query.isLoading && query.fetchStatus !== "idle",
+      isFetching: query.isFetching,
       error: query.error
         ? query.error instanceof Error
           ? query.error.message
@@ -531,8 +531,7 @@ export function TransactionStoreProvider({ children }: { children: React.ReactNo
     }),
     [
       transactions,
-      query.isLoading,
-      query.fetchStatus,
+      query.isFetching,
       query.error,
       query.isSuccess,
       saveState,

@@ -43,7 +43,7 @@ export const TransactionOverviewList = forwardRef<
   }: TransactionOverviewListProps,
   ref: React.Ref<TransactionOverviewListHandle>,
 ) {
-  const { isLoading, error, loadTransactions, transactions } = useTransactionStore();
+  const { isFetching, error, loadTransactions, transactions } = useTransactionStore();
   const { isLoading: appDataLoading, hasLoaded: hasLoadedAppData } = useAppData();
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -67,7 +67,7 @@ export const TransactionOverviewList = forwardRef<
   }
 
   // 加载状态
-  if (isLoading) {
+  if (isFetching) {
     return (
       <div className="flex h-full w-full">
         <div className="m-auto">
@@ -97,9 +97,10 @@ export const TransactionOverviewList = forwardRef<
             <Button
               size="sm"
               color="default"
-              variant="flat"
+              variant="light"
               onPress={loadTransactions}
-              isDisabled={isLoading || appDataLoading || !hasLoadedAppData}
+              isLoading={isFetching}
+              isDisabled={isFetching || appDataLoading || !hasLoadedAppData}
               startContent={<CloudArrowDownIcon className="w-4 h-4" />}
             >
               从云端加载

@@ -4,8 +4,8 @@ import type { TransactionOverviewListHandle } from "@/components/homepage/left-p
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Spinner } from "@heroui/react";
-import { Button } from "@heroui/react";
+import { Accordion, Spinner } from "@heroui/react";
+import { AccordionItem, Button } from "@heroui/react";
 import { Input } from "@heroui/react";
 import { Alert } from "@heroui/react";
 import { Divider } from "@heroui/react";
@@ -21,11 +21,11 @@ import { useTransactionStore } from "@/components/context/transaction-store-cont
 import { useTransactionEditor } from "@/components/context/transaction-editor-context";
 import { useError } from "@/components/context/error-context";
 import { TxFieldInputs } from "@/components/homepage/tx-field-inputs";
+import { TxImportInfo } from "@/components/homepage/tx-import-info";
 import { TransactionEditorFourChainSelector } from "@/components/homepage/common/four-chain-selector";
 import { TransactionOverviewList } from "@/components/homepage/left-panel/transaction-overview-list";
 import { StatusFilterDropdown } from "@/components/homepage/left-panel/status-filter-dropdown";
-import { TxParentArea } from "@/components/homepage/tx-parent-area";
-import { SplitEntryArea } from "@/components/homepage/split-area/split-entry-area";
+import { TxSupplementTabs } from "@/components/homepage/tx-supplement-tabs";
 import { useTransactionFilter } from "@/lib/hooks/use-transaction-filter";
 import { useTransactionNavigation } from "@/lib/hooks/use-transaction-navigation";
 
@@ -40,7 +40,7 @@ export default function Home() {
   const appData = useAppData();
   const store = useTransactionStore();
   const editor = useTransactionEditor();
-  const hasLoadedAppData = appData.hasLoaded;
+  const isEditorLoading = !appData.hasLoaded || editor.isCreatingTransaction;
 
   useEffect(() => {
     if (appData.error) {
@@ -91,7 +91,7 @@ export default function Home() {
   // 事件处理
   const handleImport = () => router.push("/upload");
   const handleCreate = async () => {
-    const result = await store.createEmptyTransaction();
+    const result = await editor.createEmptyTransaction();
     if (result.success && result.data) {
       editor.selectTransaction(result.data.id);
     } else {
@@ -146,7 +146,7 @@ export default function Home() {
           {/* 主内容区域 */}
           <div ref={mainContentRef} className="flex-1 min-h-0 overflow-y-auto">
             {/* AppData 加载中 */}
-            {!hasLoadedAppData ? (
+            {isEditorLoading ? (
               <div className="flex items-center justify-center h-full">
                 <Spinner size="sm" />
               </div>
@@ -211,7 +211,7 @@ export default function Home() {
               </div>
             ) : (
               /* 正常显示：已选择账单 */
-              <div className="w-full p-5 space-y-5">
+              <div className="w-full px-5 py-2 space-y-5">
                 {/* 校验提示区域 */}
                 {editor.validationAlert && (
                   <Alert
@@ -228,14 +228,15 @@ export default function Home() {
                   />
                 )}
 
-                {/* 账单附加区 */}
-                <TxParentArea />
+                {/* 标签页区域 */}
+                <TxSupplementTabs />
 
-                <Divider />
 
                 {/* 主要填写区 */}
                 <div>
-                  <div className="mb-5">
+                  <TxImportInfo />
+
+                  <div className="mb-5 mt-5">
                     <TxFieldInputs
                       selectedTxType={currentTransaction?.transaction_type || undefined}
                     />
@@ -246,32 +247,16 @@ export default function Home() {
                   <TransactionEditorFourChainSelector mode={selectorMode} />
                 </div>
 
-                {/* 拆账区（子交易不显示） */}
-                {currentTransaction && !currentTransaction.parent_id && (
-                  <>
-                    <Divider />
-                    <SplitEntryArea />
-                  </>
-                )}
-
                 <Divider />
 
                 {/* 调试信息区 */}
-                <div>
-                  <h2 className="text-xs font-semibold mb-3">调试信息 - selectedTxWithRelations</h2>
-                  <pre className="text-xs bg-gray-100 dark:bg-gray-800 p-3 rounded overflow-auto max-h-80">
-                    {JSON.stringify(
-                      currentTransaction
-                        ? {
-                            ...currentTransaction,
-                            children_ids: currentTransaction.children_ids,
-                          }
-                        : null,
-                      null,
-                      2,
-                    )}
-                  </pre>
-                </div>
+                <Accordion variant="light" itemClasses={{title: "text-xs font-medium leading-snug"}}>
+                  <AccordionItem key="1" title="调试信息">
+                    <pre className="text-xs bg-gray-100 dark:bg-gray-800 p-3 rounded overflow-auto overscroll-contain max-h-80">
+                      {JSON.stringify(currentTransaction, null, 2)}
+                    </pre>
+                  </AccordionItem>
+                </Accordion>
               </div>
             )}
           </div>

@@ -15,6 +15,7 @@ import { useSaveButtonOverride } from "./save-button-override-context";
 
 import { isValidTransaction, isWarningTransaction } from "@/lib/transaction/transaction-validation";
 import { applyEditableFields } from "@/lib/transaction/transaction-field-update";
+import { getEntranceSummary } from "@/lib/transaction/transaction-split-merge";
 
 // ==================== 类型定义 ====================
 
@@ -42,6 +43,7 @@ interface TransactionEditorContextValue {
   currentIndex: number;
   totalCount: number;
   validationAlert: ValidationAlert;
+  entranceSummary: ReturnType<typeof getEntranceSummary>;
 
   // ====== 选择 ======
   selectTransaction: (id: number | null) => void;
@@ -58,6 +60,14 @@ interface TransactionEditorContextValue {
 
   // ====== 过滤列表引用（用于计算 currentIndex）======
   setFilteredTransactions: (txs: TransactionWithRelations[]) => void;
+
+  // ====== 新建交易（含全局 loading）======
+  isCreatingTransaction: boolean;
+  createEmptyTransaction: () => Promise<{
+    success: boolean;
+    data?: TransactionWithRelations;
+    error?: string;
+  }>;
 }
 
 const TransactionEditorContext = createContext<TransactionEditorContextValue | undefined>(
@@ -74,6 +84,7 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [filteredTxs, setFilteredTxs] = useState<TransactionWithRelations[]>([]);
   const [validationAlert, setValidationAlert] = useState<ValidationAlert>(null);
+  const [isCreatingTransaction, setIsCreatingTransaction] = useState(false);
 
   const selectTransaction = useCallback(
     (id: number | null) => {
@@ -131,6 +142,11 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
       totalCount: filteredTxs.length,
     };
   }, [currentId, currentTransaction, filteredTxs]);
+
+  const entranceSummary = useMemo(
+    () => (currentTransaction ? getEntranceSummary(currentTransaction, currentChildTransactions) : []),
+    [currentTransaction, currentChildTransactions],
+  );
 
   // ==================== 便捷修改方法 ====================
 
@@ -289,6 +305,17 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
     setFilteredTxs(txs);
   }, []);
 
+  // ==================== 新建交易 ====================
+
+  const createEmptyTransaction = useCallback(async () => {
+    setIsCreatingTransaction(true);
+    try {
+      return await store.createEmptyTransaction();
+    } finally {
+      setIsCreatingTransaction(false);
+    }
+  }, [store]);
+
   // ==================== Context Value ====================
 
   const value: TransactionEditorContextValue = useMemo(
@@ -308,6 +335,9 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
       saveAllDirtyToServer,
       validationAlert,
       setFilteredTransactions,
+      isCreatingTransaction,
+      createEmptyTransaction,
+      entranceSummary,
     }),
     [
       currentId,
@@ -325,6 +355,9 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
       saveAllDirtyToServer,
       validationAlert,
       setFilteredTransactions,
+      isCreatingTransaction,
+      createEmptyTransaction,
+      entranceSummary,
     ],
   );
 

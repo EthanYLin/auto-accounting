@@ -211,8 +211,8 @@ export function TransactionListItem({
               )}
             </div>
 
-            {/* 状态 Chip - 子记录不显示, 已完成状态不显示 */}
-            {!isChild && transaction.status && transaction.status !== "已完成" && (
+            {/* 状态 Chip - 子记录不显示, 已完成及取消状态不显示 */}
+            {!isChild && transaction.status && transaction.status !== "已完成" && transaction.status !== "取消" && (
               <Chip
                 size="sm"
                 color={TRANSACTION_STATUS_COLORS[transaction.status]}

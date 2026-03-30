@@ -5,17 +5,19 @@ import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/react";
 import { useDisclosure } from "@heroui/react";
 import { Chip } from "@heroui/react";
 import { addToast } from "@heroui/react";
+import { Select, SelectItem } from "@heroui/react";
 import {
   PlusIcon,
   XMarkIcon,
   ArrowUpRightIcon,
   PencilSquareIcon,
-  CalculatorIcon,
 } from "@heroicons/react/24/outline";
 
 import { TransactionListSelector } from "@/components/homepage/common/transaction-list-selector";
+import { AmountInput } from "@/components/homepage/common/amount-input";
 import { useTransactionStore } from "@/components/context/transaction-store-context";
 import { useTransactionEditor } from "@/components/context/transaction-editor-context";
+import { useAppData } from "@/components/context/app-data-context";
 import { TRANSACTION_STATUS_COLORS } from "@/constants/transaction-type";
 import {
   calculateAmount,
@@ -24,15 +26,16 @@ import {
   formatDateTime,
   formatCategoryText,
 } from "@/lib/transaction/transaction-display";
-
 export function TxParentArea() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const store = useTransactionStore();
   const editor = useTransactionEditor();
+  const { accounts } = useAppData();
   const currentTransaction = editor.currentTransaction;
   const childTransactions = editor.currentChildTransactions;
   const parentTransaction = editor.currentParentTransaction;
   const isBusy = store.saveState !== "idle";
+  const entranceSummary = editor.entranceSummary;
 
   // 如果没有选中交易，不显示任何内容
   if (!currentTransaction) {
@@ -42,34 +45,6 @@ export function TxParentArea() {
   // 获取已附加的账单ID列表
   const childrenIds = currentTransaction.children_ids;
   const selectorKey = `${currentTransaction.id}:${childrenIds.join(",")}`;
-
-  // 计算账户金额汇总
-  const calculateAccountSummary = () => {
-    if (!isRootTransaction || childTransactions.length === 0) {
-      return null;
-    }
-
-    // 收集所有交易（根账单 + 子账单）
-    const allTransactions = [currentTransaction, ...childTransactions];
-
-    // 按账户分组求和
-    const accountMap = new Map<string, { name: string; amount: number }>();
-    allTransactions.forEach((tx) => {
-      const accountName = tx.account?.name || "未知账户";
-      const amount = calculateAmount(tx);
-      if (accountMap.has(accountName)) {
-        accountMap.get(accountName)!.amount += amount;
-      } else {
-        accountMap.set(accountName, { name: accountName, amount });
-      }
-    });
-
-    // 转换为数组并按金额绝对值降序排序
-    const accounts = Array.from(accountMap.values()).sort(
-      (a, b) => Math.abs(b.amount) - Math.abs(a.amount),
-    );
-    return accounts;
-  };
 
   // 处理添加附加账单
   const handleConfirmSelection = async (selectedIds: number[]) => {
@@ -113,37 +88,6 @@ export function TxParentArea() {
           >
             {childTransactions.length > 0 ? "选择附加账单" : "添加附加账单"}
           </Button>
-
-          {/* 账户汇总信息 */}
-          {childTransactions.length > 0 &&
-            (() => {
-              const accountSummary = calculateAccountSummary();
-              if (!accountSummary || accountSummary.length === 0) return null;
-
-              const displayAccounts = accountSummary.slice(0, 2);
-              const remainingCount = accountSummary.length - 2;
-
-              return (
-                <div className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800">
-                  <CalculatorIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                  <span className="text-gray-700 dark:text-gray-300 font-bold">汇总</span>
-                  {displayAccounts.map((account, index) => (
-                    <div key={index} className="flex items-center gap-1">
-                      <span className="text-gray-700 dark:text-gray-300">{account.name}</span>
-                      <span className="font-semibold">
-                        {account.amount > 0 ? "+" : ""}
-                        {account.amount.toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
-                  {remainingCount > 0 && (
-                    <span className="text-gray-500 dark:text-gray-400">
-                      （还有{remainingCount}个账户）
-                    </span>
-                  )}
-                </div>
-              );
-            })()}
         </div>
       )}
 
@@ -213,20 +157,74 @@ export function TxParentArea() {
       {/* 显示已附加的账单列表 */}
       {childTransactions.length > 0 && (
         <div className="space-y-2">
+          {/* 第0行：本账单信息（账户与金额可编辑） */}
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-xs">
+            {/* 账户 - 可编辑 */}
+            <Select
+              aria-label="账户"
+              placeholder="账户"
+              selectedKeys={
+                currentTransaction.account?.id ? [String(currentTransaction.account.id)] : []
+              }
+              onSelectionChange={(keys) => {
+                const key = Array.from(keys)[0] as string;
+                if (key) editor.updateFields({ account: key });
+              }}
+              size="sm"
+              variant="underlined"
+              className="w-32 flex-shrink-0"
+              classNames={{ value: "text-[13px]", trigger: "min-h-8" }}
+            >
+              {accounts.map((account) => (
+                <SelectItem key={account.id.toString()}>{account.name}</SelectItem>
+              ))}
+            </Select>
+
+            {/* 金额 - 可编辑 */}
+            <div className="w-32 flex-shrink-0">
+              <AmountInput
+                value={Math.abs(currentTransaction.amount ?? 0).toFixed(2)}
+                onChange={(v) => editor.updateFields({ amount: v })}
+                transactionType={currentTransaction.transaction_type ?? undefined}
+                textSize="text-sm"
+                minHeight="min-h-[36px]"
+                className="h-full"
+              />
+            </div>
+
+            {/* 类别 */}
+            <div className="flex-shrink-0 w-32 truncate text-gray-600 dark:text-gray-400">
+              {formatCategoryText(currentTransaction)}
+            </div>
+
+            {/* 名称 */}
+            <div className="flex-1 truncate">
+              {currentTransaction.name || currentTransaction.title || "-"}
+            </div>
+
+            {/* 占位（与子行按钮区等宽，不显示任何按钮） */}
+            <div className="flex-shrink-0 w-[68px] text-sm text-default-600 text-center">本交易</div>
+          </div>
+
+          {/* 子账单列表 */}
           {childTransactions.map((child) => (
             <div
               key={child.id}
               className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-xs"
             >
               {/* 账户 */}
-              <div className="flex-shrink-0 w-18 truncate">{child.account?.name || "-"}</div>
+              <div className="flex-shrink-0 w-32 truncate">{child.account?.name || "-"}</div>
 
               {/* 金额 */}
-              <div
-                className={`flex-shrink-0 w-20 font-semibold ${getAmountColorClass(child.transaction_type)}`}
-              >
-                ¥ {getAmountSymbol(child.transaction_type)}
-                {Math.abs(calculateAmount(child)).toFixed(2)}
+              <div className="w-32 flex-shrink-0">
+                <AmountInput
+                  value={Math.abs(child.amount ?? 0).toFixed(2)}
+                  transactionType={child.transaction_type ?? undefined}
+                  textSize="text-sm"
+                  minHeight="min-h-[36px]"
+                  isDisabled
+                  className="h-full"
+                />
               </div>
 
               {/* 类别 */}
@@ -263,6 +261,33 @@ export function TxParentArea() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* 入口汇总 */}
+      {entranceSummary.length >= 2 && (
+        <div className="space-y-1.5 pt-1">
+          <div className="flex items-center gap-2">
+            <div className="h-px flex-1 bg-divider" />
+            <span className="text-[11px] text-default-400 font-medium tracking-wide px-1">汇总</span>
+            <div className="h-px flex-1 bg-divider" />
+          </div>
+          <div className="flex gap-2 px-1 overflow-x-auto pb-1">
+            {entranceSummary.map((item) => (
+              <div
+                key={item.account.id}
+                className="w-32 flex-shrink-0 flex flex-col items-center gap-1 px-2 py-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/60"
+              >
+                <span className="text-xs font-semibold truncate w-full text-center text-default-600 dark:text-default-400">
+                  {item.account.name}
+                </span>
+                <span className={`text-sm font-bold ${getAmountColorClass(item.transaction_type)}`}>
+                  <span className="text-default-400 font-normal">¥ </span>
+                  {getAmountSymbol(item.transaction_type)}{Math.abs(item.amount).toFixed(2)}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

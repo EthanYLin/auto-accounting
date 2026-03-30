@@ -2,7 +2,7 @@
 
 import type { TransactionType } from "@/types";
 
-import { useMemo, useEffect, useCallback } from "react";
+import { useMemo, useEffect, useCallback, useRef } from "react";
 import { Listbox, ListboxItem } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/react";
 
@@ -202,11 +202,42 @@ export function FourChainSelector({
 
   const dispatch = useCallback(
     (action: FourChainAction) => {
-      const nextValue = fourChainReducer(value, action);
+      let nextValue = fourChainReducer(value, action);
+
+      // 级联自动选中：按 tx → main → sub → budget 顺序依次判断
+      // 1. SET_TX 后：若主类别只有一个则自动选中
+      if (action.type === "SET_TX" && nextValue.txType) {
+        const filteredMains = mainCategories.filter(
+          (item) => item.transaction_type === nextValue.txType,
+        );
+        if (filteredMains.length === 1) {
+          nextValue = fourChainReducer(nextValue, { type: "SET_MAIN", main: String(filteredMains[0].id) });
+        }
+      }
+
+      // 2. SET_TX / SET_MAIN 后：若子类别只有一个则自动选中
+      if ((action.type === "SET_TX" || action.type === "SET_MAIN") && nextValue.main_id) {
+        const filteredSubs = subCategories.filter(
+          (item) => item.main_category_id === Number(nextValue.main_id),
+        );
+        if (filteredSubs.length === 1) {
+          nextValue = fourChainReducer(nextValue, { type: "SET_SUB", sub: String(filteredSubs[0].id) });
+        }
+      }
+
+      // 3. SET_TX / SET_MAIN / SET_SUB 后：若子类别有关联预算且预算未设置则自动选中
+      if ((action.type === "SET_TX" || action.type === "SET_MAIN" || action.type === "SET_SUB") && nextValue.sub_id && !nextValue.budget_id) {
+        const matchedSub = subCategories.find((item) => item.id === Number(nextValue.sub_id));
+        const budgetId = matchedSub?.budget_type_id ? String(matchedSub.budget_type_id) : undefined;
+        if (budgetId) {
+          nextValue = fourChainReducer(nextValue, { type: "SET_BUDGET", budget: budgetId });
+        }
+      }
+
       if (isSameFourChainState(value, nextValue)) return;
       onChange(nextValue);
     },
-    [onChange, value],
+    [onChange, value, mainCategories, subCategories],
   );
 
   // 交易类型选项
@@ -270,33 +301,6 @@ export function FourChainSelector({
     }));
   }, [budgetTypes]);
 
-  // 自动选择逻辑
-  useEffect(() => {
-    if (value.txType && !value.main_id && mainCategoryOptions.length === 1) {
-      dispatch({ type: "SET_MAIN", main: mainCategoryOptions[0].key });
-    }
-  }, [dispatch, value.txType, value.main_id, mainCategoryOptions]);
-
-  useEffect(() => {
-    if (value.main_id && !value.sub_id && subCategoryOptions.length === 1) {
-      dispatch({ type: "SET_SUB", sub: subCategoryOptions[0].key });
-    }
-  }, [dispatch, value.main_id, value.sub_id, subCategoryOptions]);
-
-  // 选择子类别后自动选择预算计划（仅在子类别改变且预算未设置时触发）
-  useEffect(() => {
-    if (!value.sub_id) return;
-    // 如果预算计划已经设置，不覆盖
-    if (value.budget_id) return;
-
-    const matchedSub = subCategories.find((item) => item.id === Number(value.sub_id));
-    const budgetId = matchedSub?.budget_type_id ? String(matchedSub.budget_type_id) : undefined;
-
-    if (budgetId !== value.budget_id) {
-      dispatch({ type: "SET_BUDGET", budget: budgetId });
-    }
-  }, [dispatch, value.sub_id, value.budget_id, subCategories]);
-
   // 处理选择变更，支持取消选择
   const handleSelectionChange = (
     type: "tx" | "main" | "sub" | "budget",
@@ -321,6 +325,83 @@ export function FourChainSelector({
         break;
     }
   };
+
+  // ListBox 模式面板（独立组件以便使用 ref + useEffect 自动滚动到选中项）
+  const ListboxSelectorPanel = useCallback(
+    ({
+      title,
+      options,
+      selectedKey,
+      onChangeKey,
+      disabled,
+    }: {
+      title: string;
+      options: ChainOption[];
+      selectedKey: string | undefined;
+      onChangeKey: (key: string | undefined) => void;
+      disabled?: boolean;
+    }) => {
+      const scrollRef = useRef<HTMLDivElement>(null);
+
+      useEffect(() => {
+        if (!selectedKey || !scrollRef.current) return;
+        const el = scrollRef.current.querySelector(`[data-key="${selectedKey}"]`);
+        if (el) {
+          el.scrollIntoView({ block: "nearest" });
+        }
+      }, [selectedKey]);
+
+      return (
+        <div className="flex-1 min-w-[165px]">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{title}</p>
+          <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-800 shadow-sm">
+            <div ref={scrollRef} className="h-52 overflow-y-auto overscroll-contain">
+              <Listbox
+                aria-label={title}
+                variant="flat"
+                selectionMode="single"
+                selectedKeys={selectedKey ? [selectedKey] : []}
+                onSelectionChange={(keys) => {
+                  if (disabled) return;
+                  const key = Array.from(keys)[0] as string | undefined;
+                  onChangeKey(key);
+                }}
+                emptyContent={disabled ? "请先选择上级类别" : "无可用选项"}
+                itemClasses={{
+                  base: "py-1.5 px-2 min-h-unit-9",
+                  title: "text-sm",
+                }}
+              >
+                {options.map((option) => {
+                  const isSelected = selectedKey === option.key;
+                  return (
+                    <ListboxItem
+                      key={option.key}
+                      textValue={option.textValue || option.label}
+                      className={isSelected && option.backColor ? option.backColor : ""}
+                      color={isSelected && option.backColor ? (option.backColor as any) : "default"}
+                      startContent={
+                        option.icon ? (
+                          <IconComponent
+                            icon={option.icon}
+                            backColor={option.backColor}
+                            foreColor={option.foreColor}
+                          />
+                        ) : null
+                      }
+                    >
+                      <span className={`font-medium ${option.foreColor || ""}`}>{option.label}</span>
+                    </ListboxItem>
+                  );
+                })}
+              </Listbox>
+            </div>
+          </div>
+        </div>
+      );
+    },
+    [],
+  );
 
   // 渲染选择器
   const renderSelector = (
@@ -408,51 +489,13 @@ export function FourChainSelector({
 
     // ListBox模式
     return (
-      <div className="flex-1 min-w-[165px]">
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{title}</p>
-        <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-800 shadow-sm">
-          <Listbox
-            aria-label={title}
-            variant="flat"
-            selectionMode="single"
-            selectedKeys={selectedKey ? [selectedKey] : []}
-            onSelectionChange={(keys) => {
-              if (disabled) return;
-              const key = Array.from(keys)[0] as string | undefined;
-              onChange(key);
-            }}
-            className="h-52 overflow-y-auto"
-            emptyContent={disabled ? "请先选择上级类别" : "无可用选项"}
-            itemClasses={{
-              base: "py-1.5 px-2 min-h-unit-9",
-              title: "text-sm",
-            }}
-          >
-            {options.map((option) => {
-              const isSelected = selectedKey === option.key;
-              return (
-                <ListboxItem
-                  key={option.key}
-                  textValue={option.textValue || option.label}
-                  className={isSelected && option.backColor ? option.backColor : ""}
-                  color={isSelected && option.backColor ? (option.backColor as any) : "default"}
-                  startContent={
-                    option.icon ? (
-                      <IconComponent
-                        icon={option.icon}
-                        backColor={option.backColor}
-                        foreColor={option.foreColor}
-                      />
-                    ) : null
-                  }
-                >
-                  <span className={`font-medium ${option.foreColor || ""}`}>{option.label}</span>
-                </ListboxItem>
-              );
-            })}
-          </Listbox>
-        </div>
-      </div>
+      <ListboxSelectorPanel
+        title={title}
+        options={options}
+        selectedKey={selectedKey}
+        onChangeKey={onChange}
+        disabled={disabled}
+      />
     );
   };
 

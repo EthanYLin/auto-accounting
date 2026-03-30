@@ -3,6 +3,7 @@
  * 当用户尚未手动分账时，提供单条入口直接映射和多条入口按账户合并两种默认策略。
  */
 import type {
+  Account,
   TransactionWithRelations,
   TransactionSplitWithRelations,
   TransactionType,
@@ -12,6 +13,7 @@ import type {
 } from "@/types";
 
 import { calculateAmount } from "@/lib/transaction/transaction-display";
+
 // ==================== Split 合并逻辑 ====================
 
 /**
@@ -31,6 +33,36 @@ export function getDefaultSplit(
     sub_category: tx.sub_category,
     budget_type: tx.budget_type,
   };
+}
+
+/**
+ * 根据入口交易及其附加交易计算合并后的交易类型
+ */
+function getMergedTransactionType(
+  tx: TransactionWithRelations | TransactionSplitWithRelations,
+  entries: TransactionSplitWithRelations[],
+  sum: number
+): TransactionType {
+  let txTypeGroup: "income_expense" | "receivable_payable" | "transfer" | "other";
+  const resolvedType = tx.transaction_type ?? entries.find((e) => e.transaction_type)?.transaction_type;
+
+  if (resolvedType === "收入" || resolvedType === "支出") {
+    txTypeGroup = "income_expense";
+  } else if (resolvedType === "应收款项" || resolvedType === "应付款项") {
+    txTypeGroup = "receivable_payable";
+  } else if (resolvedType === "转入" || resolvedType === "转出") {
+    txTypeGroup = "transfer";
+  } else {
+    txTypeGroup = "other";
+  }
+
+  if (txTypeGroup === "income_expense" || txTypeGroup === "other") {
+    return sum < 0 ? "支出" : "收入";
+  } else if (txTypeGroup === "transfer") {
+    return sum < 0 ? "转出" : "转入";
+  } else {
+    return sum < 0 ? "应收款项" : "应付款项";
+  }
 }
 
 /**
@@ -79,33 +111,8 @@ export function defaultMerge(
 
     // (3) 交易类型：由主记录类型（全局）+ 合并后金额正负决定
     //     若主记录类型为空，则参考本组第一条类型非空记录
-    let refCategory: "income_expense" | "receivable_payable" | "other";
-    if (tx.transaction_type) {
-      if (tx.transaction_type === "收入" || tx.transaction_type === "支出") {
-        refCategory = "income_expense";
-      } else if (tx.transaction_type === "应收款项" || tx.transaction_type === "应付款项") {
-        refCategory = "receivable_payable";
-      } else {
-        refCategory = "other";
-      }
-    } else {
-      const firstType = entries.find((e) => e.transaction_type)?.transaction_type;
-      if (firstType === "收入" || firstType === "支出") {
-        refCategory = "income_expense";
-      } else if (firstType === "应收款项" || firstType === "应付款项") {
-        refCategory = "receivable_payable";
-      } else {
-        refCategory = "other";
-      }
-    }
-
-    let mergedType: TransactionType;
-    if (refCategory === "income_expense" || refCategory === "other") {
-      mergedType = sum < 0 ? "支出" : "收入";
-    } else {
-      mergedType = sum < 0 ? "应收款项" : "应付款项";
-    }
-
+    const mergedType: TransactionType = getMergedTransactionType(tx, entries, sum);
+    
     // (4) 主类别、子类别、预算计划
     let mainCat: MainCategory | undefined;
     let subCat: SubCategory | undefined;
@@ -158,4 +165,38 @@ export function getExitSplits(
   }
   // 若入口有多条，无拆账记录，出口=入口的合并
   return defaultMerge(tx, children);
+}
+
+
+// ==================== Entrance Summary 入口合并预览 ====================
+
+/**
+ * 按账户合并入口交易，返回每个账户的合并后金额与交易类型
+ */
+export function getEntranceSummary(
+  tx: TransactionWithRelations | TransactionSplitWithRelations,
+  children: TransactionWithRelations[] | TransactionSplitWithRelations[],
+): { account: Account; amount: number; transaction_type?: TransactionType }[] {
+  
+  const allEntries: TransactionSplitWithRelations[] = [tx, ...children];
+  const groups = new Map<number, TransactionSplitWithRelations[]>();
+  allEntries.forEach((e) => {
+    const accId = e.account.id;
+    if (!groups.has(accId)) groups.set(accId, []);
+    groups.get(accId)!.push(e);
+  });
+
+  const result: { account: Account; amount: number; transaction_type?: TransactionType }[] = [];
+
+  Array.from(groups.values()).forEach((entries) => {
+    const sum = entries.reduce((acc: number, e: TransactionSplitWithRelations) => acc + calculateAmount(e), 0);
+    const mergedType: TransactionType = getMergedTransactionType(entries[0], entries, sum);
+    result.push({
+      account: entries[0].account,
+      amount: sum,
+      transaction_type: sum === 0 ? undefined : mergedType,
+    });
+  });
+
+  return result;
 }

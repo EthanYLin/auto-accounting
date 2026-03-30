@@ -196,22 +196,24 @@ export function isValidTransaction(
 
   // ========== (3) 转账判定 ==========
 
-  const exitSplits = getExitSplits(tx, childrenTx);
-  const inList = exitSplits.filter((s) => s.transaction_type === "转入");
-  const outList = exitSplits.filter((s) => s.transaction_type === "转出");
-
-  if (inList.length > 0 || outList.length > 0) {
-    if (inList.length !== 1 || outList.length !== 1) {
-      hint.push("转账必须恰好包含一条转入和一条转出记录");
-    } else {
-      if (inList[0].amount !== outList[0].amount) {
-        hint.push("转入与转出金额必须相同");
-      }
-      if (inList[0].account?.id === outList[0].account?.id) {
-        hint.push("转入与转出账户不能相同");
+  if (!isChildTransaction) {
+    const exitSplits = getExitSplits(tx, childrenTx);
+    const inList = exitSplits.filter((s) => s.transaction_type === "转入");
+    const outList = exitSplits.filter((s) => s.transaction_type === "转出");
+    if (inList.length > 0 || outList.length > 0) {
+      if (inList.length !== 1 || outList.length !== 1) {
+        hint.push("转账必须恰好包含一条转入和一条转出记录");
+      } else {
+        if (inList[0].amount !== outList[0].amount) {
+          hint.push("转入与转出金额必须相同");
+        }
+        if (inList[0].account?.id === outList[0].account?.id) {
+          hint.push("转入与转出账户不能相同");
+        }
       }
     }
   }
+  
 
   return { valid: hint.length === 0, hint };
 }

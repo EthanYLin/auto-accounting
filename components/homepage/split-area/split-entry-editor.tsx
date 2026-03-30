@@ -242,7 +242,7 @@ export function SplitEntryEditor({
                 </Select>
 
                 {/* 金额输入框 */}
-                <div className="w-28 flex-shrink-0">
+                <div className="w-32 flex-shrink-0">
                   <AmountInput
                     value={entry.amount}
                     onChange={(v) => handleUpdateEntry(entry.localId, "amount", v)}
