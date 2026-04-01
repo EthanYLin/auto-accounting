@@ -2,10 +2,11 @@
 
 import type { TransactionWithRelations } from "@/types";
 
-import React, { forwardRef, useImperativeHandle, useRef } from "react";
+import React, { forwardRef, useImperativeHandle, useRef, useCallback } from "react";
 import { Spinner } from "@heroui/react";
 import { Button } from "@heroui/react";
 import { CloudArrowDownIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { TransactionListItem } from "./transaction-list-item";
 
@@ -43,18 +44,35 @@ export const TransactionOverviewList = forwardRef<
   }: TransactionOverviewListProps,
   ref: React.Ref<TransactionOverviewListHandle>,
 ) {
-  const { isFetching, error, loadTransactions, transactions } = useTransactionStore();
+  const { isFetching, error, loadTransactions, transactions, isDirty } = useTransactionStore();
   const { isLoading: appDataLoading, hasLoaded: hasLoadedAppData } = useAppData();
 
-  const containerRef = useRef<HTMLDivElement>(null);
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const virtualizer = useVirtualizer({
+    count: filteredTransactions.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 73,
+    overscan: 8,
+    measureElement:
+      typeof window !== "undefined" && navigator.userAgent.indexOf("Firefox") === -1
+        ? (element) => element?.getBoundingClientRect().height
+        : undefined,
+  });
 
   useImperativeHandle(ref, () => ({
     scrollToCurrent() {
-      if (currentId == null || !containerRef.current) return;
-      const el = containerRef.current.querySelector(`[data-tx-id="${currentId}"]`);
-      el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      if (currentId == null) return;
+      const index = filteredTransactions.findIndex((t) => t.id === currentId);
+      if (index === -1) return;
+      virtualizer.scrollToIndex(index, { behavior: "smooth", align: "auto" });
     },
   }));
+
+  const handleClick = useCallback(
+    (id: number) => () => onSelectTransaction(id),
+    [onSelectTransaction],
+  );
 
   // 错误状态
   if (error) {
@@ -111,20 +129,44 @@ export const TransactionOverviewList = forwardRef<
     );
   }
 
-  // 渲染交易列表
+  // 渲染虚拟化交易列表
+  const virtualItems = virtualizer.getVirtualItems();
+
   return (
-    <div className="w-full" ref={containerRef}>
-      {filteredTransactions.map((transaction) => {
-        return (
-          <div key={transaction.id} data-tx-id={transaction.id}>
-            <TransactionListItem
-              transaction={transaction}
-              isSelected={currentId !== undefined && transaction.id === currentId}
-              onClick={() => onSelectTransaction(transaction.id)}
-            />
-          </div>
-        );
-      })}
+    <div ref={parentRef} className="h-full w-full overflow-y-auto">
+      <div
+        style={{
+          height: `${virtualizer.getTotalSize()}px`,
+          width: "100%",
+          position: "relative",
+        }}
+      >
+        {virtualItems.map((virtualItem) => {
+          const transaction = filteredTransactions[virtualItem.index];
+
+          return (
+            <div
+              key={transaction.id}
+              data-index={virtualItem.index}
+              ref={virtualizer.measureElement}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                transform: `translateY(${virtualItem.start}px)`,
+              }}
+            >
+              <TransactionListItem
+                transaction={transaction}
+                isSelected={currentId !== undefined && transaction.id === currentId}
+                isDirty={isDirty(transaction.id)}
+                onClick={handleClick(transaction.id)}
+              />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 });

@@ -183,7 +183,9 @@ export async function casLogin(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ entityId, lck }),
     });
-    const queryData = (await queryResp.json()) as { data: { moduleCode: string; authChainCode: string }[] };
+    const queryData = (await queryResp.json()) as {
+      data: { moduleCode: string; authChainCode: string }[];
+    };
     const authMethods = queryData.data;
 
     if (authMethods[0]?.moduleCode !== "userAndPwd") {

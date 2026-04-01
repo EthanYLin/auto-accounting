@@ -3,16 +3,14 @@
 import type { TransactionType } from "@/types";
 
 import { useMemo, useEffect, useCallback, useRef } from "react";
-import { Listbox, ListboxItem } from "@heroui/react";
-import { Select, SelectItem } from "@heroui/react";
+import { Listbox, ListboxItem, Select, SelectItem } from "@heroui/react";
 
 import { TRANSACTION_TYPES } from "@/constants/transaction-type";
 import { useAppData } from "@/components/context/app-data-context";
 import { useTransactionEditor } from "@/components/context/transaction-editor-context";
 
-// ==================== 类型定义 ====================
+// ── Types ──────────────────────────────────────────────────────────────────
 
-// 四联选择器状态类型
 export type FourChainState = {
   txType?: TransactionType;
   main_id?: string;
@@ -20,87 +18,12 @@ export type FourChainState = {
   budget_id?: string;
 };
 
-// 四联选择器动作类型
 export type FourChainAction =
   | { type: "SET_TX"; tx: TransactionType | undefined }
   | { type: "SET_MAIN"; main: string | undefined }
   | { type: "SET_SUB"; sub: string | undefined }
   | { type: "SET_BUDGET"; budget: string | undefined };
 
-function isSameFourChainState(a: FourChainState, b: FourChainState): boolean {
-  return (
-    a.txType === b.txType &&
-    a.main_id === b.main_id &&
-    a.sub_id === b.sub_id &&
-    a.budget_id === b.budget_id
-  );
-}
-
-// ==================== Reducer ====================
-
-// 四联选择器reducer
-function fourChainReducer(state: FourChainState, action: FourChainAction): FourChainState {
-  switch (action.type) {
-    case "SET_TX":
-      return {
-        txType: action.tx,
-        // 清除下游选择
-        main_id: undefined,
-        sub_id: undefined,
-        budget_id: undefined,
-      };
-
-    case "SET_MAIN":
-      return {
-        ...state,
-        main_id: action.main,
-        // 清除下游选择
-        sub_id: undefined,
-        budget_id: undefined,
-      };
-
-    case "SET_SUB":
-      return {
-        ...state,
-        sub_id: action.sub,
-        // 预算计划可以被自动设置，但用户也可以手动调整，所以不清空
-      };
-
-    case "SET_BUDGET":
-      return {
-        ...state,
-        budget_id: action.budget,
-      };
-
-    default:
-      return state;
-  }
-}
-
-// ==================== 组件 ====================
-
-// 图标组件
-const IconComponent = ({
-  icon,
-  backColor,
-  foreColor,
-  sizeClassName = "w-6 h-6 text-xs",
-  className = "",
-}: {
-  icon: string;
-  backColor?: string;
-  foreColor?: string;
-  sizeClassName?: string;
-  className?: string;
-}) => (
-  <span
-    className={`inline-flex shrink-0 items-center justify-center rounded-full ${sizeClassName} ${backColor || ""} ${foreColor || ""} ${className}`}
-  >
-    {icon}
-  </span>
-);
-
-// 通用选项接口
 export interface ChainOption {
   key: string;
   label: string;
@@ -110,7 +33,6 @@ export interface ChainOption {
   textValue?: string;
 }
 
-// 选择器模式
 export type SelectorMode = "listbox" | "select";
 export type SelectFieldSize = "sm" | "md" | "lg";
 export type SelectTextSize = "sm" | "md" | "lg";
@@ -120,13 +42,11 @@ export interface FourChainSelectModeOptions {
   textSize?: SelectTextSize;
 }
 
+// ── Constants & pure utils ─────────────────────────────────────────────────
+
 const SELECT_FIELD_SIZE_STYLES: Record<
   SelectFieldSize,
-  {
-    container: string;
-    icon: string;
-    itemBase: string;
-  }
+  { container: string; icon: string; itemBase: string }
 > = {
   sm: {
     container: "min-w-[128px]",
@@ -147,44 +67,213 @@ const SELECT_FIELD_SIZE_STYLES: Record<
 
 const SELECT_TEXT_SIZE_STYLES: Record<
   SelectTextSize,
-  {
-    label: string;
-    value: string;
-    item: string;
-  }
+  { label: string; value: string; item: string }
 > = {
-  sm: {
-    label: "text-[11px]",
-    value: "text-xs",
-    item: "text-xs",
-  },
-  md: {
-    label: "text-xs",
-    value: "text-sm",
-    item: "text-sm",
-  },
-  lg: {
-    label: "text-sm",
-    value: "text-base",
-    item: "text-base",
-  },
+  sm: { label: "text-[11px]", value: "text-xs", item: "text-xs" },
+  md: { label: "text-xs", value: "text-sm", item: "text-sm" },
+  lg: { label: "text-sm", value: "text-base", item: "text-base" },
 };
 
-// FourChainSelector 组件属性
-interface FourChainSelectorProps {
-  // 受控状态
-  value: FourChainState;
-  // 状态变更回调
-  onChange: (state: FourChainState) => void;
-  // 数据过滤
-  allowedTxTypes?: TransactionType[];
-  // 显示模式
-  mode?: SelectorMode;
-  // select 模式外观
-  selectModeOptions?: FourChainSelectModeOptions;
-  // 样式
-  className?: string;
+function isSameFourChainState(a: FourChainState, b: FourChainState): boolean {
+  return (
+    a.txType === b.txType &&
+    a.main_id === b.main_id &&
+    a.sub_id === b.sub_id &&
+    a.budget_id === b.budget_id
+  );
 }
+
+function fourChainReducer(state: FourChainState, action: FourChainAction): FourChainState {
+  switch (action.type) {
+    case "SET_TX":
+      return { txType: action.tx, main_id: undefined, sub_id: undefined, budget_id: undefined };
+    case "SET_MAIN":
+      return { ...state, main_id: action.main, sub_id: undefined, budget_id: undefined };
+    case "SET_SUB":
+      return { ...state, sub_id: action.sub };
+    case "SET_BUDGET":
+      return { ...state, budget_id: action.budget };
+    default:
+      return state;
+  }
+}
+
+// ── Internal components ────────────────────────────────────────────────────
+
+const IconComponent = ({
+  icon,
+  backColor,
+  foreColor,
+  sizeClassName = "w-6 h-6 text-xs",
+  className = "",
+}: {
+  icon: string;
+  backColor?: string;
+  foreColor?: string;
+  sizeClassName?: string;
+  className?: string;
+}) => (
+  <span
+    className={`inline-flex shrink-0 items-center justify-center rounded-full ${sizeClassName} ${backColor || ""} ${foreColor || ""} ${className}`}
+  >
+    {icon}
+  </span>
+);
+
+/** ListBox 模式面板：选中项自动滚动到可视区域 */
+function ListboxDisplayMode({
+  title,
+  options,
+  selectedKey,
+  onChangeKey,
+  disabled,
+}: {
+  title: string;
+  options: ChainOption[];
+  selectedKey: string | undefined;
+  onChangeKey: (key: string | undefined) => void;
+  disabled?: boolean;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!selectedKey || !scrollRef.current) return;
+    scrollRef.current
+      .querySelector(`[data-key="${selectedKey}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [selectedKey]);
+
+  return (
+    <div className="flex-1 min-w-[165px]">
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{title}</p>
+      <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-800 shadow-sm">
+        <div ref={scrollRef} className="h-52 overflow-y-auto overscroll-contain">
+          <Listbox
+            aria-label={title}
+            variant="flat"
+            selectionMode="single"
+            selectedKeys={selectedKey ? [selectedKey] : []}
+            onSelectionChange={(keys) => {
+              if (disabled) return;
+              onChangeKey(Array.from(keys)[0] as string | undefined);
+            }}
+            emptyContent={disabled ? "请先选择上级类别" : "无可用选项"}
+            itemClasses={{ base: "py-1.5 px-2 min-h-unit-9", title: "text-sm" }}
+          >
+            {options.map((option) => {
+              const isSelected = selectedKey === option.key;
+              return (
+                <ListboxItem
+                  key={option.key}
+                  textValue={option.textValue || option.label}
+                  className={isSelected && option.backColor ? option.backColor : ""}
+                  color={isSelected && option.backColor ? (option.backColor as any) : "default"}
+                  startContent={
+                    option.icon ? (
+                      <IconComponent
+                        icon={option.icon}
+                        backColor={option.backColor}
+                        foreColor={option.foreColor}
+                      />
+                    ) : null
+                  }
+                >
+                  <span className={`font-medium ${option.foreColor || ""}`}>{option.label}</span>
+                </ListboxItem>
+              );
+            })}
+          </Listbox>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Select 模式面板：下拉选择器 */
+function SelectDisplayMode({
+  title,
+  options,
+  selectedKey,
+  onChange,
+  disabled = false,
+  placeholder,
+  selectFieldStyles,
+  selectTextStyles,
+  resolvedSelectFieldSize,
+}: {
+  title: string;
+  options: ChainOption[];
+  selectedKey: string | undefined;
+  onChange: (key: string | undefined) => void;
+  disabled?: boolean;
+  placeholder?: string;
+  selectFieldStyles: (typeof SELECT_FIELD_SIZE_STYLES)[SelectFieldSize];
+  selectTextStyles: (typeof SELECT_TEXT_SIZE_STYLES)[SelectTextSize];
+  resolvedSelectFieldSize: SelectFieldSize;
+}) {
+  const selectedOption = selectedKey ? options.find((o) => o.key === selectedKey) : undefined;
+
+  return (
+    <div className={`flex-1 ${selectFieldStyles.container}`}>
+      <Select
+        size={resolvedSelectFieldSize}
+        label={title}
+        placeholder={placeholder || `选择${title}`}
+        selectedKeys={selectedKey ? [selectedKey] : []}
+        onSelectionChange={(keys) => onChange(Array.from(keys)[0] as string | undefined)}
+        isDisabled={disabled}
+        className="w-full"
+        classNames={{ label: selectTextStyles.label, value: selectTextStyles.value }}
+        listboxProps={{
+          itemClasses: { base: selectFieldStyles.itemBase, title: selectTextStyles.item },
+        }}
+        renderValue={() => {
+          if (!selectedOption) return null;
+          return (
+            <div className="flex min-w-0 items-center gap-2">
+              {selectedOption.icon ? (
+                <IconComponent
+                  icon={selectedOption.icon}
+                  backColor={selectedOption.backColor}
+                  foreColor={selectedOption.foreColor}
+                  sizeClassName={selectFieldStyles.icon}
+                />
+              ) : null}
+              <span
+                className={`truncate font-medium ${selectTextStyles.value} ${selectedOption.foreColor || ""}`}
+              >
+                {selectedOption.label}
+              </span>
+            </div>
+          );
+        }}
+      >
+        {options.map((option) => (
+          <SelectItem
+            key={option.key}
+            textValue={option.textValue || option.label}
+            startContent={
+              option.icon ? (
+                <IconComponent
+                  icon={option.icon}
+                  backColor={option.backColor}
+                  foreColor={option.foreColor}
+                  sizeClassName={selectFieldStyles.icon}
+                />
+              ) : null
+            }
+          >
+            <span className={`font-medium ${selectTextStyles.item} ${option.foreColor || ""}`}>
+              {option.label}
+            </span>
+          </SelectItem>
+        ))}
+      </Select>
+    </div>
+  );
+}
+
+// ── Exported components ────────────────────────────────────────────────────
 
 export function FourChainSelector({
   value,
@@ -193,7 +282,14 @@ export function FourChainSelector({
   mode = "listbox",
   selectModeOptions,
   className = "",
-}: FourChainSelectorProps) {
+}: {
+  value: FourChainState;
+  onChange: (state: FourChainState) => void;
+  allowedTxTypes?: TransactionType[];
+  mode?: SelectorMode;
+  selectModeOptions?: FourChainSelectModeOptions;
+  className?: string;
+}) {
   const { mainCategories, subCategories, budgetTypes } = useAppData();
   const resolvedSelectFieldSize = selectModeOptions?.size ?? "md";
   const resolvedSelectTextSize = selectModeOptions?.textSize ?? "md";
@@ -202,353 +298,157 @@ export function FourChainSelector({
 
   const dispatch = useCallback(
     (action: FourChainAction) => {
-      let nextValue = fourChainReducer(value, action);
+      let next = fourChainReducer(value, action);
 
-      // 级联自动选中：按 tx → main → sub → budget 顺序依次判断
-      // 1. SET_TX 后：若主类别只有一个则自动选中
-      if (action.type === "SET_TX" && nextValue.txType) {
-        const filteredMains = mainCategories.filter(
-          (item) => item.transaction_type === nextValue.txType,
-        );
-        if (filteredMains.length === 1) {
-          nextValue = fourChainReducer(nextValue, { type: "SET_MAIN", main: String(filteredMains[0].id) });
-        }
+      // 级联自动选中：SET_TX 后若主类别唯一则自动选中
+      if (action.type === "SET_TX" && next.txType) {
+        const mains = mainCategories.filter((i) => i.transaction_type === next.txType);
+        if (mains.length === 1)
+          next = fourChainReducer(next, { type: "SET_MAIN", main: String(mains[0].id) });
       }
 
-      // 2. SET_TX / SET_MAIN 后：若子类别只有一个则自动选中
-      if ((action.type === "SET_TX" || action.type === "SET_MAIN") && nextValue.main_id) {
-        const filteredSubs = subCategories.filter(
-          (item) => item.main_category_id === Number(nextValue.main_id),
-        );
-        if (filteredSubs.length === 1) {
-          nextValue = fourChainReducer(nextValue, { type: "SET_SUB", sub: String(filteredSubs[0].id) });
-        }
+      // SET_TX / SET_MAIN 后若子类别唯一则自动选中
+      if ((action.type === "SET_TX" || action.type === "SET_MAIN") && next.main_id) {
+        const subs = subCategories.filter((i) => i.main_category_id === Number(next.main_id));
+        if (subs.length === 1)
+          next = fourChainReducer(next, { type: "SET_SUB", sub: String(subs[0].id) });
       }
 
-      // 3. SET_TX / SET_MAIN / SET_SUB 后：若子类别有关联预算且预算未设置则自动选中
-      if ((action.type === "SET_TX" || action.type === "SET_MAIN" || action.type === "SET_SUB") && nextValue.sub_id && !nextValue.budget_id) {
-        const matchedSub = subCategories.find((item) => item.id === Number(nextValue.sub_id));
-        const budgetId = matchedSub?.budget_type_id ? String(matchedSub.budget_type_id) : undefined;
-        if (budgetId) {
-          nextValue = fourChainReducer(nextValue, { type: "SET_BUDGET", budget: budgetId });
-        }
+      // SET_TX / SET_MAIN / SET_SUB 后若子类别有关联预算且预算未设置则自动选中
+      if (
+        (action.type === "SET_TX" || action.type === "SET_MAIN" || action.type === "SET_SUB") &&
+        next.sub_id &&
+        !next.budget_id
+      ) {
+        const budgetId = subCategories.find((i) => i.id === Number(next.sub_id))?.budget_type_id;
+        if (budgetId)
+          next = fourChainReducer(next, { type: "SET_BUDGET", budget: String(budgetId) });
       }
 
-      if (isSameFourChainState(value, nextValue)) return;
-      onChange(nextValue);
+      if (isSameFourChainState(value, next)) return;
+      onChange(next);
     },
     [onChange, value, mainCategories, subCategories],
   );
 
-  // 交易类型选项
   const txTypeOptions = useMemo((): ChainOption[] => {
-    const types = allowedTxTypes || TRANSACTION_TYPES.map((item) => item.type);
+    const types = allowedTxTypes || TRANSACTION_TYPES.map((i) => i.type);
     return types.map((txType) => {
-      const typeOption = TRANSACTION_TYPES.find((item) => item.type === txType);
+      const t = TRANSACTION_TYPES.find((i) => i.type === txType);
       return {
         key: txType,
         label: txType,
-        icon: typeOption?.icon || "🔄",
-        backColor: typeOption?.back_color || "bg-gray-100 dark:bg-gray-800",
-        foreColor: typeOption?.fore_color || "text-gray-800 dark:text-gray-200",
         textValue: txType,
+        icon: t?.icon || "🔄",
+        backColor: t?.back_color || "bg-gray-100 dark:bg-gray-800",
+        foreColor: t?.fore_color || "text-gray-800 dark:text-gray-200",
       };
     });
   }, [allowedTxTypes]);
 
-  // 主类别选项（按交易类型过滤）
   const mainCategoryOptions = useMemo((): ChainOption[] => {
     if (!value.txType) return [];
-
     return mainCategories
-      .filter((item) => item.transaction_type === value.txType)
-      .map((item) => ({
-        key: String(item.id),
-        label: item.label,
-        icon: item.icon,
-        backColor: item.back_color,
-        foreColor: item.fore_color,
-        textValue: item.label,
+      .filter((i) => i.transaction_type === value.txType)
+      .map((i) => ({
+        key: String(i.id),
+        label: i.label,
+        icon: i.icon,
+        backColor: i.back_color,
+        foreColor: i.fore_color,
+        textValue: i.label,
       }));
   }, [value.txType, mainCategories]);
 
-  // 子类别选项（按主类别过滤）
   const subCategoryOptions = useMemo((): ChainOption[] => {
     if (!value.main_id) return [];
-
-    const mainId = Number(value.main_id);
     return subCategories
-      .filter((item) => item.main_category_id === mainId)
-      .map((item) => ({
-        key: String(item.id),
-        label: item.label,
-        icon: item.icon,
-        backColor: item.back_color,
-        foreColor: item.fore_color,
-        textValue: item.label,
+      .filter((i) => i.main_category_id === Number(value.main_id))
+      .map((i) => ({
+        key: String(i.id),
+        label: i.label,
+        icon: i.icon,
+        backColor: i.back_color,
+        foreColor: i.fore_color,
+        textValue: i.label,
       }));
   }, [value.main_id, subCategories]);
 
-  // 预算计划选项（显示所有预算计划）
-  const budgetOptions = useMemo((): ChainOption[] => {
-    return budgetTypes.map((item) => ({
-      key: String(item.id),
-      label: item.name,
-      icon: item.icon || "📊",
-      backColor: "bg-blue-100 dark:bg-blue-800",
-      foreColor: "text-blue-800 dark:text-blue-200",
-      textValue: item.name,
-    }));
-  }, [budgetTypes]);
-
-  // 处理选择变更，支持取消选择
-  const handleSelectionChange = (
-    type: "tx" | "main" | "sub" | "budget",
-    key: string | undefined,
-  ) => {
-    switch (type) {
-      case "tx":
-        const newTx = key === value.txType ? undefined : (key as TransactionType);
-        dispatch({ type: "SET_TX", tx: newTx });
-        break;
-      case "main":
-        const newMain = key === value.main_id ? undefined : key;
-        dispatch({ type: "SET_MAIN", main: newMain });
-        break;
-      case "sub":
-        const newSub = key === value.sub_id ? undefined : key;
-        dispatch({ type: "SET_SUB", sub: newSub });
-        break;
-      case "budget":
-        const newBudget = key === value.budget_id ? undefined : key;
-        dispatch({ type: "SET_BUDGET", budget: newBudget });
-        break;
-    }
-  };
-
-  // ListBox 模式面板（独立组件以便使用 ref + useEffect 自动滚动到选中项）
-  const ListboxSelectorPanel = useCallback(
-    ({
-      title,
-      options,
-      selectedKey,
-      onChangeKey,
-      disabled,
-    }: {
-      title: string;
-      options: ChainOption[];
-      selectedKey: string | undefined;
-      onChangeKey: (key: string | undefined) => void;
-      disabled?: boolean;
-    }) => {
-      const scrollRef = useRef<HTMLDivElement>(null);
-
-      useEffect(() => {
-        if (!selectedKey || !scrollRef.current) return;
-        const el = scrollRef.current.querySelector(`[data-key="${selectedKey}"]`);
-        if (el) {
-          el.scrollIntoView({ block: "nearest" });
-        }
-      }, [selectedKey]);
-
-      return (
-        <div className="flex-1 min-w-[165px]">
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{title}</p>
-          <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-800 shadow-sm">
-            <div ref={scrollRef} className="h-52 overflow-y-auto overscroll-contain">
-              <Listbox
-                aria-label={title}
-                variant="flat"
-                selectionMode="single"
-                selectedKeys={selectedKey ? [selectedKey] : []}
-                onSelectionChange={(keys) => {
-                  if (disabled) return;
-                  const key = Array.from(keys)[0] as string | undefined;
-                  onChangeKey(key);
-                }}
-                emptyContent={disabled ? "请先选择上级类别" : "无可用选项"}
-                itemClasses={{
-                  base: "py-1.5 px-2 min-h-unit-9",
-                  title: "text-sm",
-                }}
-              >
-                {options.map((option) => {
-                  const isSelected = selectedKey === option.key;
-                  return (
-                    <ListboxItem
-                      key={option.key}
-                      textValue={option.textValue || option.label}
-                      className={isSelected && option.backColor ? option.backColor : ""}
-                      color={isSelected && option.backColor ? (option.backColor as any) : "default"}
-                      startContent={
-                        option.icon ? (
-                          <IconComponent
-                            icon={option.icon}
-                            backColor={option.backColor}
-                            foreColor={option.foreColor}
-                          />
-                        ) : null
-                      }
-                    >
-                      <span className={`font-medium ${option.foreColor || ""}`}>{option.label}</span>
-                    </ListboxItem>
-                  );
-                })}
-              </Listbox>
-            </div>
-          </div>
-        </div>
-      );
-    },
-    [],
+  const budgetOptions = useMemo(
+    (): ChainOption[] =>
+      budgetTypes.map((i) => ({
+        key: String(i.id),
+        label: i.name,
+        textValue: i.name,
+        icon: i.icon || "📊",
+        backColor: "bg-blue-100 dark:bg-blue-800",
+        foreColor: "text-blue-800 dark:text-blue-200",
+      })),
+    [budgetTypes],
   );
 
-  // 渲染选择器
+  // 支持点击已选项取消选择
+  const handle = (fieldType: "tx" | "main" | "sub" | "budget", key: string | undefined) => {
+    if (fieldType === "tx")
+      dispatch({ type: "SET_TX", tx: key === value.txType ? undefined : (key as TransactionType) });
+    if (fieldType === "main")
+      dispatch({ type: "SET_MAIN", main: key === value.main_id ? undefined : key });
+    if (fieldType === "sub")
+      dispatch({ type: "SET_SUB", sub: key === value.sub_id ? undefined : key });
+    if (fieldType === "budget")
+      dispatch({ type: "SET_BUDGET", budget: key === value.budget_id ? undefined : key });
+  };
+
   const renderSelector = (
     title: string,
     options: ChainOption[],
     selectedKey: string | undefined,
-    onChange: (key: string | undefined) => void,
-    disabled: boolean = false,
+    fieldType: "tx" | "main" | "sub" | "budget",
+    disabled = false,
     placeholder?: string,
   ) => {
+    const commonProps = { title, options, selectedKey, disabled };
     if (mode === "select") {
-      const selectedOption = selectedKey
-        ? options.find((option) => option.key === selectedKey)
-        : undefined;
-
       return (
-        <div className={`flex-1 ${selectFieldStyles.container}`}>
-          <Select
-            size={resolvedSelectFieldSize}
-            label={title}
-            placeholder={placeholder || `选择${title}`}
-            selectedKeys={selectedKey ? [selectedKey] : []}
-            onSelectionChange={(keys) => {
-              const key = Array.from(keys)[0] as string | undefined;
-              onChange(key);
-            }}
-            isDisabled={disabled}
-            className="w-full"
-            classNames={{
-              label: selectTextStyles.label,
-              value: selectTextStyles.value,
-            }}
-            listboxProps={{
-              itemClasses: {
-                base: selectFieldStyles.itemBase,
-                title: selectTextStyles.item,
-              },
-            }}
-            renderValue={() => {
-              if (!selectedOption) return null;
-
-              return (
-                <div className="flex min-w-0 items-center gap-2">
-                  {selectedOption.icon ? (
-                    <IconComponent
-                      icon={selectedOption.icon}
-                      backColor={selectedOption.backColor}
-                      foreColor={selectedOption.foreColor}
-                      sizeClassName={selectFieldStyles.icon}
-                    />
-                  ) : null}
-                  <span
-                    className={`truncate font-medium ${selectTextStyles.value} ${selectedOption.foreColor || ""}`}
-                  >
-                    {selectedOption.label}
-                  </span>
-                </div>
-              );
-            }}
-          >
-            {options.map((option) => (
-              <SelectItem
-                key={option.key}
-                textValue={option.textValue || option.label}
-                startContent={
-                  option.icon ? (
-                    <IconComponent
-                      icon={option.icon}
-                      backColor={option.backColor}
-                      foreColor={option.foreColor}
-                      sizeClassName={selectFieldStyles.icon}
-                    />
-                  ) : null
-                }
-              >
-                <span className={`font-medium ${selectTextStyles.item} ${option.foreColor || ""}`}>
-                  {option.label}
-                </span>
-              </SelectItem>
-            ))}
-          </Select>
-        </div>
+        <SelectDisplayMode
+          {...commonProps}
+          onChange={(k) => handle(fieldType, k)}
+          placeholder={placeholder}
+          selectFieldStyles={selectFieldStyles}
+          selectTextStyles={selectTextStyles}
+          resolvedSelectFieldSize={resolvedSelectFieldSize}
+        />
       );
     }
-
-    // ListBox模式
-    return (
-      <ListboxSelectorPanel
-        title={title}
-        options={options}
-        selectedKey={selectedKey}
-        onChangeKey={onChange}
-        disabled={disabled}
-      />
-    );
+    return <ListboxDisplayMode {...commonProps} onChangeKey={(k) => handle(fieldType, k)} />;
   };
 
   return (
     <div className={`w-full space-y-3 ${className}`}>
-      {/* 四联选择器 - 横向排列 */}
       <div
         className={`${mode === "select" ? "grid grid-cols-2 md:grid-cols-4" : "flex flex-wrap"} gap-3`}
       >
-        {/* 交易类型选择 */}
-        {renderSelector("交易类型", txTypeOptions, value.txType, (key) =>
-          handleSelectionChange("tx", key),
-        )}
-
-        {/* 主类别选择 */}
+        {renderSelector("交易类型", txTypeOptions, value.txType, "tx")}
         {renderSelector(
           "主类别",
           mainCategoryOptions,
           value.main_id,
-          (key) => handleSelectionChange("main", key),
+          "main",
           !value.txType,
           "请先选择交易类型",
         )}
-
-        {/* 子类别选择 */}
         {renderSelector(
           "子类别",
           subCategoryOptions,
           value.sub_id,
-          (key) => handleSelectionChange("sub", key),
+          "sub",
           !value.main_id,
           "请先选择主类别",
         )}
-
-        {/* 预算计划选择 */}
-        {renderSelector("预算计划", budgetOptions, value.budget_id, (key) =>
-          handleSelectionChange("budget", key),
-        )}
+        {renderSelector("预算计划", budgetOptions, value.budget_id, "budget")}
       </div>
     </div>
   );
-}
-
-// TransactionEditorFourChainSelector 组件：绑定当前交易编辑器状态的四联选择器
-export interface TransactionEditorFourChainSelectorProps {
-  // 数据过滤
-  allowedTxTypes?: TransactionType[];
-  // 显示模式
-  mode?: SelectorMode;
-  // select 模式外观
-  selectModeOptions?: FourChainSelectModeOptions;
-  // 样式
-  className?: string;
 }
 
 export function TransactionEditorFourChainSelector({
@@ -556,7 +456,12 @@ export function TransactionEditorFourChainSelector({
   mode = "listbox",
   selectModeOptions,
   className = "",
-}: TransactionEditorFourChainSelectorProps) {
+}: {
+  allowedTxTypes?: TransactionType[];
+  mode?: SelectorMode;
+  selectModeOptions?: FourChainSelectModeOptions;
+  className?: string;
+}) {
   const { currentTransaction, updateFields } = useTransactionEditor();
 
   const value = useMemo(
@@ -581,12 +486,12 @@ export function TransactionEditorFourChainSelector({
   );
 
   const handleChange = useCallback(
-    (nextValue: FourChainState) => {
+    (next: FourChainState) => {
       updateFields({
-        transaction_type: nextValue.txType || "",
-        main_category: nextValue.main_id,
-        sub_category: nextValue.sub_id,
-        budget_type: nextValue.budget_id,
+        transaction_type: next.txType || "",
+        main_category: next.main_id,
+        sub_category: next.sub_id,
+        budget_type: next.budget_id,
       });
     },
     [updateFields],

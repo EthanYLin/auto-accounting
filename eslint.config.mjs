@@ -99,10 +99,9 @@ export default defineConfig([globalIgnores([
         "no-unused-vars": "off",
         "unused-imports/no-unused-vars": "off",
         "unused-imports/no-unused-imports": "warn",
-
         "@typescript-eslint/no-unused-vars": ["warn", {
             args: "after-used",
-            ignoreRestSiblings: false,
+            ignoreRestSiblings: true,
             argsIgnorePattern: "^_.*?$",
         }],
 

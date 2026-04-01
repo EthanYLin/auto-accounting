@@ -9,7 +9,6 @@ import { FudanImport } from "@/components/upload/fudan-import";
 import { WeChatImport } from "@/components/upload/wechat-import";
 
 export default function ExcelUploadPage() {
-
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <h1 className="text-3xl font-bold mb-6">账单导入</h1>

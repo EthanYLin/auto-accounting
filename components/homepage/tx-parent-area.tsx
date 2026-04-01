@@ -203,7 +203,9 @@ export function TxParentArea() {
             </div>
 
             {/* 占位（与子行按钮区等宽，不显示任何按钮） */}
-            <div className="flex-shrink-0 w-[68px] text-sm text-default-600 text-center">本交易</div>
+            <div className="flex-shrink-0 w-[68px] text-sm text-default-600 text-center">
+              本交易
+            </div>
           </div>
 
           {/* 子账单列表 */}
@@ -269,7 +271,9 @@ export function TxParentArea() {
         <div className="space-y-1.5 pt-1">
           <div className="flex items-center gap-2">
             <div className="h-px flex-1 bg-divider" />
-            <span className="text-[11px] text-default-400 font-medium tracking-wide px-1">汇总</span>
+            <span className="text-[11px] text-default-400 font-medium tracking-wide px-1">
+              汇总
+            </span>
             <div className="h-px flex-1 bg-divider" />
           </div>
           <div className="flex gap-2 px-1 overflow-x-auto pb-1">
@@ -283,7 +287,8 @@ export function TxParentArea() {
                 </span>
                 <span className={`text-sm font-bold ${getAmountColorClass(item.transaction_type)}`}>
                   <span className="text-default-400 font-normal">¥ </span>
-                  {getAmountSymbol(item.transaction_type)}{Math.abs(item.amount).toFixed(2)}
+                  {getAmountSymbol(item.transaction_type)}
+                  {Math.abs(item.amount).toFixed(2)}
                 </span>
               </div>
             ))}

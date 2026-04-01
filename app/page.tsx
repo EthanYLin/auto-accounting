@@ -58,7 +58,7 @@ export default function Home() {
   }, [store.error, showError]);
 
   // 搜索/过滤
-  const search = useTransactionFilter(store.transactions);
+  const search = useTransactionFilter(store.transactions, editor.currentTransaction?.id);
 
   // 将过滤后的列表同步给 editor（供 currentIndex 计算）
   useEffect(() => {
@@ -126,7 +126,7 @@ export default function Home() {
           </div>
 
           {/* 账单概览区 */}
-          <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="flex-1 min-h-0">
             <TransactionOverviewList
               ref={transactionListRef}
               currentId={currentTransaction?.id}
@@ -231,7 +231,6 @@ export default function Home() {
                 {/* 标签页区域 */}
                 <TxSupplementTabs />
 
-
                 {/* 主要填写区 */}
                 <div>
                   <TxImportInfo />
@@ -250,7 +249,10 @@ export default function Home() {
                 <Divider />
 
                 {/* 调试信息区 */}
-                <Accordion variant="light" itemClasses={{title: "text-xs font-medium leading-snug"}}>
+                <Accordion
+                  variant="light"
+                  itemClasses={{ title: "text-xs font-medium leading-snug" }}
+                >
                   <AccordionItem key="1" title="调试信息">
                     <pre className="text-xs bg-gray-100 dark:bg-gray-800 p-3 rounded overflow-auto overscroll-contain max-h-80">
                       {JSON.stringify(currentTransaction, null, 2)}

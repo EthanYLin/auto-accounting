@@ -21,7 +21,13 @@ import {
   TableRow,
   addToast,
 } from "@heroui/react";
-import { CheckCircleIcon, EyeIcon, EyeSlashIcon, MagnifyingGlassIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  CheckCircleIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  MagnifyingGlassIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date";
 
 import { queryFudanRecords } from "@/app/actions/fudan";
@@ -49,7 +55,7 @@ function buildNewTransactionData(
   record: FudanCampusCardRecord,
   appData: ReturnType<typeof useAppData>,
 ): NewTransactionData {
-  const { accounts, subCategories, mainCategories, budgetTypeMap, mainCategoryMap } = appData;
+  const { accounts, subCategories, budgetTypeMap, mainCategoryMap } = appData;
 
   const account = accounts.find((a) => a.name === "复旦校园卡")!;
 
@@ -57,13 +63,10 @@ function buildNewTransactionData(
     ? subCategories.find((s) => s.label === record.category)
     : undefined;
 
-  const matchedMain = matchedSub
-    ? mainCategoryMap.get(matchedSub.main_category_id)
-    : undefined;
+  const matchedMain = matchedSub ? mainCategoryMap.get(matchedSub.main_category_id) : undefined;
 
-  const matchedBudget = matchedSub?.budget_type_id != null
-    ? budgetTypeMap.get(matchedSub.budget_type_id)
-    : undefined;
+  const matchedBudget =
+    matchedSub?.budget_type_id != null ? budgetTypeMap.get(matchedSub.budget_type_id) : undefined;
 
   const { id, ...rawWithoutId } = record;
 
@@ -224,9 +227,11 @@ export function FudanImport() {
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
                   >
-                    {showPassword
-                      ? <EyeSlashIcon className="w-4 h-4" />
-                      : <EyeIcon className="w-4 h-4" />}
+                    {showPassword ? (
+                      <EyeSlashIcon className="w-4 h-4" />
+                    ) : (
+                      <EyeIcon className="w-4 h-4" />
+                    )}
                   </button>
                 }
                 label="密码"
@@ -261,7 +266,6 @@ export function FudanImport() {
               </Button>
             </div>
           </form>
-
         </CardBody>
       </Card>
 
@@ -280,50 +284,50 @@ export function FudanImport() {
                     "[&_tr:first-child_th:first-child]:rounded-tl-lg [&_tr:first-child_th:last-child]:rounded-tr-lg",
                 }}
               >
-              <TableHeader>
-                <TableColumn className="min-w-[160px]">交易时间</TableColumn>
-                <TableColumn className="min-w-[120px]">交易细节</TableColumn>
-                <TableColumn className="min-w-[120px]">商家</TableColumn>
-                <TableColumn align="end" className="min-w-[88px]">
-                  金额
-                </TableColumn>
-                <TableColumn className="min-w-[96px]">类别</TableColumn>
-                <TableColumn align="end" className="w-24">
-                  操作
-                </TableColumn>
-              </TableHeader>
-              <TableBody items={rows}>
-                {(row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>
-                      <span className="font-mono text-[13px]">
-                        {formatDateTimeDisplay(row.datetime)}
-                      </span>
-                    </TableCell>
-                    <TableCell>{row.detail ?? "—"}</TableCell>
-                    <TableCell>{row.merchant ?? "—"}</TableCell>
-                    <TableCell>
-                      <span className="tabular-nums">{formatAmountCny(row.amount)}</span>
-                    </TableCell>
-                    <TableCell>{row.category ?? "—"}</TableCell>
-                    <TableCell>
-                      <div className="flex justify-end">
-                        <Button
-                          isIconOnly
-                          aria-label="删除此行"
-                          color="danger"
-                          size="sm"
-                          variant="light"
-                          onPress={() => removeRow(row.id)}
-                        >
-                          <TrashIcon className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                <TableHeader>
+                  <TableColumn className="min-w-[160px]">交易时间</TableColumn>
+                  <TableColumn className="min-w-[120px]">交易细节</TableColumn>
+                  <TableColumn className="min-w-[120px]">商家</TableColumn>
+                  <TableColumn align="end" className="min-w-[88px]">
+                    金额
+                  </TableColumn>
+                  <TableColumn className="min-w-[96px]">类别</TableColumn>
+                  <TableColumn align="end" className="w-24">
+                    操作
+                  </TableColumn>
+                </TableHeader>
+                <TableBody items={rows}>
+                  {(row) => (
+                    <TableRow key={row.id}>
+                      <TableCell>
+                        <span className="font-mono text-[13px]">
+                          {formatDateTimeDisplay(row.datetime)}
+                        </span>
+                      </TableCell>
+                      <TableCell>{row.detail ?? "—"}</TableCell>
+                      <TableCell>{row.merchant ?? "—"}</TableCell>
+                      <TableCell>
+                        <span className="tabular-nums">{formatAmountCny(row.amount)}</span>
+                      </TableCell>
+                      <TableCell>{row.category ?? "—"}</TableCell>
+                      <TableCell>
+                        <div className="flex justify-end">
+                          <Button
+                            isIconOnly
+                            aria-label="删除此行"
+                            color="danger"
+                            size="sm"
+                            variant="light"
+                            onPress={() => removeRow(row.id)}
+                          >
+                            <TrashIcon className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </div>
 

@@ -419,22 +419,39 @@ export async function deleteBudgetType(id: number): Promise<ActionResult<null>> 
 // 交易记录相关
 // ========================================================
 
+/** PostgREST / Supabase 单次响应默认最多 1000 行，需分页取全量 */
+const TRANSACTION_PAGE_SIZE = 1000;
+
 /**
  * 获取当前用户的所有交易记录
  */
 export async function getAllTransactions(): Promise<ActionResult<Transaction[]>> {
   return withSupabaseUser("获取所有交易记录", async ({ supabase, userId }) => {
-    const { data, error } = await supabase
-      .from("transaction")
-      .select("*")
-      .eq("user_id", userId)
-      .order("datetime", { ascending: false });
+    const rows: Transaction[] = [];
+    let from = 0;
 
-    if (error) {
-      return fail(error.message);
+    for (;;) {
+      const { data, error } = await supabase
+        .from("transaction")
+        .select("*")
+        .eq("user_id", userId)
+        .order("datetime", { ascending: false })
+        .order("id", { ascending: false })
+        .range(from, from + TRANSACTION_PAGE_SIZE - 1);
+
+      if (error) {
+        return fail(error.message);
+      }
+
+      const batch = (data ?? []) as Transaction[];
+      rows.push(...batch);
+      if (batch.length < TRANSACTION_PAGE_SIZE) {
+        break;
+      }
+      from += TRANSACTION_PAGE_SIZE;
     }
 
-    return ok(data as Transaction[]);
+    return ok(rows);
   });
 }
 

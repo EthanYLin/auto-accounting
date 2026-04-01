@@ -31,7 +31,7 @@ export function TxSupplementTabs() {
       defaultSelectedKey={defaultSelectedKey}
       destroyInactiveTabPanel={false}
       variant="underlined"
-      classNames={{base: "mb-0" , panel: "mb-0 px-0 py-0"}}
+      classNames={{ base: "mb-0", panel: "mb-0 px-0 py-0" }}
     >
       <Tab key="tx-info" title="交易信息">
         <div className="py-1" />

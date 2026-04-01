@@ -51,10 +51,10 @@ export function TransactionListSelector({
   );
 
   // 使用搜索过滤
-  const filteredTransactions = useMemo(
-    () => filterTransactionsBySearch(orderedTransactions, searchQuery),
-    [orderedTransactions, searchQuery],
-  );
+  const filteredTransactions = useMemo(() => {
+    const ids = filterTransactionsBySearch(orderedTransactions, searchQuery);
+    return orderedTransactions.filter((tx) => ids.has(tx.id));
+  }, [orderedTransactions, searchQuery]);
 
   // 计算总页数
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);

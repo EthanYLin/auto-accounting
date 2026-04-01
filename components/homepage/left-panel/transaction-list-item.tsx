@@ -2,13 +2,12 @@
 
 import type { TransactionWithRelations } from "@/types";
 
-import React from "react";
+import React, { memo } from "react";
 import { Chip } from "@heroui/react";
 import { LinkIcon, RectangleStackIcon, ScissorsIcon } from "@heroicons/react/24/outline";
 
 import { TRANSACTION_TYPES, TRANSACTION_STATUS_COLORS } from "@/constants/transaction-type";
 import { formatDateTime } from "@/lib/transaction/transaction-display";
-import { useTransactionStore } from "@/components/context/transaction-store-context";
 
 // ========== 工具函数 ==========
 
@@ -23,18 +22,17 @@ function formatAmount(amount: number, sign: number): string {
 
 // ========== 组件接口 ==========
 
-export function TransactionListItem({
+export const TransactionListItem = memo(function TransactionListItem({
   transaction,
   isSelected = false,
+  isDirty = false,
   onClick,
 }: {
   transaction: TransactionWithRelations;
   isSelected?: boolean;
+  isDirty?: boolean;
   onClick?: () => void;
 }) {
-  const store = useTransactionStore();
-  const isDirty = store.isDirty(transaction.id);
-
   // 获取图标和颜色（优先级：子类别 > 主类别 > 交易类型 > 默认）
   const getIconAndColor = () => {
     if (transaction.sub_category) {
@@ -212,19 +210,22 @@ export function TransactionListItem({
             </div>
 
             {/* 状态 Chip - 子记录不显示, 已完成及取消状态不显示 */}
-            {!isChild && transaction.status && transaction.status !== "已完成" && transaction.status !== "取消" && (
-              <Chip
-                size="sm"
-                color={TRANSACTION_STATUS_COLORS[transaction.status]}
-                variant="flat"
-                className="h-5"
-              >
-                {transaction.status}
-              </Chip>
-            )}
+            {!isChild &&
+              transaction.status &&
+              transaction.status !== "已完成" &&
+              transaction.status !== "取消" && (
+                <Chip
+                  size="sm"
+                  color={TRANSACTION_STATUS_COLORS[transaction.status]}
+                  variant="flat"
+                  className="h-5"
+                >
+                  {transaction.status}
+                </Chip>
+              )}
           </div>
         </div>
       </div>
     </div>
   );
-}
+});

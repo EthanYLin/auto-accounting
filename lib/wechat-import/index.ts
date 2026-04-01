@@ -14,10 +14,7 @@ import { ColumnKey, ExcelRow, ExcelTable } from "./types";
  * @throws Error 文件类型不符、工作表缺失、行数不足时抛出
  */
 export async function parseWeChatFile(file: File): Promise<ExcelTable> {
-  if (
-    !file.name.toLowerCase().endsWith(".xlsx") &&
-    !file.name.toLowerCase().endsWith(".xls")
-  ) {
+  if (!file.name.toLowerCase().endsWith(".xlsx") && !file.name.toLowerCase().endsWith(".xls")) {
     throw new Error("请选择Excel文件（.xlsx或.xls格式）");
   }
 
@@ -72,7 +69,6 @@ export async function importFromWeChatExcel(
   return { importedCount: processed.length, transactions: processed };
 }
 
-
 // ─── 辅助函数 ────────────────────────────────────────────────────────────────
 
 /**
@@ -91,7 +87,7 @@ function parseAmount(amountStr: string | null): number | null {
  * "/" 或其他非标准值返回 null（不计收支）。
  */
 function resolveTransactionType(direction: string | null): TransactionType | null {
-  return (direction === "支出" || direction === "收入") ? direction as TransactionType : null;
+  return direction === "支出" || direction === "收入" ? (direction as TransactionType) : null;
 }
 
 /**
@@ -107,7 +103,6 @@ function resolveAccount(
   paymentMethod: string | null,
   accounts: Account[],
 ): { account: Account; accountNote?: string } {
-  
   const wxAccount = accounts.find((a) => a.name === "微信支付");
   if (!wxAccount) throw new Error('在账户列表中未找到"微信支付"账户，请先创建该账户');
 
@@ -122,9 +117,7 @@ function resolveAccount(
   }
 
   // 精确匹配
-  const directMatch = accounts.find(
-    (a) => a.name === paymentMethod,
-  );
+  const directMatch = accounts.find((a) => a.name === paymentMethod);
   if (directMatch) return { account: directMatch };
 
   // 匹配 (数字) 整段（含括号），与账户名中包含该片段的账户对应
@@ -160,7 +153,11 @@ export function parseRowToTransaction(
   const transactionType = resolveTransactionType(row.get(ColumnKey.Direction));
 
   // ── 识别标题：交易对方-商品-交易类型 ─────────────────────────
-  const titleParts = [row.get(ColumnKey.Counterparty), row.get(ColumnKey.Product), transactionType].filter(Boolean);
+  const titleParts = [
+    row.get(ColumnKey.Counterparty),
+    row.get(ColumnKey.Product),
+    transactionType,
+  ].filter(Boolean);
   const title = titleParts.length > 0 ? titleParts.join("-") : null;
 
   return {

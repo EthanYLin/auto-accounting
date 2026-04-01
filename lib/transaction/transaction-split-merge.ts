@@ -41,10 +41,11 @@ export function getDefaultSplit(
 function getMergedTransactionType(
   tx: TransactionWithRelations | TransactionSplitWithRelations,
   entries: TransactionSplitWithRelations[],
-  sum: number
+  sum: number,
 ): TransactionType {
   let txTypeGroup: "income_expense" | "receivable_payable" | "transfer" | "other";
-  const resolvedType = tx.transaction_type ?? entries.find((e) => e.transaction_type)?.transaction_type;
+  const resolvedType =
+    tx.transaction_type ?? entries.find((e) => e.transaction_type)?.transaction_type;
 
   if (resolvedType === "收入" || resolvedType === "支出") {
     txTypeGroup = "income_expense";
@@ -112,7 +113,7 @@ export function defaultMerge(
     // (3) 交易类型：由主记录类型（全局）+ 合并后金额正负决定
     //     若主记录类型为空，则参考本组第一条类型非空记录
     const mergedType: TransactionType = getMergedTransactionType(tx, entries, sum);
-    
+
     // (4) 主类别、子类别、预算计划
     let mainCat: MainCategory | undefined;
     let subCat: SubCategory | undefined;
@@ -167,7 +168,6 @@ export function getExitSplits(
   return defaultMerge(tx, children);
 }
 
-
 // ==================== Entrance Summary 入口合并预览 ====================
 
 /**
@@ -177,7 +177,6 @@ export function getEntranceSummary(
   tx: TransactionWithRelations | TransactionSplitWithRelations,
   children: TransactionWithRelations[] | TransactionSplitWithRelations[],
 ): { account: Account; amount: number; transaction_type?: TransactionType }[] {
-  
   const allEntries: TransactionSplitWithRelations[] = [tx, ...children];
   const groups = new Map<number, TransactionSplitWithRelations[]>();
   allEntries.forEach((e) => {
@@ -189,7 +188,10 @@ export function getEntranceSummary(
   const result: { account: Account; amount: number; transaction_type?: TransactionType }[] = [];
 
   Array.from(groups.values()).forEach((entries) => {
-    const sum = entries.reduce((acc: number, e: TransactionSplitWithRelations) => acc + calculateAmount(e), 0);
+    const sum = entries.reduce(
+      (acc: number, e: TransactionSplitWithRelations) => acc + calculateAmount(e),
+      0,
+    );
     const mergedType: TransactionType = getMergedTransactionType(entries[0], entries, sum);
     result.push({
       account: entries[0].account,

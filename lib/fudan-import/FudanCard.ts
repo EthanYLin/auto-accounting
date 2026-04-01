@@ -3,11 +3,12 @@
  *
  * 依赖 node-html-parser 解析 HTML，不可在客户端导入。
  */
+import type { FudanCampusCardRecord } from "./types";
+import type { FetchSession } from "./FudanCAS";
+
 import { parse as parseHtml } from "node-html-parser";
 
-import type { FudanCampusCardRecord } from "./types";
 import { casLogin } from "./FudanCAS";
-import type { FetchSession } from "./FudanCAS";
 
 const SERVICE_URL = "https://ecard.fudan.edu.cn/epay/consume/query";
 
@@ -41,10 +42,7 @@ function toIsoDatetime(datePart: string, timePart: string): string | null {
  *   或者
  *   [0] 交易日期  [1] 交易时间  [2] 交易细节  [3] 商家  [4] 金额  [5..] 其他列
  */
-function parseTransactionRow(
-  cells: string[],
-  rowIndex: number,
-): FudanCampusCardRecord | null {
+function parseTransactionRow(cells: string[], rowIndex: number): FudanCampusCardRecord | null {
   if (cells.length < 4) return null;
 
   let datePart: string;

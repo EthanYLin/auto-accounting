@@ -144,7 +144,8 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
   }, [currentId, currentTransaction, filteredTxs]);
 
   const entranceSummary = useMemo(
-    () => (currentTransaction ? getEntranceSummary(currentTransaction, currentChildTransactions) : []),
+    () =>
+      currentTransaction ? getEntranceSummary(currentTransaction, currentChildTransactions) : [],
     [currentTransaction, currentChildTransactions],
   );
 

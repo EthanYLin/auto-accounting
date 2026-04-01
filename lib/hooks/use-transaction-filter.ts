@@ -1,6 +1,6 @@
 import type { TransactionStatus, TransactionWithRelations } from "@/types";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 
 import { useSaveButtonOverride } from "@/components/context/save-button-override-context";
 
@@ -112,14 +112,42 @@ export function flattenTransactionsWithChildren(
 export function filterTransactionsBySearch(
   transactions: TransactionWithRelations[],
   searchQuery: string,
-): TransactionWithRelations[] {
-  if (!searchQuery.trim()) return transactions;
+  includeParent: boolean = false,
+  includeChildren: boolean = false,
+): Set<number> {
+  if (!searchQuery.trim()) return new Set(transactions.map((tx) => tx.id));
   const keywords = searchQuery
     .trim()
     .split(/\s+/)
     .filter((k) => k.length > 0);
-  return transactions.filter((tx) =>
-    keywords.every((keyword) => matchesTransactionKeyword(tx, keyword)),
+  return new Set(
+    transactions
+      .filter((tx) => keywords.every((keyword) => matchesTransactionKeyword(tx, keyword)))
+      .flatMap((tx) => {
+        if (includeParent && tx.parent_id) return [tx.id, tx.parent_id];
+        if (includeChildren && tx.children_ids.length > 0) return [tx.id, ...tx.children_ids];
+        return [tx.id];
+      }),
+  );
+}
+
+/**
+ * 根据状态过滤交易列表
+ */
+export function filterTransactionsByStatus(
+  transactions: TransactionWithRelations[],
+  status: TransactionStatus,
+  includeParent: boolean = false,
+  includeChildren: boolean = false,
+): Set<number> {
+  return new Set(
+    transactions
+      .filter((tx) => tx.status === status)
+      .flatMap((tx) => {
+        if (includeParent && tx.parent_id) return [tx.id, tx.parent_id];
+        if (includeChildren && tx.children_ids.length > 0) return [tx.id, ...tx.children_ids];
+        return [tx.id];
+      }),
   );
 }
 
@@ -128,11 +156,21 @@ export function filterTransactionsBySearch(
 /**
  * 管理交易搜索/过滤状态，返回过滤后的交易列表。
  * 内部维护 searchQuery 和 statusFilter 状态。
+ * @param selectedTransactionId 当前选中的交易 id；过滤后会始终保留该条（及同组父/子），避免侧栏列表与编辑区脱节。
  */
-export function useTransactionFilter(transactions: TransactionWithRelations[]) {
+export function useTransactionFilter(
+  transactions: TransactionWithRelations[],
+  selectedTransactionId?: number | null,
+) {
   const { clearSaveButtonOverride } = useSaveButtonOverride();
   const [searchQuery, setSearchQueryState] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [statusFilter, setStatusFilterState] = useState<TransactionStatus | "all">("all");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const setSearchQuery = useCallback(
     (value: string) => {
@@ -157,39 +195,36 @@ export function useTransactionFilter(transactions: TransactionWithRelations[]) {
 
   // 先应用搜索过滤，再应用状态过滤
   const filteredTransactions = useMemo(() => {
-    let result = flatTransactions;
+    // 1. 搜索过滤（当父记录匹配时，将子记录也加入结果；当子记录匹配时，将父记录也加入结果）
+    let resultIds = debouncedSearchQuery.trim()
+      ? filterTransactionsBySearch(flatTransactions, debouncedSearchQuery, true, true)
+      : new Set(flatTransactions.map((tx) => tx.id));
 
-    // 1. 搜索过滤
-    if (searchQuery.trim()) {
-      const matched = filterTransactionsBySearch(flatTransactions, searchQuery);
-      const matchedIds = new Set(matched.map((tx) => tx.id));
-
-      // 当子记录匹配时，将父记录也加入结果；当父记录匹配时，将子记录也加入结果。
-      matched.forEach((tx) => {
-        if (!tx.parent_id && tx.children_ids.length > 0) {
-          tx.children_ids.forEach((childId) => matchedIds.add(childId));
-        }
-        if (tx.parent_id) {
-          matchedIds.add(tx.parent_id);
-        }
-      });
-
-      result = result.filter((tx) => matchedIds.has(tx.id));
-    }
-
-    // 2. 状态过滤
+    // 2. 状态过滤：与搜索结果取交集（AND 语义）
     if (statusFilter !== "all") {
-      result = result.filter((tx) => tx.status === statusFilter);
+      const statusIds = filterTransactionsByStatus(flatTransactions, statusFilter, false, true);
+      resultIds = new Set(Array.from(resultIds).filter((id) => statusIds.has(id)));
     }
 
-    return result;
-  }, [flatTransactions, searchQuery, statusFilter]);
+    // 3. 始终纳入当前的选中交易（当父记录匹配时，将子记录也加入结果；当子记录匹配时，将父记录也加入结果）
+    if (selectedTransactionId != null) {
+      const currentTx = flatTransactions.find((tx) => tx.id === selectedTransactionId);
+      if (currentTx) {
+        resultIds.add(currentTx.id);
+        if (currentTx.parent_id) resultIds.add(currentTx.parent_id);
+        currentTx.children_ids.forEach((id) => resultIds.add(id));
+      }
+    }
 
-  const isFiltered = searchQuery.trim() !== "" || statusFilter !== "all";
+    return flatTransactions.filter((tx) => resultIds.has(tx.id));
+  }, [flatTransactions, debouncedSearchQuery, statusFilter, selectedTransactionId]);
+
+  const isFiltered = debouncedSearchQuery.trim() !== "" || statusFilter !== "all";
 
   const clearFilters = useCallback(() => {
     clearSaveButtonOverride();
     setSearchQueryState("");
+    setDebouncedSearchQuery("");
     setStatusFilterState("all");
   }, [clearSaveButtonOverride]);
 

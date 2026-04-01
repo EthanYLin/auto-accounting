@@ -1,4 +1,11 @@
-import type { Database, Json, Tables, TablesInsert, TablesUpdate, Enums } from "@/types/database.types";
+import type {
+  Database,
+  Json,
+  Tables,
+  TablesInsert,
+  TablesUpdate,
+  Enums,
+} from "@/types/database.types";
 
 import { SVGProps } from "react";
 

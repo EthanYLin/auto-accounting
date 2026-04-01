@@ -506,7 +506,7 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
     test: (selected) =>
       selected.length === 1 &&
       !!selected[0].chainState.txType &&
-      ["支出", "应收款项"].includes(selected[0].chainState.txType),
+      ["支出", "应收款项", "转出"].includes(selected[0].chainState.txType),
     split: (sources, nextLocalId, payload) =>
       buildCrossAccountSplitEntries("recharge-to", sources, nextLocalId, payload),
   },
@@ -518,7 +518,7 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
     test: (selected) =>
       selected.length === 1 &&
       !!selected[0].chainState.txType &&
-      ["收入", "应付款项"].includes(selected[0].chainState.txType),
+      ["收入", "应付款项", "转入"].includes(selected[0].chainState.txType),
     split: (sources, nextLocalId, payload) =>
       buildCrossAccountSplitEntries("recharge-from", sources, nextLocalId, payload),
   },

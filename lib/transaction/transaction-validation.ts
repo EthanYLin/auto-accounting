@@ -213,7 +213,6 @@ export function isValidTransaction(
       }
     }
   }
-  
 
   return { valid: hint.length === 0, hint };
 }

@@ -37,7 +37,9 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
   const amountInput =
     entranceSummary.length === 1 && children.length > 0 ? (
       <>
-        <span className={`text-xs font-bold ${getAmountColorClass(entranceSummary[0]!.transaction_type)} shrink-0`}>
+        <span
+          className={`text-xs font-bold ${getAmountColorClass(entranceSummary[0]!.transaction_type)} shrink-0`}
+        >
           {entranceSummary[0]!.amount === 0 ? "该账单正负相抵" : "汇总后"}
         </span>
         <div className="flex-1 min-h-0">
@@ -173,7 +175,8 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
         <div
           className="grid gap-3 min-w-0 items-end"
           style={{
-            gridTemplateColumns: "minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,1.35fr) minmax(0,1.35fr)",
+            gridTemplateColumns:
+              "minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,1.35fr) minmax(0,1.35fr)",
           }}
         >
           <div className="min-w-0">{nameInput}</div>

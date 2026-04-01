@@ -113,9 +113,7 @@ export function AmountInput({
       startContent={
         <span className={`${textSize} whitespace-nowrap`}>
           <span className="text-default-400">¥ </span>
-          <span className={colorClass}>
-            {getAmountSymbol(transactionType)}
-          </span>
+          <span className={colorClass}>{getAmountSymbol(transactionType)}</span>
         </span>
       }
       type="text"
