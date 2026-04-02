@@ -3,21 +3,48 @@ import type { ImportResult } from "./types";
 
 import * as XLSX from "xlsx";
 
-import { importers } from "./importer";
+import { Importer } from "../importers/types";
+import { WechatNeutralTxImporter } from "../importers/wechat-neutral-importer";
+import { WechatRefundImporter } from "../importers/wechat-refund-importer";
+import { MatchingRuleImporter } from "../importers/matching-rule-importer";
+import { AiFillImporter } from "../importers/ai-fill-importer";
+
 import { ColumnKey, ExcelRow, ExcelTable } from "./types";
+
+export const wechatImporters: Importer[] = [
+  new WechatNeutralTxImporter(),
+  new WechatRefundImporter(),
+  new MatchingRuleImporter(),
+  new AiFillImporter(),
+];
+
+export const wechatImporterDescriptions: string[] = wechatImporters.map((i) => i.description());
+
+function resolveImporters(importerIndices?: number[]): Importer[] {
+  if (!importerIndices) return wechatImporters;
+  const sorted = Array.from(new Set(importerIndices))
+    .filter((idx) => idx >= 0 && idx < wechatImporters.length)
+    .sort((a, b) => a - b);
+  return sorted.map((idx) => wechatImporters[idx]);
+}
 
 /**
  * 解析微信账单 Excel 文件，返回结构化的 ExcelTable
  *
  * @param file 用户选择的 Excel 文件（.xlsx / .xls）
+ * @param onProgress 进度回调函数
  * @returns 解析后的 ExcelTable，跳过前 16 行说明，第 17 行为列名
  * @throws Error 文件类型不符、工作表缺失、行数不足时抛出
  */
-export async function parseWeChatFile(file: File): Promise<ExcelTable> {
+export async function parseWeChatFile(
+  file: File,
+  onProgress?: (message: string) => void,
+): Promise<ExcelTable> {
   if (!file.name.toLowerCase().endsWith(".xlsx") && !file.name.toLowerCase().endsWith(".xls")) {
     throw new Error("请选择Excel文件（.xlsx或.xls格式）");
   }
 
+  onProgress?.("正在读取 Excel 文件…");
   const arrayBuffer = await file.arrayBuffer();
   const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
 
@@ -25,6 +52,7 @@ export async function parseWeChatFile(file: File): Promise<ExcelTable> {
 
   if (!worksheet) throw new Error("未找到工作表");
 
+  onProgress?.("正在解析工作表…");
   const jsonData = XLSX.utils.sheet_to_json(worksheet, {
     header: 1,
     defval: "",
@@ -44,15 +72,19 @@ export async function parseWeChatFile(file: File): Promise<ExcelTable> {
  *
  * @param excelData  parseWeChatFile 返回的 ExcelTable
  * @param appData    AppDataValue，包含当前用户的账户列表、类别列表等
+ * @param importerIndices 要执行的步骤在 `wechatImporters` 中的下标；执行顺序按数字升序。省略时执行全部。
  */
 export async function importFromWeChatExcel(
   excelData: ExcelTable,
   appData: AppDataValue,
+  onProgress?: (message: string) => void,
+  importerIndices?: number[],
 ): Promise<ImportResult> {
   if (!excelData || !excelData.headers) throw new Error("无效的Excel数据格式");
   if (excelData.headers.length === 0) throw new Error("Excel文件缺少标题行");
   if (excelData.length === 0) throw new Error("Excel文件没有数据行");
 
+  onProgress?.("正在解析账单数据…");
   const transactions: NewTransactionData[] = [];
 
   for (let i = 0; i < excelData.length; i++) {
@@ -62,8 +94,8 @@ export async function importFromWeChatExcel(
   }
 
   let processed = transactions;
-  for (const importer of importers) {
-    processed = importer.handle(processed, appData);
+  for (const importer of resolveImporters(importerIndices)) {
+    processed = await importer.handle(processed, appData, onProgress);
   }
 
   return { importedCount: processed.length, transactions: processed };
@@ -154,8 +186,8 @@ export function parseRowToTransaction(
 
   // ── 识别标题：交易对方-商品-交易类型 ─────────────────────────
   const titleParts = [
-    row.get(ColumnKey.Counterparty),
-    row.get(ColumnKey.Product),
+    row.get(ColumnKey.Counterparty) == "/" ? null : row.get(ColumnKey.Counterparty),
+    row.get(ColumnKey.Product) == "/" ? null : row.get(ColumnKey.Product),
     transactionType,
   ].filter(Boolean);
   const title = titleParts.length > 0 ? titleParts.join("-") : null;

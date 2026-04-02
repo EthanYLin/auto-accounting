@@ -1,128 +1,29 @@
-import type { AppDataValue, MainCategory, NewTransactionData, SubCategory, TransactionType } from "@/types";
+import type { AppDataValue, NewTransactionData } from "@/types";
+import type { Importer } from "./types";
 
-import { ColumnKey } from "./types";
+import { ColumnKey } from "../wechat-import/types";
 
-// ─── 接口 ──────────────────────────────────────────────────────────────────────
-
-export interface Importer {
-  handle(transactions: NewTransactionData[], appData: AppDataValue): NewTransactionData[];
-}
-
-// ─── 辅助函数 ──────────────────────────────────────────────────────────────────
-
-/** 从 raw_info 中读取微信账单原始字段值 */
-function getRawField(tx: NewTransactionData, field: ColumnKey): string | null {
-  const raw = tx.raw_info;
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
-  const val = (raw as Record<string, unknown>)[field];
-  if (val === undefined || val === null) return null;
-  const str = String(val).trim();
-  return str === "" ? null : str;
-}
-
-/** 追加备注，自动处理空值和空格 */
-function appendRemark(existing: string | null, addition: string): string {
-  if (!existing || existing.trim() === "") return addition;
-  return `${existing.trim()} ${addition}`;
-}
-
-/**
- * 按 transaction_type 和 label 查找主/子分类，找不到则保持 undefined。
- */
-function resolveCategories(
-  appData: AppDataValue,
-  txType: TransactionType | null,
-  mainLabel: string,
-  subLabel: string,
-): { main_category?: MainCategory; sub_category?: SubCategory } {
-  const mainCat = appData.mainCategories.find(
-    (mc) => mc.label === mainLabel && (!txType || mc.transaction_type === txType),
-  );
-  const subCat = mainCat
-    ? appData.subCategories.find(
-        (sc) => sc.label === subLabel && sc.main_category_id === mainCat.id,
-      )
-    : undefined;
-
-  return { main_category: mainCat, sub_category: subCat };
-}
-
-/**
- * 从微信状态字符串中提取退款金额数字。
- * 支持 "已退款（¥77.00）" / "已退款(￥77.00)" / "已退款¥77.00" 等格式，忽略 ¥/￥ 符号差异。
- * 返回 null 表示无法解析。
- */
-function parseRefundAmount(status: string): number | null {
-  // 移除所有括号、¥、￥ 后提取数字
-  const match = status.match(/已退款[（(]?[¥￥]?([\d.]+)[）)]?/);
-  if (!match) return null;
-  const num = parseFloat(match[1]);
-  return isNaN(num) ? null : num;
-}
-
-/** 判断两个金额是否相等（浮点容差 0.001） */
-function amountEquals(a: number, b: number): boolean {
-  return Math.abs(a - b) < 0.001;
-}
-
-// ─── 收/支为 "/" 的处理 ────────────────────────────────────────────────
-
-export class DirectionNullImporter implements Importer {
-  handle(transactions: NewTransactionData[], appData: AppDataValue): NewTransactionData[] {
-    return transactions.map((tx) => {
-      if (getRawField(tx, ColumnKey.Direction) !== "/") return tx;
-
-      const txType = getRawField(tx, ColumnKey.TransactionType);
-      const product = getRawField(tx, ColumnKey.Product);
-
-      // A1：零钱通互转
-      if (
-        txType === "转入零钱通-来自零钱" ||
-        txType === "零钱通转出-到零钱"
-      ) {
-        const { main_category, sub_category } = resolveCategories(appData, "支出", "其他", "其他");
-        return {
-          ...tx,
-          amount: 0,
-          status: "经自动处理取消",
-          remark: appendRemark(tx.remark, "零钱/零钱通互转不计收支"),
-          name: txType,
-          transaction_type: "支出",
-          main_category,
-          sub_category,
-        };
-      }
-
-      // A2：其他 "/" 交易
-      let resolvedType: TransactionType | undefined;
-      let main_category: MainCategory | undefined;
-      let sub_category: SubCategory | undefined;
-
-      if (product?.includes("转出")) {
-        resolvedType = "转出";
-        ({ main_category, sub_category } = resolveCategories(appData, "转出", "转出", "转出"));
-      } else if (product?.includes("转入")) {
-        resolvedType = "转入";
-        ({ main_category, sub_category } = resolveCategories(appData, "转入", "转入", "转入"));
-      }
-
-      return {
-        ...tx,
-        name: txType,
-        status: "待处理",
-        remark: appendRemark(tx.remark, "⚠️请确认该交易是否有实际支出。"),
-        ...(resolvedType !== undefined && { transaction_type: resolvedType }),
-        ...(main_category !== undefined && { main_category }),
-        ...(sub_category !== undefined && { sub_category }),
-      };
-    });
-  }
-}
+import {
+  amountEquals,
+  appendRemark,
+  getRawField,
+  parseRefundAmount,
+  resolveCategories,
+} from "./shared";
 
 // ─── 退款处理 ────────────────────────────────────────────────────
 
-export class RefundImporter implements Importer {
-  handle(transactions: NewTransactionData[], appData: AppDataValue): NewTransactionData[] {
+export class WechatRefundImporter implements Importer {
+  description(): string {
+    return "自动处理退款交易";
+  }
+
+  async handle(
+    transactions: NewTransactionData[],
+    appData: AppDataValue,
+    onProgress?: (message: string) => void,
+  ): Promise<NewTransactionData[]> {
+    onProgress?.("正在处理退款…");
     // 按 datetime 升序排序（正时序）
     const sorted = [...transactions].sort((a, b) => {
       if (!a.datetime && !b.datetime) return 0;
@@ -192,7 +93,10 @@ export class RefundImporter implements Importer {
     }
 
     // 未找到
-    expense.remark = appendRemark(expense.remark, "⚠️该支出已被全额退款，但没有找到对应的退款记录。");
+    expense.remark = appendRemark(
+      expense.remark,
+      "⚠️该支出已被全额退款，但没有找到对应的退款记录。",
+    );
     expense.status = "待处理";
     expense.amount = 0;
   }
@@ -264,12 +168,10 @@ export class RefundImporter implements Importer {
       if (remaining === 0) return true;
       if (index >= candidates.length || remaining < 0) return false;
 
-      // 选当前候选项
       result.push(candidates[index]);
       if (backtrack(index + 1, remaining - Math.round(candidates[index].amount * 100))) return true;
       result.pop();
 
-      // 不选当前候选项
       if (backtrack(index + 1, remaining)) return true;
 
       return false;
@@ -278,13 +180,3 @@ export class RefundImporter implements Importer {
     return backtrack(0, targetCents) ? result : null;
   }
 }
-
-
-
-
-// ─── 导出 ──────────────────────────────────────────────────────────────────
-
-export const importers: Importer[] = [
-  new DirectionNullImporter(),
-  new RefundImporter(),
-];
