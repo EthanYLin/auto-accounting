@@ -102,166 +102,164 @@ export default function Home() {
   const { currentTransaction, currentIndex } = editor;
 
   return (
-      <div className="flex h-full w-full min-h-0 overflow-hidden">
-        {/* 左侧 Sidebar */}
-        <aside className="w-80 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col h-full min-h-0">
-          {/* 搜索框和状态过滤 */}
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <div className="flex gap-2 items-center">
-              <Input
-                placeholder="搜索名称, 金额..."
-                value={search.searchQuery}
-                onValueChange={search.setSearchQuery}
-                startContent={<MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />}
-                variant="bordered"
-                size="sm"
-                className="flex-1"
-              />
-              <StatusFilterDropdown
-                statusFilter={search.statusFilter}
-                onStatusFilterChange={search.setStatusFilter}
-              />
-            </div>
-          </div>
-
-          {/* 账单概览区 */}
-          <div className="flex-1 min-h-0">
-            <TransactionOverviewList
-              ref={transactionListRef}
-              currentId={currentTransaction?.id}
-              onSelectTransaction={editor.selectTransaction}
-              filteredTransactions={search.filteredTransactions}
-              isFiltered={search.isFiltered}
-              onClearFilters={search.clearFilters}
+    <div className="flex h-full w-full min-h-0 overflow-hidden">
+      {/* 左侧 Sidebar */}
+      <aside className="w-80 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col h-full min-h-0">
+        {/* 搜索框和状态过滤 */}
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <div className="flex gap-2 items-center">
+            <Input
+              placeholder="搜索名称, 金额..."
+              value={search.searchQuery}
+              onValueChange={search.setSearchQuery}
+              startContent={<MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />}
+              variant="bordered"
+              size="sm"
+              className="flex-1"
+            />
+            <StatusFilterDropdown
+              statusFilter={search.statusFilter}
+              onStatusFilterChange={search.setStatusFilter}
             />
           </div>
-        </aside>
+        </div>
 
-        {/* 右侧主要区域 */}
-        <main className="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
-          {/* ActionBar */}
-          {currentTransaction !== null && currentIndex > 0 && <ActionBar navigation={navigation} />}
+        {/* 账单概览区 */}
+        <div className="flex-1 min-h-0">
+          <TransactionOverviewList
+            ref={transactionListRef}
+            currentId={currentTransaction?.id}
+            onSelectTransaction={editor.selectTransaction}
+            filteredTransactions={search.filteredTransactions}
+            isFiltered={search.isFiltered}
+            onClearFilters={search.clearFilters}
+          />
+        </div>
+      </aside>
 
-          {/* 主内容区域 */}
-          <div ref={mainContentRef} className="flex-1 min-h-0 overflow-y-auto">
-            {/* AppData 加载中 */}
-            {isEditorLoading ? (
-              <div className="flex items-center justify-center h-full">
-                <Spinner size="sm" />
-              </div>
-            ) : store.transactions.length === 0 ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <p className="text-lg text-gray-500 dark:text-gray-400 mb-2">暂无账单</p>
-                  <p className="text-sm text-gray-400 dark:text-gray-500 mb-6">
-                    请先新建或导入账单
-                  </p>
-                  <div className="flex gap-3 justify-center">
-                    <Button
-                      size="sm"
-                      color="default"
-                      variant="flat"
-                      startContent={<DocumentPlusIcon className="w-4 h-4" />}
-                      onPress={handleCreate}
-                    >
-                      新建记录
-                    </Button>
-                    <Button
-                      size="sm"
-                      color="default"
-                      variant="flat"
-                      startContent={<ArrowDownTrayIcon className="w-4 h-4" />}
-                      onPress={handleImport}
-                    >
-                      导入账单
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ) : currentTransaction === null ? (
-              /* 空状态：未选择账单 */
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <p className="text-lg text-gray-500 dark:text-gray-400 mb-2">未选择账单</p>
-                  <p className="text-sm text-gray-400 dark:text-gray-500 mb-6">
-                    请先在左侧选择一个账单
-                  </p>
-                  <div className="flex gap-3 justify-center">
-                    <Button
-                      size="sm"
-                      color="default"
-                      variant="flat"
-                      startContent={<DocumentPlusIcon className="w-4 h-4" />}
-                      onPress={handleCreate}
-                    >
-                      新建记录
-                    </Button>
-                    <Button
-                      size="sm"
-                      color="default"
-                      variant="flat"
-                      startContent={<ArrowDownTrayIcon className="w-4 h-4" />}
-                      onPress={handleImport}
-                    >
-                      导入账单
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              /* 正常显示：已选择账单 */
-              <div className="w-full px-5 py-2 space-y-5">
-                {/* 校验提示区域 */}
-                {editor.validationAlert && (
-                  <Alert
-                    color={editor.validationAlert.type}
+      {/* 右侧主要区域 */}
+      <main className="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
+        {/* ActionBar */}
+        {currentTransaction !== null && currentIndex > 0 && <ActionBar navigation={navigation} />}
+
+        {/* 主内容区域 */}
+        <div ref={mainContentRef} className="flex-1 min-h-0 overflow-y-auto">
+          {/* AppData 加载中 */}
+          {isEditorLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <Spinner size="sm" />
+            </div>
+          ) : store.transactions.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <p className="text-lg text-gray-500 dark:text-gray-400 mb-2">暂无账单</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mb-6">请先新建或导入账单</p>
+                <div className="flex gap-3 justify-center">
+                  <Button
+                    size="sm"
+                    color="default"
                     variant="flat"
-                    title={editor.validationAlert.title}
-                    description={
-                      <ul className="space-y-0.5 mt-0.5">
-                        {editor.validationAlert.hints.map((hint, i) => (
-                          <li key={`${i}-${hint}`}>• {hint}</li>
-                        ))}
-                      </ul>
-                    }
+                    startContent={<DocumentPlusIcon className="w-4 h-4" />}
+                    onPress={handleCreate}
+                  >
+                    新建记录
+                  </Button>
+                  <Button
+                    size="sm"
+                    color="default"
+                    variant="flat"
+                    startContent={<ArrowDownTrayIcon className="w-4 h-4" />}
+                    onPress={handleImport}
+                  >
+                    导入账单
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : currentTransaction === null ? (
+            /* 空状态：未选择账单 */
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <p className="text-lg text-gray-500 dark:text-gray-400 mb-2">未选择账单</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mb-6">
+                  请先在左侧选择一个账单
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <Button
+                    size="sm"
+                    color="default"
+                    variant="flat"
+                    startContent={<DocumentPlusIcon className="w-4 h-4" />}
+                    onPress={handleCreate}
+                  >
+                    新建记录
+                  </Button>
+                  <Button
+                    size="sm"
+                    color="default"
+                    variant="flat"
+                    startContent={<ArrowDownTrayIcon className="w-4 h-4" />}
+                    onPress={handleImport}
+                  >
+                    导入账单
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* 正常显示：已选择账单 */
+            <div className="w-full px-5 py-2 space-y-5">
+              {/* 校验提示区域 */}
+              {editor.validationAlert && (
+                <Alert
+                  color={editor.validationAlert.type}
+                  variant="flat"
+                  title={editor.validationAlert.title}
+                  description={
+                    <ul className="space-y-0.5 mt-0.5">
+                      {editor.validationAlert.hints.map((hint, i) => (
+                        <li key={`${i}-${hint}`}>• {hint}</li>
+                      ))}
+                    </ul>
+                  }
+                />
+              )}
+
+              {/* 标签页区域 */}
+              <TxSupplementTabs />
+
+              {/* 主要填写区 */}
+              <div>
+                <TxImportInfo />
+
+                <div className="mb-5 mt-5">
+                  <TxFieldInputs
+                    selectedTxType={currentTransaction?.transaction_type || undefined}
                   />
-                )}
-
-                {/* 标签页区域 */}
-                <TxSupplementTabs />
-
-                {/* 主要填写区 */}
-                <div>
-                  <TxImportInfo />
-
-                  <div className="mb-5 mt-5">
-                    <TxFieldInputs
-                      selectedTxType={currentTransaction?.transaction_type || undefined}
-                    />
-                  </div>
-
-                  <div className="h-2" />
-
-                  <TransactionEditorFourChainSelector mode={selectorMode} />
                 </div>
 
-                <Divider />
+                <div className="h-2" />
 
-                {/* 调试信息区 */}
-                <Accordion
-                  variant="light"
-                  itemClasses={{ title: "text-xs font-medium leading-snug" }}
-                >
-                  <AccordionItem key="1" title="调试信息">
-                    <pre className="text-xs bg-gray-100 dark:bg-gray-800 p-3 rounded overflow-auto overscroll-contain max-h-80">
-                      {JSON.stringify(currentTransaction, null, 2)}
-                    </pre>
-                  </AccordionItem>
-                </Accordion>
+                <TransactionEditorFourChainSelector mode={selectorMode} />
               </div>
-            )}
-          </div>
-        </main>
-      </div>
+
+              <Divider />
+
+              {/* 调试信息区 */}
+              <Accordion
+                variant="light"
+                itemClasses={{ title: "text-xs font-medium leading-snug" }}
+              >
+                <AccordionItem key="1" title="调试信息">
+                  <pre className="text-xs bg-gray-100 dark:bg-gray-800 p-3 rounded overflow-auto overscroll-contain max-h-80">
+                    {JSON.stringify(currentTransaction, null, 2)}
+                  </pre>
+                </AccordionItem>
+              </Accordion>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
   );
 }

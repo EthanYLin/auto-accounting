@@ -466,7 +466,6 @@ export function CustomImport() {
                   placeholder="请选择账户"
                   size="sm"
                   variant="underlined"
-                  required
                   selectedKeys={selectedAccountId ? [selectedAccountId] : []}
                   onSelectionChange={(keys) => {
                     const next = Array.from(keys)[0];
