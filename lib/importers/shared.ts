@@ -6,12 +6,31 @@ import type {
   TransactionType,
 } from "@/types";
 
-import { ColumnKey } from "../wechat-import/types";
+import { ColumnKey as WechatColumnKey } from "../wechat-import/types";
+import { ColumnKey as AlipayColumnKey } from "../alipay-import/types";
 
 // ─── 辅助函数 ──────────────────────────────────────────────────────────────────
 
+/** 按 `datetime` 字符串升序；缺失 `datetime` 的排在前面 */
+export function sortByDatetime<T extends { datetime: string | null }>(a: T, b: T): number {
+  if (!a.datetime && !b.datetime) return 0;
+  if (!a.datetime) return -1;
+  if (!b.datetime) return 1;
+  return a.datetime < b.datetime ? -1 : a.datetime > b.datetime ? 1 : 0;
+}
+
 /** 从 raw_info 中读取微信账单原始字段值 */
-export function getRawField(tx: NewTransactionData, field: ColumnKey): string | null {
+export function getWxRawField(tx: NewTransactionData, field: WechatColumnKey): string | null {
+  const raw = tx.raw_info;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const val = (raw as Record<string, unknown>)[field];
+  if (val === undefined || val === null) return null;
+  const str = String(val).trim();
+  return str === "" ? null : str;
+}
+
+/** 从 raw_info 中读取支付宝账单原始字段值 */
+export function getAlipayRawField(tx: NewTransactionData, field: AlipayColumnKey): string | null {
   const raw = tx.raw_info;
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const val = (raw as Record<string, unknown>)[field];

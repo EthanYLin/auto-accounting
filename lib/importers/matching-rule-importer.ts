@@ -158,7 +158,7 @@ export class MatchingRuleImporter implements Importer {
 
     if (changed) {
       next.remark = appendRemark(tx.remark, "[R]");
-      next.status = "经自动处理填写";
+      if (next.status === "待处理") next.status = "经自动处理填写";
     }
 
     return next;

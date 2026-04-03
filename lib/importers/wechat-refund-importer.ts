@@ -6,9 +6,10 @@ import { ColumnKey } from "../wechat-import/types";
 import {
   amountEquals,
   appendRemark,
-  getRawField,
+  getWxRawField,
   parseRefundAmount,
   resolveCategories,
+  sortByDatetime,
 } from "./shared";
 
 // ─── 退款处理 ────────────────────────────────────────────────────
@@ -25,17 +26,12 @@ export class WechatRefundImporter implements Importer {
   ): Promise<NewTransactionData[]> {
     onProgress?.("正在处理退款…");
     // 按 datetime 升序排序（正时序）
-    const sorted = [...transactions].sort((a, b) => {
-      if (!a.datetime && !b.datetime) return 0;
-      if (!a.datetime) return -1;
-      if (!b.datetime) return 1;
-      return a.datetime < b.datetime ? -1 : a.datetime > b.datetime ? 1 : 0;
-    });
+    const sorted = [...transactions].sort(sortByDatetime);
 
     for (let i = 0; i < sorted.length; i++) {
       const tx = sorted[i];
       if (tx.transaction_type !== "支出") continue;
-      const wechatStatus = getRawField(tx, ColumnKey.Status);
+      const wechatStatus = getWxRawField(tx, ColumnKey.Status);
       if (!wechatStatus) continue;
 
       // 处理全额退款及部分退款
@@ -51,7 +47,7 @@ export class WechatRefundImporter implements Importer {
       if (tx.transaction_type !== "收入") continue;
       if (tx.status !== "待处理") continue;
 
-      const wechatStatus = getRawField(tx, ColumnKey.Status);
+      const wechatStatus = getWxRawField(tx, ColumnKey.Status);
       if (!wechatStatus) continue;
       if (!wechatStatus.includes("已退款") && !wechatStatus.includes("已全额退款")) continue;
 
@@ -78,7 +74,7 @@ export class WechatRefundImporter implements Importer {
       const candidate = sorted[j];
       if (candidate.status !== "待处理") continue;
       if (candidate.transaction_type !== "收入") continue;
-      if (getRawField(candidate, ColumnKey.Status) !== "已全额退款") continue;
+      if (getWxRawField(candidate, ColumnKey.Status) !== "已全额退款") continue;
       if (!amountEquals(candidate.amount, expense.amount)) continue;
 
       // 找到：将退款附加到支出
@@ -118,7 +114,7 @@ export class WechatRefundImporter implements Importer {
       const candidate = sorted[j];
       if (candidate.status !== "待处理") continue;
       if (candidate.transaction_type !== "收入") continue;
-      const candidateStatus = getRawField(candidate, ColumnKey.Status);
+      const candidateStatus = getWxRawField(candidate, ColumnKey.Status);
       if (!candidateStatus) continue;
       const candidateRefundAmount = parseRefundAmount(candidateStatus);
       if (candidateRefundAmount === null) continue;

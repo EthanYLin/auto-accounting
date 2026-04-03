@@ -1,63 +1,112 @@
 "use client";
 
-import type { ImportResult } from "@/lib/wechat-import/types";
-import type { Transaction } from "@/types";
+import type { ImportResult } from "@/lib/alipay-import/types";
 
 import React, { useState, useCallback } from "react";
 import { ChevronRightIcon, EllipsisHorizontalIcon } from "@heroicons/react/24/outline";
 import { Alert } from "@heroui/react";
 import Image from "next/image";
+import { Checkbox } from "@heroui/react";
 
-import { useAppData } from "@/components/context/app-data-context";
 import { FileUpload } from "@/components/upload/file-upload";
+import { useAppData } from "@/components/context/app-data-context";
+import { useTransactionImport } from "@/lib/hooks/use-transaction-import";
+import {
+  alipayImporterDescriptions,
+  importFromAlipayCsv,
+  parseAlipayCsvFile,
+} from "@/lib/alipay-import";
 
 interface AlipayImportProps {
-  onImportSuccess: (transactions: Transaction[]) => void;
+  onImportSuccess: (transactions: ImportResult["transactions"]) => void;
 }
 
 export function AlipayImport({ onImportSuccess }: AlipayImportProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [progressMessage, setProgressMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [selectedImporterIndices, setSelectedImporterIndices] = useState<number[]>(() =>
+    alipayImporterDescriptions.map((_, i) => i),
+  );
 
   const appData = useAppData();
+  const { createTransactions } = useTransactionImport();
 
-  const parseAlipayFile = useCallback(
+  const toggleImporter = useCallback((index: number, selected: boolean) => {
+    setSelectedImporterIndices((prev) => {
+      if (selected) return prev.includes(index) ? prev : [...prev, index];
+      return prev.filter((x) => x !== index);
+    });
+  }, []);
+
+  const handleFileSelect = useCallback(
     async (file: File) => {
       setIsProcessing(true);
+      setProgressMessage(null);
       setError(null);
       setResult(null);
 
+      const onProgress = (message: string) => {
+        setProgressMessage(message);
+      };
+
       try {
-        // 检查文件类型
-        if (!file.name.toLowerCase().endsWith(".csv")) {
-          throw new Error("请选择CSV文件（.csv格式）");
+        const table = await parseAlipayCsvFile(file, onProgress);
+        const importResult = await importFromAlipayCsv(
+          table,
+          appData,
+          onProgress,
+          selectedImporterIndices,
+        );
+        onProgress("正在保存交易记录…");
+        const createResult = await createTransactions(importResult.transactions);
+        if (!createResult.success) {
+          setError(createResult.error ?? "保存交易记录失败");
+          return;
         }
 
-        // TODO: 实现支付宝CSV文件解析逻辑
-        // 这里暂时用模拟数据
-        await new Promise((resolve) => setTimeout(resolve, 2000)); // 模拟处理时间
-
-        const transactions: Transaction[] = [];
-        setResult({ importedCount: 0, transactions: [] });
-        onImportSuccess(transactions);
+        setResult(importResult);
+        onImportSuccess(importResult.transactions);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "解析CSV文件失败");
+        setError(err instanceof Error ? err.message : "导入失败");
       } finally {
         setIsProcessing(false);
+        setProgressMessage(null);
       }
     },
-    [appData, onImportSuccess],
+    [appData, createTransactions, onImportSuccess, selectedImporterIndices],
   );
 
   return (
     <div className="space-y-6">
-      {/* 支付宝文件上传 */}
+      <div className="rounded-medium border border-default-200 bg-content1 p-4">
+        <p className="mb-3 text-sm font-medium text-foreground">导入后处理步骤</p>
+        <ul className="flex flex-col gap-3">
+          {alipayImporterDescriptions.map((description, index) => {
+            const isSelected = selectedImporterIndices.includes(index);
+            return (
+              <li key={index} className="flex items-start gap-3">
+                <Checkbox
+                  classNames={{ label: "text-small" }}
+                  isSelected={isSelected}
+                  onValueChange={(v) => toggleImporter(index, v)}
+                  size="sm"
+                >
+                  {description}
+                </Checkbox>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
       <FileUpload
-        onFileSelect={parseAlipayFile}
+        onFileSelect={handleFileSelect}
         accept=".csv"
         isLoading={appData.isLoading || (!appData.hasLoaded && appData.error === null)}
         isProcessing={isProcessing}
+        processingMessage={progressMessage ?? undefined}
         isError={!!appData.error}
         errorMessage={appData.error ?? "基础数据加载失败"}
         description="拖拽支付宝账单文件到这里"
@@ -89,10 +138,8 @@ export function AlipayImport({ onImportSuccess }: AlipayImportProps) {
         />
       )}
 
-      {/* 错误提示 */}
       {error && <Alert color="danger">{error}</Alert>}
 
-      {/* 导入结果 */}
       {result && <Alert color="success">成功导入 {result.importedCount} 条交易记录！</Alert>}
     </div>
   );

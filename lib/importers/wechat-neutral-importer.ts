@@ -9,7 +9,7 @@ import type { Importer } from "./types";
 
 import { ColumnKey } from "../wechat-import/types";
 
-import { appendRemark, getRawField, resolveCategories } from "./shared";
+import { appendRemark, getWxRawField, resolveCategories } from "./shared";
 
 // ─── 收/支为 "/" 的处理 ────────────────────────────────────────────────
 
@@ -25,10 +25,10 @@ export class WechatNeutralTxImporter implements Importer {
   ): Promise<NewTransactionData[]> {
     onProgress?.("正在处理中性交易…");
     return transactions.map((tx) => {
-      if (getRawField(tx, ColumnKey.Direction) !== "/") return tx;
+      if (getWxRawField(tx, ColumnKey.Direction) !== "/") return tx;
 
-      const txType = getRawField(tx, ColumnKey.TransactionType);
-      const product = getRawField(tx, ColumnKey.Product);
+      const txType = getWxRawField(tx, ColumnKey.TransactionType);
+      const product = getWxRawField(tx, ColumnKey.Product);
 
       // A1：零钱通互转
       if (txType === "转入零钱通-来自零钱" || txType === "零钱通转出-到零钱") {
