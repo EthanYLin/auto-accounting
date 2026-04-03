@@ -72,7 +72,7 @@ export class YuebaoEarningsImporter implements Importer {
         datetime: parentDatetime,
         name: parentName,
         title: "余额宝收益-自动填写",
-        merchant: null,
+        merchant: "余额宝",
         transaction_type: "收入",
         source: "支付宝导入(余额宝收益合并)",
         remark: null,

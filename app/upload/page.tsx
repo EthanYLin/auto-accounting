@@ -5,6 +5,7 @@ import { Tabs, Tab } from "@heroui/react";
 import Image from "next/image";
 
 import { AlipayImport } from "@/components/upload/alipay-import";
+import { CustomImport } from "@/components/upload/custom-import";
 import { FudanImport } from "@/components/upload/fudan-import";
 import { WeChatImport } from "@/components/upload/wechat-import";
 
@@ -48,6 +49,17 @@ export default function ExcelUploadPage() {
           }
         >
           <FudanImport />
+        </Tab>
+
+        <Tab
+          key="custom"
+          title={
+            <div className="flex items-center gap-2 px-1">
+              <span>自定义导入</span>
+            </div>
+          }
+        >
+          <CustomImport />
         </Tab>
       </Tabs>
     </div>
