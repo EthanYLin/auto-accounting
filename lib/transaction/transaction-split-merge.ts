@@ -97,12 +97,12 @@ export function defaultMerge(
 
   // 3. 逐组合并
   Array.from(groups.values()).forEach((entries) => {
-    // (1) 金额：带符号求和，为 0 则抵消该记录
-    const sum = entries.reduce(
-      (acc: number, e: TransactionSplitWithRelations) => acc + calculateAmount(e),
+    // (1) 金额：带符号求和（分），为 0 则抵消该记录
+    const sumCents = entries.reduce(
+      (acc: number, e: TransactionSplitWithRelations) => acc + Math.round(calculateAmount(e) * 100),
       0,
     );
-    if (sum === 0) return;
+    if (sumCents === 0) return;
 
     // 本组中的主交易(可能无)
     const mainTx: TransactionSplitWithRelations | undefined = entries.find((e) => e.id === tx.id);
@@ -112,7 +112,7 @@ export function defaultMerge(
 
     // (3) 交易类型：由主记录类型（全局）+ 合并后金额正负决定
     //     若主记录类型为空，则参考本组第一条类型非空记录
-    const mergedType: TransactionType = getMergedTransactionType(tx, entries, sum);
+    const mergedType: TransactionType = getMergedTransactionType(tx, entries, sumCents);
 
     // (4) 主类别、子类别、预算计划
     let mainCat: MainCategory | undefined;
@@ -136,7 +136,7 @@ export function defaultMerge(
 
     result.push({
       id: mainTx?.id ?? entries[0].id,
-      amount: Math.abs(sum),
+      amount: Math.abs(sumCents) / 100,
       name,
       transaction_type: mergedType,
       user_id: tx.user_id,
@@ -188,15 +188,15 @@ export function getEntranceSummary(
   const result: { account: Account; amount: number; transaction_type?: TransactionType }[] = [];
 
   Array.from(groups.values()).forEach((entries) => {
-    const sum = entries.reduce(
-      (acc: number, e: TransactionSplitWithRelations) => acc + calculateAmount(e),
+    const sumCents = entries.reduce(
+      (acc: number, e: TransactionSplitWithRelations) => acc + Math.round(calculateAmount(e) * 100),
       0,
     );
-    const mergedType: TransactionType = getMergedTransactionType(entries[0], entries, sum);
+    const mergedType: TransactionType = getMergedTransactionType(entries[0], entries, sumCents);
     result.push({
       account: entries[0].account,
-      amount: sum,
-      transaction_type: sum === 0 ? undefined : mergedType,
+      amount: sumCents / 100,
+      transaction_type: sumCents === 0 ? undefined : mergedType,
     });
   });
 
