@@ -102,7 +102,6 @@ export default function Home() {
   const { currentTransaction, currentIndex } = editor;
 
   return (
-    <>
       <div className="flex h-full w-full min-h-0 overflow-hidden">
         {/* 左侧 Sidebar */}
         <aside className="w-80 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col h-full min-h-0">
@@ -264,6 +263,5 @@ export default function Home() {
           </div>
         </main>
       </div>
-    </>
   );
 }

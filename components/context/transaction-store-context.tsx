@@ -3,7 +3,7 @@
 import type { TransactionContentDraft, TransactionUpdate, TransactionWithRelations } from "@/types";
 import type { SaveQueueResult, TransactionSaveState } from "../../lib/hooks/use-save-queue";
 
-import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { produce } from "immer";
 
@@ -80,6 +80,19 @@ export function TransactionStoreProvider({ children }: { children: React.ReactNo
   const { saveState, offerSingleSave, offerExclusiveAction } = useSaveQueue();
   const isDirty = (id: number) => localEdits.has(id);
   const getDirtyIds = useCallback(() => Array.from(localEdits.keys()), [localEdits]);
+
+  const localEditsRef = useRef(localEdits);
+  localEditsRef.current = localEdits;
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (localEditsRef.current.size > 0) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
   const canLoadTransactions = appDataReady && accounts.length > 0 && currentUserId !== null;
   const transactionQueryKey = useMemo(
