@@ -159,7 +159,7 @@ export function getExitSplits(
   children: TransactionWithRelations[],
 ): TransactionSplitWithRelations[] {
   // 若有拆账数据，以拆账数据为准
-  if (tx.splits?.length) return tx.splits;
+  if (tx.splits?.length) return [...tx.splits];
   // 若入口仅一条，无拆账记录，出口=入口
   if (tx.children_ids.length === 0) {
     return [getDefaultSplit(tx)];

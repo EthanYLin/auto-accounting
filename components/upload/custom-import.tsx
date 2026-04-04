@@ -499,7 +499,7 @@ export function CustomImport() {
                     color="primary"
                     size="sm"
                     className="min-w-32 h-10 px-4"
-                    startContent={<ArrowDownTrayIcon className="h-4 w-4" />}
+                    startContent={!isImporting && <ArrowDownTrayIcon className="h-4 w-4" />}
                     isLoading={isImporting}
                     onPress={() => void handleImport()}
                   >

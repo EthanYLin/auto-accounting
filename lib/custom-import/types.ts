@@ -104,7 +104,7 @@ export function toNewTransactionData(
     remark: null,
     title: tx.title ?? null,
     status: "待处理",
-    original_amount: amount,
+    original_amount: Math.abs(amount),
     raw_info: tx.raw_info ?? null,
     main_category: undefined,
     sub_category: undefined,

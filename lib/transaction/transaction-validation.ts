@@ -194,10 +194,10 @@ export function isValidTransaction(
     });
   }
 
-  // ========== (3) 转账判定 ==========
-
   if (!isChildTransaction) {
     const exitSplits = getExitSplits(tx, childrenTx);
+
+    // ========== (3) 转账判定 ==========
     const inList = exitSplits.filter((s) => s.transaction_type === "转入");
     const outList = exitSplits.filter((s) => s.transaction_type === "转出");
     if (inList.length > 0 || outList.length > 0) {
@@ -211,6 +211,21 @@ export function isValidTransaction(
           hint.push("转入与转出账户不能相同");
         }
       }
+    }
+
+    // ========== (4) 出口处类别判定 ==========
+    if (!tx.splits || tx.splits.length === 0) {
+      exitSplits.forEach((split) => {
+        hint.push(
+          ...validateCategoryChain(
+            split.transaction_type,
+            split.main_category,
+            split.sub_category,
+            mainCategories,
+            subCategories,
+          ).map((h) => `账户"${split.account.name}"的交易: ${h}`),
+        );
+      });
     }
   }
 
