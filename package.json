@@ -3,9 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
+    "dev": "NODE_OPTIONS='--disable-warning=DEP0040' next dev --turbopack",
+    "build": "NODE_OPTIONS='--disable-warning=DEP0040' next build",
+    "start": "NODE_OPTIONS='--disable-warning=DEP0040' next start",
     "lint": "eslint --fix"
   },
   "dependencies": {
@@ -20,6 +20,8 @@
     "@supabase/supabase-js": "^2.75.0",
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-virtual": "^3.13.23",
+    "ag-grid-enterprise": "^35.2.0",
+    "ag-grid-react": "^35.2.0",
     "clsx": "2.1.1",
     "framer-motion": "11.18.2",
     "immer": "^11.1.3",

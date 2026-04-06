@@ -9,12 +9,16 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { I18nProvider } from "@react-aria/i18n";
 import { ToastProvider } from "@heroui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AllEnterpriseModule } from "ag-grid-enterprise";
+import { AgGridProvider } from "ag-grid-react";
 
 import { AppDataProvider } from "@/components/context/app-data-context";
 import { SaveButtonOverrideProvider } from "@/components/context/save-button-override-context";
 import { TransactionStoreProvider } from "@/components/context/transaction-store-context";
 import { TransactionEditorProvider } from "@/components/context/transaction-editor-context";
 import { ErrorProvider } from "@/components/context/error-context";
+
+const agGridModules = [AllEnterpriseModule];
 
 export interface ProvidersProps {
   children: React.ReactNode;
@@ -63,7 +67,14 @@ export function Providers({ children, themeProps }: ProvidersProps) {
               <ErrorProvider>
                 <SaveButtonOverrideProvider>
                   <TransactionStoreProvider>
-                    <TransactionEditorProvider>{children}</TransactionEditorProvider>
+                    <TransactionEditorProvider>
+                      <AgGridProvider
+                        modules={agGridModules}
+                        licenseKey="[v3][RELEASE][0102]_NDg2Njc4MzY3MDgzNw==16d78ca762fb5d2ff740aed081e2af7b"
+                      >
+                        {children}
+                      </AgGridProvider>
+                    </TransactionEditorProvider>
                   </TransactionStoreProvider>
                 </SaveButtonOverrideProvider>
               </ErrorProvider>
