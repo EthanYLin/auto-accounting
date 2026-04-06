@@ -146,10 +146,21 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
     <DatePicker
       label="日期时间"
       labelPlacement="outside"
-      granularity="minute"
+      granularity="second"
       hourCycle={24}
-      value={tx.datetime ? parseDateTime(tx.datetime) : null}
-      onChange={(date) => editor.updateFields({ datetime: date ? date.toString() : null })}
+      value={(() => {
+        if (!tx.datetime) return null;
+        try {
+          return parseDateTime(tx.datetime);
+        } catch {
+          return null;
+        }
+      })()}
+      onChange={(date) =>
+        editor.updateFields({
+          datetime: date ? date.toString() : null,
+        })
+      }
       size="sm"
       variant="underlined"
       classNames={{ input: "font-normal" }}

@@ -17,6 +17,8 @@ import type {
 } from "@/types";
 import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
 
+import { formatTxTime } from "@/lib/transaction/transaction-datetime";
+
 // ==================== 数据库 <==> 业务对象 ====================
 
 /**
@@ -77,6 +79,7 @@ export function buildTransactionsWithRelations(
 
     return {
       ...txWithoutIds,
+      datetime: formatTxTime(txWithoutIds.datetime),
       account: account!,
       main_category: mainCategory,
       sub_category: subCategory,
@@ -120,7 +123,7 @@ export function buildTransactionAndSplits(txWithRelations: TransactionWithRelati
 
   const transaction: Transaction = {
     ...txData,
-    datetime: txData.datetime || null,
+    datetime: formatTxTime(txData.datetime),
     account_id: account.id,
     main_category_id: main_category?.id ?? null,
     sub_category_id: sub_category?.id ?? null,
@@ -172,7 +175,7 @@ export function buildInsertFromNewData(newData: NewTransactionData): {
 
   const tx: Omit<TransactionInsert, "user_id"> = {
     ...txFields,
-    datetime: txFields.datetime || null,
+    datetime: formatTxTime(txFields.datetime),
     account_id: account.id,
     main_category_id: main_category?.id ?? null,
     sub_category_id: sub_category?.id ?? null,

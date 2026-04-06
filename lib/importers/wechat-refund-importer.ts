@@ -2,6 +2,7 @@ import type { AppDataValue, NewTransactionData } from "@/types";
 import type { Importer } from "./types";
 
 import { ColumnKey } from "../wechat-import/types";
+import { compareTxTime } from "../transaction/transaction-datetime";
 
 import {
   amountEquals,
@@ -9,7 +10,6 @@ import {
   getWxRawField,
   parseRefundAmount,
   resolveCategories,
-  sortByDatetime,
 } from "./shared";
 
 // ─── 退款处理 ────────────────────────────────────────────────────
@@ -26,7 +26,7 @@ export class WechatRefundImporter implements Importer {
   ): Promise<NewTransactionData[]> {
     onProgress?.("正在处理退款…");
     // 按 datetime 升序排序（正时序）
-    const sorted = [...transactions].sort(sortByDatetime);
+    const sorted = [...transactions].sort((a, b) => compareTxTime(a.datetime, b.datetime));
 
     for (let i = 0; i < sorted.length; i++) {
       const tx = sorted[i];

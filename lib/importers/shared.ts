@@ -11,14 +11,6 @@ import { ColumnKey as AlipayColumnKey } from "../alipay-import/types";
 
 // ─── 辅助函数 ──────────────────────────────────────────────────────────────────
 
-/** 按 `datetime` 字符串升序；缺失 `datetime` 的排在前面 */
-export function sortByDatetime<T extends { datetime: string | null }>(a: T, b: T): number {
-  if (!a.datetime && !b.datetime) return 0;
-  if (!a.datetime) return -1;
-  if (!b.datetime) return 1;
-  return a.datetime < b.datetime ? -1 : a.datetime > b.datetime ? 1 : 0;
-}
-
 /** 从 raw_info 中读取微信账单原始字段值 */
 export function getWxRawField(tx: NewTransactionData, field: WechatColumnKey): string | null {
   const raw = tx.raw_info;

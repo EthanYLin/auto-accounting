@@ -13,6 +13,7 @@ import type {
 } from "@/types";
 
 import { calculateAmount } from "@/lib/transaction/transaction-display";
+import { parseTxTime } from "@/lib/transaction/transaction-datetime";
 import { getExitSplits } from "@/lib/transaction/transaction-split-merge";
 
 export type ValidationResult = { valid: boolean; hint: string[] };
@@ -110,7 +111,7 @@ export function isValidTransaction(
   // 3. 日期时间不为空且合法
   if (!tx.datetime) {
     hint.push("日期时间不能为空");
-  } else if (isNaN(new Date(tx.datetime).getTime())) {
+  } else if (!parseTxTime(tx.datetime)) {
     hint.push("日期时间格式不合法");
   }
 

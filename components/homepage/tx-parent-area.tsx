@@ -23,9 +23,9 @@ import {
   calculateAmount,
   getAmountColorClass,
   getAmountSymbol,
-  formatDateTime,
   formatCategoryText,
 } from "@/lib/transaction/transaction-display";
+import { displayTxTime } from "@/lib/transaction/transaction-datetime";
 export function TxParentArea() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const store = useTransactionStore();
@@ -111,7 +111,7 @@ export function TxParentArea() {
 
             {/* 日期时间 */}
             <div className="flex-shrink-0 w-28 truncate text-gray-500 dark:text-gray-400">
-              {formatDateTime(parentTransaction.datetime)}
+              {displayTxTime(parentTransaction.datetime)}
             </div>
 
             {/* 账户 */}

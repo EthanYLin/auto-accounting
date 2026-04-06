@@ -14,6 +14,7 @@ import React, {
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { produce } from "immer";
+import { DateTime } from "luxon";
 
 import { useSaveQueue } from "../../lib/hooks/use-save-queue";
 
@@ -33,6 +34,10 @@ import {
   buildTransactionAndSplits,
   mergeContentDraft,
 } from "@/lib/transaction/transaction-convert";
+import {
+  TRANSACTION_DATETIME_FORMAT,
+  TRANSACTION_TIME_ZONE,
+} from "@/lib/transaction/transaction-datetime";
 export type { TransactionSaveState } from "../../lib/hooks/use-save-queue";
 
 type SaveResult = SaveQueueResult;
@@ -429,11 +434,12 @@ export function TransactionStoreProvider({ children }: { children: React.ReactNo
     if (saveState !== "idle") return { success: false, error: SAVE_BUSY_ERROR } as const;
     if (accounts.length === 0) return { success: false, error: "暂无账户，无法新建记录" } as const;
     try {
-      const now = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(); // 创建东八区时间
       const result = await insertTransaction({
         account_id: accounts[0].id,
         amount: 0,
-        datetime: now,
+        datetime: DateTime.now()
+          .setZone(TRANSACTION_TIME_ZONE)
+          .toFormat(TRANSACTION_DATETIME_FORMAT),
         source: "手动新建",
         status: "待处理",
       });

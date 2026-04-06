@@ -2,6 +2,7 @@ import type { TransactionWithRelations } from "@/types";
 import type { ExportArtifact, TransactionExporter } from "@/lib/exporters/types";
 
 import { calculateAmount } from "@/lib/transaction/transaction-display";
+import { parseTxTime } from "@/lib/transaction/transaction-datetime";
 
 const MOZE_HEADERS = [
   "账户",
@@ -30,14 +31,12 @@ function escapeCsvCell(value: string): string {
 }
 
 function formatDateParts(datetime: string | null): { date: string; time: string } {
-  if (!datetime) return { date: "", time: "" };
-
-  const date = new Date(datetime);
-  if (Number.isNaN(date.getTime())) return { date: "", time: "" };
+  const dt = parseTxTime(datetime);
+  if (!dt) return { date: "", time: "" };
 
   return {
-    date: `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`,
-    time: `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`,
+    date: dt.toFormat("yyyy/M/d"),
+    time: dt.toFormat("HH:mm"),
   };
 }
 

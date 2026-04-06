@@ -6,9 +6,15 @@
 import type { FudanCampusCardRecord } from "./types";
 import type { FetchSession } from "./FudanCAS";
 
+import { DateTime } from "luxon";
 import { parse as parseHtml } from "node-html-parser";
 
 import { casLogin } from "./FudanCAS";
+
+import {
+  TRANSACTION_DATETIME_FORMAT,
+  TRANSACTION_TIME_ZONE,
+} from "@/lib/transaction/transaction-datetime";
 
 const SERVICE_URL = "https://ecard.fudan.edu.cn/epay/consume/query";
 
@@ -27,11 +33,10 @@ function hourToCategory(hour: number): string {
  * @param timePart  形如 "08:30" 的时间字符串
  */
 function toIsoDatetime(datePart: string, timePart: string): string | null {
-  // datePart: "2026.03.10", timePart: "08:30"
-  const [year, month, day] = datePart.split(".");
-  const [hour, minute] = timePart.split(":");
-  if (!year || !month || !day || !hour || !minute) return null;
-  return `${year}-${month}-${day}T${hour}:${minute}:00.000`;
+  const dt = DateTime.fromFormat(`${datePart} ${timePart}`, "yyyy.MM.dd HH:mm", {
+    zone: TRANSACTION_TIME_ZONE,
+  });
+  return dt.isValid ? dt.toFormat(TRANSACTION_DATETIME_FORMAT) : null;
 }
 
 /**

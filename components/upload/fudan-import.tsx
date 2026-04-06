@@ -33,17 +33,12 @@ import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date";
 import { queryFudanRecords } from "@/app/actions/fudan";
 import { useAppData } from "@/components/context/app-data-context";
 import { useTransactionImport } from "@/lib/hooks/use-transaction-import";
+import { displayTxTime } from "@/lib/transaction/transaction-datetime";
 
 /** 将 ISO 日期时间展示为 YYYY-MM-DD HH:mm */
 function formatDateTimeDisplay(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  const h = String(d.getHours()).padStart(2, "0");
-  const min = String(d.getMinutes()).padStart(2, "0");
-  return `${y}-${m}-${day} ${h}:${min}`;
+  const formatted = displayTxTime(iso, "long");
+  return formatted === "-" ? iso : formatted;
 }
 
 function formatAmountCny(amount: number): string {

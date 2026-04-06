@@ -15,11 +15,8 @@ import {
   flattenTransactionsWithChildren,
 } from "@/lib/hooks/use-transaction-filter";
 import { TRANSACTION_STATUS_COLORS } from "@/constants/transaction-type";
-import {
-  calculateAmount,
-  formatDateTime,
-  formatCategoryDisplay,
-} from "@/lib/transaction/transaction-display";
+import { calculateAmount, formatCategoryDisplay } from "@/lib/transaction/transaction-display";
+import { displayTxTime } from "@/lib/transaction/transaction-datetime";
 
 interface TransactionListSelectorProps {
   selectedIds: number[]; // 当前选中的交易ID（受控）
@@ -213,7 +210,7 @@ export function TransactionListSelector({
                     })()}
                   </TableCell>
                   <TableCell>
-                    <span className={cellClassName}>{formatDateTime(tx.datetime)}</span>
+                    <span className={cellClassName}>{displayTxTime(tx.datetime, "short")}</span>
                   </TableCell>
                   <TableCell>
                     <div className={cellClassName}>

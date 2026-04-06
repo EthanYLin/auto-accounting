@@ -4,6 +4,8 @@
  */
 import type { AppDataValue, TransactionContentDraft, TransactionStatus } from "@/types";
 
+import { formatTxTime } from "@/lib/transaction/transaction-datetime";
+
 // ==================== 类型定义 ====================
 
 /** 可通过 updateFields 修改的字段（使用原始类型值，内部会转换为关联对象） */
@@ -45,7 +47,7 @@ export function applyEditableFields(
     updated.merchant = fields.merchant || null;
   }
   if ("datetime" in fields && fields.datetime !== undefined) {
-    updated.datetime = fields.datetime && fields.datetime.trim() ? fields.datetime : null;
+    updated.datetime = formatTxTime(fields.datetime);
   }
   if ("remark" in fields) {
     updated.remark = fields.remark ?? null;

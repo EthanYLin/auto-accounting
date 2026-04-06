@@ -7,7 +7,7 @@ import { Chip } from "@heroui/react";
 import { LinkIcon, RectangleStackIcon, ScissorsIcon } from "@heroicons/react/24/outline";
 
 import { TRANSACTION_TYPES, TRANSACTION_STATUS_COLORS } from "@/constants/transaction-type";
-import { formatDateTime } from "@/lib/transaction/transaction-display";
+import { displayTxTime } from "@/lib/transaction/transaction-datetime";
 
 // ========== 工具函数 ==========
 
@@ -166,7 +166,7 @@ export const TransactionListItem = memo(function TransactionListItem({
             className={`flex items-center justify-between ${isChild ? "text-[10px]" : "text-xs"} text-gray-500 dark:text-gray-400 mb-1`}
           >
             <span className="truncate">
-              {formatDateTime(transaction.datetime, "short")}
+              {displayTxTime(transaction.datetime, "short")}
               {transaction.merchant && ` - ${transaction.merchant}`}
             </span>
             <span className="ml-2 flex-shrink-0 truncate max-w-[80px]">

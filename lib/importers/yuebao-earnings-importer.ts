@@ -1,9 +1,16 @@
 import type { AppDataValue, NewTransactionData } from "@/types";
 import type { Importer } from "./types";
 
+import { DateTime } from "luxon";
+
+import {
+  compareTxTime,
+  TRANSACTION_DATETIME_FORMAT,
+  TRANSACTION_TIME_ZONE,
+} from "../transaction/transaction-datetime";
 import { ColumnKey } from "../alipay-import/types";
 
-import { getAlipayRawField, resolveCategories, sortByDatetime } from "./shared";
+import { getAlipayRawField, resolveCategories } from "./shared";
 
 /**
  * 余额宝每日收益：商品说明同时包含「余额宝」「收益发放」。
@@ -50,7 +57,7 @@ export class YuebaoEarningsImporter implements Importer {
     const parents: NewTransactionData[] = [];
     for (const key of monthKeys) {
       const group = byMonth.get(key)!;
-      group.sort(sortByDatetime);
+      group.sort((a, b) => compareTxTime(a.datetime, b.datetime));
 
       const parentName = `余额宝收益 (${key})`;
 
@@ -96,14 +103,16 @@ export class YuebaoEarningsImporter implements Importer {
     return product.includes("余额宝") && product.includes("收益发放");
   }
 
-  /** `key` 为 `YYYY.MM`，返回该月最后一天 `YYYY-MM-DD 22:00:00` */
+  /** `key` 为 `YYYY.MM`，返回该月最后一天 `YYYY-MM-DDTHH:mm:ss` */
   private lastDayOfMonthAt22(key: string): string {
-    const [y, m] = key.split(".");
-    const year = Number.parseInt(y, 10);
-    const monthNum = Number.parseInt(m, 10);
-    const lastDay = new Date(year, monthNum, 0).getDate();
-    const dd = String(lastDay).padStart(2, "0");
-    return `${y}-${m}-${dd} 22:00:00`;
+    const dt = DateTime.fromFormat(key, "yyyy.MM", { zone: TRANSACTION_TIME_ZONE });
+    if (!dt.isValid) {
+      return DateTime.now().setZone(TRANSACTION_TIME_ZONE).toFormat(TRANSACTION_DATETIME_FORMAT);
+    }
+    return dt
+      .endOf("month")
+      .set({ hour: 22, minute: 0, second: 0, millisecond: 0 })
+      .toFormat(TRANSACTION_DATETIME_FORMAT);
   }
 
   /**

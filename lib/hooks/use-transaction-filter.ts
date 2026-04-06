@@ -3,6 +3,7 @@ import type { TransactionStatus, TransactionWithRelations } from "@/types";
 import { useState, useMemo, useCallback, useEffect } from "react";
 
 import { useSaveButtonOverride } from "@/components/context/save-button-override-context";
+import { compareTxTime, parseTxTime } from "@/lib/transaction/transaction-datetime";
 
 // ==================== 内部工具函数 ====================
 
@@ -29,12 +30,12 @@ function matchesTransactionKeyword(tx: TransactionWithRelations, keyword: string
   }
 
   // 3. 日期时间搜索
-  if (tx.datetime) {
-    const txDate = new Date(tx.datetime);
-    const txMonth = txDate.getMonth() + 1;
-    const txDay = txDate.getDate();
-    const txHour = txDate.getHours();
-    const txMinute = txDate.getMinutes();
+  const txDateTime = parseTxTime(tx.datetime);
+  if (txDateTime) {
+    const txMonth = txDateTime.month;
+    const txDay = txDateTime.day;
+    const txHour = txDateTime.hour;
+    const txMinute = txDateTime.minute;
 
     // MM-DD 或 MM/DD
     const datePattern = /^(\d{1,2})[-\/](\d{1,2})$/;
@@ -90,9 +91,7 @@ export function flattenTransactionsWithChildren(
   const rootTransactions = transactions
     .filter((tx) => !tx.parent_id)
     .sort((a, b) => {
-      const dateA = a.datetime ? new Date(a.datetime).getTime() : 0;
-      const dateB = b.datetime ? new Date(b.datetime).getTime() : 0;
-      return dateB - dateA;
+      return compareTxTime(b.datetime, a.datetime);
     });
 
   rootTransactions.forEach((parent) => {

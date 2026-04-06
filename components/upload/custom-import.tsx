@@ -38,6 +38,7 @@ import {
 import { useAppData } from "@/components/context/app-data-context";
 import { useTransactionImport } from "@/lib/hooks/use-transaction-import";
 import { parseFromString, toNewTransactionData } from "@/lib/custom-import/types";
+import { displayTxTime } from "@/lib/transaction/transaction-datetime";
 
 const PROMPT_TEMPLATE = `请将我提供的截图、文本或交易记录转换为 JSON 数组。
 
@@ -402,7 +403,7 @@ export function CustomImport() {
                         {rows.map((row) => (
                           <TableRow key={row.id}>
                             <TableCell className="whitespace-nowrap text-default-700">
-                              {row.data.datetime.replace("T", " ")}
+                              {displayTxTime(row.data.datetime, "full")}
                             </TableCell>
                             <TableCell className="whitespace-nowrap font-medium text-foreground">
                               {row.data.amount > 0 ? "+" : ""}

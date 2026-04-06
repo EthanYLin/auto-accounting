@@ -1,6 +1,6 @@
 /**
  * 负责交易与拆账在展示层所需的格式化和显示辅助。
- * 包括金额符号与颜色、带符号金额计算、日期格式化，以及类别文本/图标展示数据的生成。
+ * 包括金额符号与颜色、带符号金额计算，以及类别文本/图标展示数据的生成。
  */
 import type { TransactionWithRelations, TransactionType, MainCategory, SubCategory } from "@/types";
 import type { FourChainState } from "@/components/homepage/common/four-chain-selector";
@@ -41,24 +41,20 @@ export function calculateAmount(input: {
   return input.amount * (txType?.sign || 1);
 }
 
-// ==================== 日期格式化 ====================
-
 /**
- * 格式化日期时间
- * @param datetime ISO 日期字符串
- * @param format 'long'（2026-01-01 09:03，默认）或 'short'（01-01 09:03）
+ * 拆分符号与绝对值数字串
+ * @param amount 金额
+ * @param transactionType 交易类型
+ * @returns 符号与数字串
  */
-export function formatDateTime(datetime: string | null, format: "long" | "short" = "long"): string {
-  if (!datetime) return "-";
-  const date = new Date(datetime);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return format === "long"
-    ? `${year}-${month}-${day} ${hours}:${minutes}`
-    : `${month}-${day} ${hours}:${minutes}`;
+export function formatAmountParts(
+  amount: number,
+  transactionType?: TransactionType | null,
+): { sign: string; digits: string } {
+  const txType = TRANSACTION_TYPES.find((t) => t.type === transactionType);
+  const digits = Math.abs(amount).toFixed(2);
+  const sign = !txType ? " " : txType.sign === 1 ? "+" : "-";
+  return { sign, digits };
 }
 
 // ==================== 类别格式化 ====================
@@ -74,6 +70,15 @@ export function formatCategoryText(tx: TransactionWithRelations): string {
   if (tx.main_category?.label) parts.push(tx.main_category.label);
   if (tx.sub_category?.label) parts.push(tx.sub_category.label);
   return parts.join("-") || "-";
+}
+
+/** 交易类型：Emoji + 文案 */
+export function formatTransactionTypeWithEmoji(
+  type: TransactionType | string | null | undefined,
+): string {
+  if (type == null || type === "") return "-";
+  const opt = TRANSACTION_TYPES.find((t) => t.type === type);
+  return opt ? `${opt.icon} ${type}` : String(type);
 }
 
 // ==================== 类别图标展示 ====================

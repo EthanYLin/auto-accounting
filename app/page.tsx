@@ -234,6 +234,7 @@ export default function Home() {
 
                 <div className="mb-5 mt-5">
                   <TxFieldInputs
+                    key={currentTransaction.id}
                     selectedTxType={currentTransaction?.transaction_type || undefined}
                   />
                 </div>

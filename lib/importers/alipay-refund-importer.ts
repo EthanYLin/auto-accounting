@@ -2,9 +2,10 @@ import type { AppDataValue, NewTransactionData } from "@/types";
 import type { Importer } from "./types";
 
 import { ColumnKey } from "../alipay-import/types";
+import { compareTxTime } from "../transaction/transaction-datetime";
 import { calculateAmount } from "../transaction/transaction-display";
 
-import { appendRemark, getAlipayRawField, resolveCategories, sortByDatetime } from "./shared";
+import { appendRemark, getAlipayRawField, resolveCategories } from "./shared";
 
 /**
  * 获取支付宝交易主订单号：取从左起的连续数字前缀。
@@ -73,7 +74,7 @@ export class AlipayRefundImporter implements Importer {
     // ── 1. 筛选：哪些交易参与退款分组 ────────────────────────────────────
     //    条件：(不计收支 & 退款成功) 或 (支出)
     //          且 交易订单号、商家订单号均非空
-    const sorted = [...transactions].sort(sortByDatetime);
+    const sorted = [...transactions].sort((a, b) => compareTxTime(a.datetime, b.datetime));
     const candidateIndices: number[] = [];
 
     for (let i = 0; i < sorted.length; i++) {
@@ -168,7 +169,7 @@ export class AlipayRefundImporter implements Importer {
     const main =
       expenses.length > 0
         ? expenses.reduce((a, b) => (a.amount >= b.amount ? a : b))
-        : [...items].sort(sortByDatetime)[0];
+        : [...items].sort((a, b) => compareTxTime(a.datetime, b.datetime))[0];
 
     // 计算带符号金额总和（分，支出为负、退款为正）
     const sumCents = items.reduce(
