@@ -230,7 +230,7 @@ export default function Home() {
 
               {/* 主要填写区 */}
               <div>
-                <TxImportInfo />
+                <TxImportInfo key={currentTransaction.id} />
 
                 <div className="mb-5 mt-5">
                   <TxFieldInputs

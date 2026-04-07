@@ -152,7 +152,9 @@ export function mergeContentDraft(
   baseTx: TransactionWithRelations,
   draft?: TransactionContentDraft,
 ): TransactionWithRelations {
-  if (!draft) return baseTx;
+  if (!draft) {
+    return { ...baseTx, children_ids: [...baseTx.children_ids] };
+  }
   return {
     ...baseTx,
     ...draft,

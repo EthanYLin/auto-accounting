@@ -4,6 +4,7 @@ import type {
   TransactionWithRelations,
   TransactionSplitWithRelations,
   TransactionStatus,
+  TransactionContentDraft,
 } from "@/types";
 import type { EditableFields } from "@/lib/transaction/transaction-field-update";
 
@@ -266,38 +267,25 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
       return { success: false, error: "当前有保存操作进行中" };
     }
     const dirtyIds = store.getDirtyIds();
-    const unsavedIds = new Set();
-    let savedCount = 0;
     for (const id of dirtyIds) {
       // 如果某交易和他的父交易都在脏列表里，则只保存父交易即可，避免重复保存
       const tx = transactionsById.get(id);
       if (!tx) continue;
       if (tx.parent_id && dirtyIds.includes(tx.parent_id)) continue;
-      // 1. 校验保存的交易及其子交易
+      // 校验保存的交易及其子交易
       const childTransactions = getChildTransactions(tx);
       const validResult = isValidTransaction(tx, childTransactions, appData);
-      // 2. 若校验不通过，则跳过保存并记录未保存的交易 ID
-      if (!validResult.valid) {
-        unsavedIds.add(id);
-        childTransactions
-          .map((child) => child.id)
-          .filter((cid) => dirtyIds.includes(cid))
-          .forEach((cid) => unsavedIds.add(cid));
-        continue;
+      // 如果交易校验不通过且其状态为“已完成”，则将其状态设置为“稍后处理”
+      let draftOverride: TransactionContentDraft | undefined;
+      if (!validResult.valid && tx.status === "已完成") {
+        const { parent_id, children_ids, ...baseDraft } = tx;
+        draftOverride = { ...baseDraft, status: "稍后处理" };
       }
-      // 3. 保存交易
-      const result = await store.saveToServer(id);
+      // 保存交易
+      const result = await store.saveToServer(id, draftOverride);
       if (!result.success) return { success: false, error: result.error };
-      savedCount++;
     }
-    if (unsavedIds.size == 0) return { success: true };
-    else
-      return {
-        success: false,
-        error: `共保存了${savedCount}条交易，以下交易校验失败未保存：${Array.from(unsavedIds)
-          .map((id) => `#${id}`)
-          .join(", ")}`,
-      };
+    return { success: true };
   }, [store, appData, transactionsById, getChildTransactions]);
 
   // ==================== 设置过滤列表 ====================

@@ -5,7 +5,7 @@ export const siteConfig = {
   description: "自动记账平台",
   navItems: [
     {
-      label: "首页",
+      label: "账单",
       href: "/",
     },
     {
@@ -17,8 +17,8 @@ export const siteConfig = {
       href: "/export",
     },
     {
-      label: "账单",
-      href: "/accounting",
+      label: "总览",
+      href: "/overview",
     },
     {
       label: "配置",

@@ -9,6 +9,7 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { I18nProvider } from "@react-aria/i18n";
 import { ToastProvider } from "@heroui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QuickFilterModule } from "ag-grid-community";
 import { AllEnterpriseModule } from "ag-grid-enterprise";
 import { AgGridProvider } from "ag-grid-react";
 
@@ -18,7 +19,7 @@ import { TransactionStoreProvider } from "@/components/context/transaction-store
 import { TransactionEditorProvider } from "@/components/context/transaction-editor-context";
 import { ErrorProvider } from "@/components/context/error-context";
 
-const agGridModules = [AllEnterpriseModule];
+const agGridModules = [AllEnterpriseModule, QuickFilterModule];
 
 export interface ProvidersProps {
   children: React.ReactNode;
