@@ -4,23 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@heroui/react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
-interface NavigationControlsProps {
-  currentIndex: number;
-  totalCount: number;
-  onPrev: () => void;
-  onNext: () => void;
-  onGoToIndex: (index: number) => void;
-  onLocateCurrent: () => void;
-}
+import { dispatchCommand, useCommandListener } from "@/lib/commands";
+import { useTransactionEditor } from "@/components/context/transaction-editor-context";
 
-export function NavigationControls({
-  currentIndex,
-  totalCount,
-  onPrev,
-  onNext,
-  onGoToIndex,
-  onLocateCurrent,
-}: NavigationControlsProps) {
+export function NavigationControls() {
+  const { currentIndex, totalCount } = useTransactionEditor();
   const [indexInput, setIndexInput] = useState("");
   const [isEditingIndex, setIsEditingIndex] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -39,16 +27,18 @@ export function NavigationControls({
   const commitIndex = useCallback(() => {
     const index = parseInt(indexInput, 10);
     if (!Number.isNaN(index)) {
-      onGoToIndex(index);
-      setTimeout(onLocateCurrent, 0);
+      dispatchCommand("go-to-index", { index });
+      setTimeout(() => dispatchCommand("locate-current"), 0);
     }
     setIsEditingIndex(false);
-  }, [indexInput, onGoToIndex, onLocateCurrent]);
+  }, [indexInput]);
 
   const startEditing = useCallback(() => {
     setIndexInput(String(currentIndex));
     setIsEditingIndex(true);
   }, [currentIndex]);
+
+  useCommandListener("edit-index", startEditing);
 
   return (
     <div className="flex items-center gap-2">
@@ -57,7 +47,7 @@ export function NavigationControls({
         variant="ghost"
         size="sm"
         disabled={currentIndex <= 1}
-        onPress={onPrev}
+        onPress={() => dispatchCommand("go-previous")}
         aria-label="上一条"
       >
         <ChevronLeftIcon className="h-4 w-4" />
@@ -102,7 +92,7 @@ export function NavigationControls({
         variant="ghost"
         size="sm"
         disabled={currentIndex >= totalCount}
-        onPress={onNext}
+        onPress={() => dispatchCommand("go-next")}
         aria-label="下一条"
       >
         <ChevronRightIcon className="h-4 w-4" />

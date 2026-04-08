@@ -2,7 +2,7 @@
 
 import type { TransactionOverviewListHandle } from "@/components/homepage/left-panel/transaction-overview-list";
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Alert, Button, Input, Spinner } from "@heroui/react";
 import {
@@ -11,6 +11,8 @@ import {
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 
+import { useCommandListener } from "@/lib/commands";
+import { useTransactionEditorHotkeys } from "@/lib/hooks/use-transaction-editor-hotkeys";
 import { ActionBar } from "@/components/homepage/action-bar";
 import { TxFieldInputs } from "@/components/homepage/tx-field-inputs";
 import { TxImportInfo } from "@/components/homepage/tx-import-info";
@@ -29,6 +31,7 @@ export default function TransactionsRoutePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showError } = useError();
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const transactionListRef = useRef<TransactionOverviewListHandle>(null);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const [selectorMode, setSelectorMode] = useState<"listbox" | "select">("select");
@@ -65,7 +68,7 @@ export default function TransactionsRoutePage() {
     currentIndex: editor.currentIndex,
     totalCount: editor.totalCount,
     onSelectTransaction: editor.selectTransaction,
-    onLocateCurrent: () => transactionListRef.current?.scrollToCurrent(),
+    onLocateCurrent: (id) => transactionListRef.current?.scrollToTransaction(id),
   });
 
   useEffect(() => {
@@ -127,6 +130,13 @@ export default function TransactionsRoutePage() {
     return () => resizeObserver.disconnect();
   }, []);
 
+  useTransactionEditorHotkeys();
+
+  useCommandListener("focus-search", () => {
+    searchInputRef.current?.focus();
+    searchInputRef.current?.select();
+  });
+
   const handleImport = () => router.push("/upload");
   const handleCreate = async () => {
     const result = await editor.createEmptyTransaction();
@@ -137,6 +147,8 @@ export default function TransactionsRoutePage() {
     }
   };
 
+  useCommandListener("create", () => void handleCreate());
+
   const { currentTransaction, currentIndex } = editor;
 
   return (
@@ -145,6 +157,7 @@ export default function TransactionsRoutePage() {
         <div className="shrink-0 border-b border-gray-200 p-4 dark:border-gray-700">
           <div className="flex items-center gap-2">
             <Input
+              ref={searchInputRef}
               placeholder="搜索名称, 金额..."
               value={search.searchQuery}
               onValueChange={search.setSearchQuery}
@@ -173,7 +186,7 @@ export default function TransactionsRoutePage() {
       </aside>
 
       <main className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-        {currentTransaction !== null && currentIndex > 0 && <ActionBar navigation={navigation} />}
+        {currentTransaction !== null && currentIndex > 0 && <ActionBar />}
 
         <div ref={mainContentRef} className="min-h-0 flex-1 overflow-y-auto">
           {isEditorLoading ? (

@@ -27,8 +27,8 @@ interface TransactionOverviewListProps {
 }
 
 export interface TransactionOverviewListHandle {
-  /** 将列表滚动到当前选中的交易 */
-  scrollToCurrent: () => void;
+  /** 将列表滚动到指定交易，不传 id 则滚动到当前选中项 */
+  scrollToTransaction: (targetId?: number | null) => void;
 }
 
 export const TransactionOverviewList = forwardRef<
@@ -61,11 +61,12 @@ export const TransactionOverviewList = forwardRef<
   });
 
   useImperativeHandle(ref, () => ({
-    scrollToCurrent() {
-      if (currentId == null) return;
-      const index = filteredTransactions.findIndex((t) => t.id === currentId);
+    scrollToTransaction(targetId?: number | null) {
+      const id = targetId ?? currentId;
+      if (id == null) return;
+      const index = filteredTransactions.findIndex((t) => t.id === id);
       if (index === -1) return;
-      virtualizer.scrollToIndex(index, { behavior: "smooth", align: "auto" });
+      virtualizer.scrollToIndex(index, { behavior: "smooth", align: "center" });
     },
   }));
 

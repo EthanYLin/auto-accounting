@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@heroui/react";
 import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/react";
 
@@ -26,6 +26,17 @@ export function DeleteConfirmDialog({
     }
   }, [request]);
 
+  const handleConfirm = useCallback(async () => {
+    if (!request || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await request.onConfirm();
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [request, isSubmitting, onClose]);
+
   return (
     <Modal
       isDismissable={!isSubmitting}
@@ -34,7 +45,14 @@ export function DeleteConfirmDialog({
       size="sm"
       onClose={onClose}
     >
-      <ModalContent>
+      <ModalContent
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            void handleConfirm();
+          }
+        }}
+      >
         <ModalHeader>{request?.title ?? "确认删除"}</ModalHeader>
         <ModalBody>
           <p className="text-sm text-default-600">{request?.description}</p>
@@ -43,21 +61,7 @@ export function DeleteConfirmDialog({
           <Button isDisabled={isSubmitting} variant="light" onPress={onClose}>
             取消
           </Button>
-          <Button
-            color="danger"
-            isLoading={isSubmitting}
-            onPress={async () => {
-              if (!request) return;
-
-              setIsSubmitting(true);
-              try {
-                await request.onConfirm();
-                onClose();
-              } finally {
-                setIsSubmitting(false);
-              }
-            }}
-          >
+          <Button color="danger" isLoading={isSubmitting} onPress={handleConfirm}>
             {request?.confirmLabel ?? "确认删除"}
           </Button>
         </ModalFooter>

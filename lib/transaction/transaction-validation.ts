@@ -215,7 +215,7 @@ export function isValidTransaction(
     }
 
     // ========== (4) 出口处类别判定 ==========
-    if (!tx.splits || tx.splits.length === 0) {
+    if ((tx.splits?.length ?? 0) !== 0) {
       exitSplits.forEach((split) => {
         hint.push(
           ...validateCategoryChain(

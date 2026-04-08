@@ -2,7 +2,7 @@
 
 import type { FourChainState } from "@/components/homepage/common/four-chain-selector";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@heroui/react";
 import { Checkbox } from "@heroui/react";
 import { Input } from "@heroui/react";
@@ -39,6 +39,8 @@ export interface SplitEntryEditorProps {
   onSelectedIdsChange: (ids: Set<number>) => void;
   /** 是否显示名称列（受控） */
   showName: boolean;
+  /** 类别弹窗打开状态变化 */
+  onCategoryModalOpenChange?: (isOpen: boolean) => void;
 }
 
 // 类别图标展示组件（圆形底色 + emoji）
@@ -62,6 +64,7 @@ export function SplitEntryEditor({
   selectedIds,
   onSelectedIdsChange,
   showName,
+  onCategoryModalOpenChange,
 }: SplitEntryEditorProps) {
   const { accounts, mainCategories, subCategories } = useAppData();
 
@@ -112,6 +115,12 @@ export function SplitEntryEditor({
   const cancelCategoryModal = () => {
     setEditingLocalId(null);
   };
+
+  const isCategoryModalOpen = editingLocalId !== null;
+
+  useEffect(() => {
+    onCategoryModalOpenChange?.(isCategoryModalOpen);
+  }, [isCategoryModalOpen, onCategoryModalOpenChange]);
 
   // ==================== 类别展示辅助 ====================
 
@@ -320,7 +329,7 @@ export function SplitEntryEditor({
       {/* 类别选择 Modal */}
       <CategorySelectModal
         key={editingLocalId ?? "__closed"}
-        isOpen={editingLocalId !== null}
+        isOpen={isCategoryModalOpen}
         initialChainState={entries.find((e) => e.localId === editingLocalId)?.chainState ?? {}}
         onConfirm={confirmCategoryModal}
         onCancel={cancelCategoryModal}

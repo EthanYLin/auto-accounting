@@ -1,13 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { Accordion, AccordionItem } from "@heroui/react";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 
+import { useCommandListener } from "@/lib/commands";
 import { useTransactionEditor } from "@/components/context/transaction-editor-context";
 
 export function TxImportInfo() {
   const editor = useTransactionEditor();
   const tx = editor.currentTransaction;
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+
+  useCommandListener("toggle-import-info", () => {
+    setSelectedKeys((prev) => (prev.length > 0 ? [] : ["import-info"]));
+  });
 
   if (!tx) return null;
 
@@ -18,6 +25,10 @@ export function TxImportInfo() {
       <Accordion
         fullWidth
         variant="light"
+        selectedKeys={selectedKeys}
+        onSelectionChange={(keys) =>
+          setSelectedKeys(keys === "all" ? ["import-info"] : Array.from(keys, String))
+        }
         className="w-full max-w-full"
         itemClasses={{
           base: "w-full",

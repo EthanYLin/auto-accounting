@@ -2,7 +2,7 @@
 
 import type { TransactionWithRelations } from "@/types";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { AgGridReact } from "ag-grid-react";
 import {
   BackspaceIcon,
@@ -46,6 +46,45 @@ export default function OverviewPage() {
   const { transactions } = store;
   const dirtyCount = store.getDirtyIds().length;
   const isBusy = store.saveState !== "idle" || busyAction !== null;
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (selectedIds.length === 0 || isBusy) return;
+    const count = selectedIds.length;
+    setBusyAction("delete");
+    try {
+      const result = await store.deleteTransactions(selectedIds);
+      if (result.success) {
+        setIsDeleteConfirmOpen(false);
+        gridRef.current?.api.deselectAll();
+        setSelectedIds([]);
+        addToast({ title: `已删除 ${count} 笔交易`, color: "success" });
+      } else {
+        addToast({ title: "删除失败", description: result.error || "未知错误", color: "danger" });
+      }
+    } finally {
+      setBusyAction(null);
+    }
+  }, [selectedIds, isBusy, store]);
+
+  const handleClearAllConfirm = useCallback(async () => {
+    if (isBusy || clearAllConfirmText.trim() !== String(transactions.length)) return;
+    setBusyAction("clear");
+    try {
+      const result = await deleteAllTransactions();
+      if (!result.success) {
+        addToast({ title: "清空失败", description: result.error || "未知错误", color: "danger" });
+        return;
+      }
+      gridRef.current?.api.deselectAll();
+      setSelectedIds([]);
+      await store.loadTransactions();
+      setIsClearAllOpen(false);
+      setClearAllConfirmText("");
+      addToast({ title: `已清空 ${transactions.length} 笔交易`, color: "success" });
+    } finally {
+      setBusyAction(null);
+    }
+  }, [isBusy, clearAllConfirmText, transactions.length, store]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 p-6">
@@ -179,21 +218,33 @@ export default function OverviewPage() {
         }}
         size="sm"
       >
-        <ModalContent>
+        <ModalContent
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void handleDeleteConfirm();
+            }
+          }}
+        >
           <ModalHeader>删除交易</ModalHeader>
           <ModalBody>
             <p className="text-sm leading-6 text-default-600">
-              将要删除选中的 <span className="font-semibold text-danger">{selectedIds.length}</span>{" "}
-              笔交易。此操作无法撤销。
+              {busyAction === "delete" ? (
+                "正在删除…"
+              ) : (
+                <>
+                  将要删除选中的{" "}
+                  <span className="font-semibold text-danger">{selectedIds.length}</span>{" "}
+                  笔交易。此操作无法撤销。
+                </>
+              )}
             </p>
           </ModalBody>
           <ModalFooter>
             <Button
               variant="light"
               isDisabled={isBusy}
-              onPress={() => {
-                setIsDeleteConfirmOpen(false);
-              }}
+              onPress={() => setIsDeleteConfirmOpen(false)}
             >
               取消
             </Button>
@@ -201,30 +252,7 @@ export default function OverviewPage() {
               color="danger"
               isLoading={busyAction === "delete"}
               isDisabled={selectedIds.length === 0 || isBusy}
-              onPress={async () => {
-                if (selectedIds.length === 0 || isBusy) return;
-                setBusyAction("delete");
-                try {
-                  const result = await store.deleteTransactions(selectedIds);
-                  if (result.success) {
-                    gridRef.current?.api.deselectAll();
-                    setSelectedIds([]);
-                    setIsDeleteConfirmOpen(false);
-                    addToast({
-                      title: `已删除 ${selectedIds.length} 笔交易`,
-                      color: "success",
-                    });
-                  } else {
-                    addToast({
-                      title: "删除失败",
-                      description: result.error || "未知错误",
-                      color: "danger",
-                    });
-                  }
-                } finally {
-                  setBusyAction(null);
-                }
-              }}
+              onPress={handleDeleteConfirm}
             >
               确认删除
             </Button>
@@ -240,7 +268,14 @@ export default function OverviewPage() {
         }}
         size="md"
       >
-        <ModalContent>
+        <ModalContent
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void handleClearAllConfirm();
+            }
+          }}
+        >
           <ModalHeader>清空所有交易</ModalHeader>
           <ModalBody className="space-y-4">
             <p className="text-sm leading-6 text-default-600">
@@ -274,32 +309,7 @@ export default function OverviewPage() {
               color="danger"
               isLoading={busyAction === "clear"}
               isDisabled={isBusy || clearAllConfirmText.trim() !== String(transactions.length)}
-              onPress={async () => {
-                if (isBusy || clearAllConfirmText.trim() !== String(transactions.length)) return;
-                setBusyAction("clear");
-                try {
-                  const result = await deleteAllTransactions();
-                  if (!result.success) {
-                    addToast({
-                      title: "清空失败",
-                      description: result.error || "未知错误",
-                      color: "danger",
-                    });
-                    return;
-                  }
-                  gridRef.current?.api.deselectAll();
-                  setSelectedIds([]);
-                  await store.loadTransactions();
-                  setIsClearAllOpen(false);
-                  setClearAllConfirmText("");
-                  addToast({
-                    title: `已清空 ${transactions.length} 笔交易`,
-                    color: "success",
-                  });
-                } finally {
-                  setBusyAction(null);
-                }
-              }}
+              onPress={handleClearAllConfirm}
             >
               确认清空
             </Button>

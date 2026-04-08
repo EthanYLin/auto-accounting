@@ -217,7 +217,14 @@ export function TextPaintSelector({
 
   return (
     <Modal isOpen={isOpen} onClose={handleCancel} size="3xl" scrollBehavior="inside" closeButton>
-      <ModalContent>
+      <ModalContent
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            handleComplete();
+          }
+        }}
+      >
         <ModalHeader className="flex flex-col gap-1">涂抹选择文字</ModalHeader>
         <ModalBody>
           <div className="space-y-4">

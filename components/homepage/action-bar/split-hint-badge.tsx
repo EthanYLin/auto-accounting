@@ -1,4 +1,4 @@
-import type { SplitHint } from "./use-action-bar-controller";
+import type { SplitHint } from "./action-bar-config";
 
 import { ExclamationTriangleIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
 

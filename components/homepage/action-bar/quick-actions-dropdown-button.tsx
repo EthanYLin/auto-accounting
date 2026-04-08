@@ -1,4 +1,4 @@
-import type { DangerConfirm, QuickActionIcon, QuickActionKey } from "./use-action-bar-controller";
+import type { DangerConfirm, QuickActionIcon, QuickActionKey } from "./action-bar-config";
 
 import { Button, ButtonGroup } from "@heroui/react";
 import {
@@ -11,7 +11,7 @@ import {
 import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/react";
 import { CheckIcon, ChevronDownIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
-import { QUICK_ACTION_ITEMS } from "./use-action-bar-controller";
+import { QUICK_ACTION_ITEMS } from "./action-bar-config";
 
 interface QuickActionsDropdownButtonProps {
   currentQuickActionIcon: QuickActionIcon;
@@ -130,7 +130,14 @@ export function QuickActionsDropdownButton({
       </ButtonGroup>
 
       <Modal isOpen={dangerConfirm.isOpen} onClose={dangerConfirm.onClose} size="sm">
-        <ModalContent>
+        <ModalContent
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              dangerConfirm.onConfirm();
+            }
+          }}
+        >
           <ModalHeader>{dangerConfirm.title}</ModalHeader>
           <ModalBody>
             <p className="text-sm text-gray-600 dark:text-gray-400">{dangerConfirm.description}</p>

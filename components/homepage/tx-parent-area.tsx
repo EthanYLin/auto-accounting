@@ -13,6 +13,7 @@ import {
   PencilSquareIcon,
 } from "@heroicons/react/24/outline";
 
+import { useCommandListener } from "@/lib/commands";
 import { TransactionListSelector } from "@/components/homepage/common/transaction-list-selector";
 import { AmountInput } from "@/components/homepage/common/amount-input";
 import { useTransactionStore } from "@/components/context/transaction-store-context";
@@ -26,6 +27,7 @@ import {
   formatCategoryText,
 } from "@/lib/transaction/transaction-display";
 import { displayTxTime } from "@/lib/transaction/transaction-datetime";
+
 export function TxParentArea() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const store = useTransactionStore();
@@ -36,8 +38,13 @@ export function TxParentArea() {
   const parentTransaction = editor.currentParentTransaction;
   const isBusy = store.saveState !== "idle";
   const entranceSummary = editor.entranceSummary;
+  const isRootTransaction = !!currentTransaction && !currentTransaction.parent_id;
 
-  // 如果没有选中交易，不显示任何内容
+  useCommandListener("open-attach-selection", () => {
+    if (!currentTransaction || !isRootTransaction || isBusy) return;
+    onOpen();
+  });
+
   if (!currentTransaction) {
     return <div className="text-xs text-gray-500 dark:text-gray-500">请先选择一个交易</div>;
   }
@@ -65,9 +72,6 @@ export function TxParentArea() {
       addToast({ title: "取消附加失败", description: result.error || "未知错误", color: "danger" });
     }
   };
-
-  // 是否是根账单（没有 parent）
-  const isRootTransaction = !currentTransaction.parent_id;
 
   return (
     <div className="space-y-3">

@@ -1,6 +1,7 @@
 "use client";
 
 import type { SplitEntryData } from "@/components/homepage/split-area/split-entry-editor";
+import type { SplitActionKey, SplitActionPayload } from "@/lib/split-actions";
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Button } from "@heroui/react";
@@ -13,11 +14,8 @@ import {
   type SplitDialogKey,
 } from "@/components/homepage/split-area/split-entry-dialogs";
 import { SplitEntryEditor } from "@/components/homepage/split-area/split-entry-editor";
-import {
-  getAvailableActions,
-  type SplitActionKey,
-  type SplitActionPayload,
-} from "@/lib/split-actions";
+import { getAvailableActions } from "@/lib/split-actions";
+import { useCommandListener } from "@/lib/commands";
 import { useAppData } from "@/components/context/app-data-context";
 import { useTransactionEditor } from "@/components/context/transaction-editor-context";
 import { txSplitsToEntries, entriesToTxSplits } from "@/lib/transaction/transaction-convert";
@@ -46,7 +44,16 @@ function getNextLocalId(entries: SplitEntryData[]): number {
   return entries.reduce((maxId, entry) => Math.max(maxId, entry.localId), 0) + 1;
 }
 
-export function SplitEntryArea() {
+/** 热键动作名 → 可能对应的 SplitActionKey（按优先级排列） */
+const HOTKEY_ACTION_KEYS: Record<string, SplitActionKey[]> = {
+  merge: ["merge"],
+  "social-2": ["social-split-2"],
+  "social-3": ["social-split-3"],
+  transfer: ["transfer-to", "transfer-from"],
+  recharge: ["recharge-to", "recharge-from"],
+};
+
+export function SplitEntryArea({ isActive }: { isActive: boolean }) {
   const editor = useTransactionEditor();
   const appData = useAppData();
   const tx = editor.currentTransaction;
@@ -58,6 +65,7 @@ export function SplitEntryArea() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showName, setShowName] = useState(false);
   const [activeDialog, setActiveDialog] = useState<SplitDialogKey | null>(null);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const txEntries = useMemo(() => txSplitsToEntries(tx?.splits), [tx?.splits]);
   const txEntriesSignature = useMemo(() => getEntriesSignature(txEntries), [txEntries]);
 
@@ -68,6 +76,7 @@ export function SplitEntryArea() {
     setSelectedIds(new Set());
     setShowName(tx?.splits?.some((s) => s.name && s.name.trim() !== "") ?? false);
     setActiveDialog(null);
+    setIsCategoryModalOpen(false);
   }, [editor.currentId, selectedTransactionId]);
 
   // 同一条交易下，如果 store 中的拆账内容和本地签名不一致，说明发生了外部回滚，同步回本地 entries。
@@ -79,6 +88,7 @@ export function SplitEntryArea() {
     setSelectedIds(new Set());
     setShowName(txEntries.some((entry) => entry.name.trim() !== ""));
     setActiveDialog(null);
+    setIsCategoryModalOpen(false);
   }, [tx, txEntries, txEntriesSignature]);
 
   // ==================== 派生状态 ====================
@@ -108,7 +118,7 @@ export function SplitEntryArea() {
     return entries.filter((entry) => selectedIds.has(entry.localId));
   }, [entries, selectedIds, defaultEntries]);
 
-  // ==================== 工具栏回调 ====================
+  // ==================== 回调 ====================
 
   const handleSelectAll = useCallback(() => {
     setSelectedIds((prev) => {
@@ -117,7 +127,6 @@ export function SplitEntryArea() {
     });
   }, [entries]);
 
-  // entries 变更时同步回 store
   const handleEntriesChange = useCallback(
     (newEntries: SplitEntryData[]) => {
       lastLocalSignatureRef.current = getEntriesSignature(newEntries);
@@ -186,6 +195,23 @@ export function SplitEntryArea() {
   const handleDialogClose = useCallback(() => {
     setActiveDialog(null);
   }, []);
+
+  // ==================== 快捷键监听 ====================
+
+  useCommandListener("split-action", (detail: { action: string }) => {
+    if (!isActive || activeDialog !== null || isCategoryModalOpen) return;
+
+    if (detail.action === "open") {
+      if (entries.length > 0) return;
+      replaceSelectedEntries(selectedEntries);
+      return;
+    }
+
+    const candidates = HOTKEY_ACTION_KEYS[detail.action];
+    if (!candidates) return;
+    const match = candidates.find((k) => availableActions.some((a) => a.key === k));
+    if (match) handleActionPress(match);
+  });
 
   // ==================== 渲染 ====================
 
@@ -280,6 +306,7 @@ export function SplitEntryArea() {
         selectedIds={selectedIds}
         onSelectedIdsChange={setSelectedIds}
         showName={showName}
+        onCategoryModalOpenChange={setIsCategoryModalOpen}
       />
 
       {tx ? (

@@ -1,34 +1,54 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { Divider, Tab, Tabs } from "@heroui/react";
 
+import { useCommandListener } from "@/lib/commands";
 import { useTransactionEditor } from "@/components/context/transaction-editor-context";
 import { SplitEntryArea } from "@/components/homepage/split-area/split-entry-area";
 import { TxParentArea } from "@/components/homepage/tx-parent-area";
 
+type TabKey = "tx-info" | "parent" | "split";
+
+function getDefaultTab(childrenCount: number, splitCount: number, hasParent: boolean): TabKey {
+  if (splitCount > 0 && !hasParent) return "split";
+  if (childrenCount > 0 || hasParent) return "parent";
+  return "tx-info";
+}
+
 export function TxSupplementTabs() {
   const editor = useTransactionEditor();
-  const currentTransaction = editor.currentTransaction;
+  const tx = editor.currentTransaction;
 
-  if (!currentTransaction) return null;
+  const childrenCount = tx?.children_ids?.length ?? 0;
+  const splitCount = tx?.splits?.length ?? 0;
+  const hasSplitTab = !!tx && !tx.parent_id;
 
-  const childrenCount = currentTransaction.children_ids?.length ?? 0;
-  const splitCount = currentTransaction.splits?.length ?? 0;
+  const defaultTab = useMemo(
+    () => getDefaultTab(childrenCount, splitCount, !!tx?.parent_id),
+    [childrenCount, tx?.parent_id, splitCount],
+  );
+  const [tab, setTab] = useState<TabKey>(defaultTab);
+  const activeTab = hasSplitTab || tab !== "split" ? tab : "tx-info";
 
-  let defaultSelectedKey;
-  if (splitCount > 0 && !currentTransaction.parent_id) {
-    defaultSelectedKey = "split";
-  } else if (childrenCount > 0 || currentTransaction.parent_id) {
-    defaultSelectedKey = "parent";
-  } else {
-    defaultSelectedKey = "tx-info";
-  }
+  useEffect(() => {
+    setTab(defaultTab);
+  }, [tx?.id, defaultTab]);
+
+  useCommandListener("open-attach-selection", () => setTab("parent"));
+
+  useCommandListener("select-tab", (key: TabKey) => {
+    if (key === "split" && !hasSplitTab) return;
+    setTab(key);
+  });
+
+  if (!tx) return null;
 
   return (
     <Tabs
-      key={currentTransaction.id}
       aria-label="交易补充信息"
-      defaultSelectedKey={defaultSelectedKey}
+      selectedKey={activeTab}
+      onSelectionChange={(key) => setTab(key as TabKey)}
       destroyInactiveTabPanel={false}
       variant="underlined"
       classNames={{ base: "mb-0", panel: "mb-0 px-0 py-0" }}
@@ -42,10 +62,10 @@ export function TxSupplementTabs() {
           <Divider />
         </div>
       </Tab>
-      {!currentTransaction.parent_id && (
+      {hasSplitTab && (
         <Tab key="split" title={`分账${splitCount > 0 ? `(${splitCount})` : ""}`}>
           <div className="py-3 flex flex-col space-y-3">
-            <SplitEntryArea />
+            <SplitEntryArea isActive={activeTab === "split"} />
             <Divider />
           </div>
         </Tab>

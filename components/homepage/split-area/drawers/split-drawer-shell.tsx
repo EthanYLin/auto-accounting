@@ -39,7 +39,14 @@ export function SplitDrawerShell({
         if (!open) onCancel();
       }}
     >
-      <DrawerContent>
+      <DrawerContent
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            onSave();
+          }
+        }}
+      >
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="min-h-0 flex-1 overflow-y-auto">
             <DrawerHeader className="flex flex-col gap-1 border-b border-divider px-6 py-4 sm:flex-row sm:items-center sm:justify-between">

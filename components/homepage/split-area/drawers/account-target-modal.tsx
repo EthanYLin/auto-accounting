@@ -68,7 +68,14 @@ export function AccountTargetModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onCancel} size="md">
-      <ModalContent>
+      <ModalContent
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            handleConfirm();
+          }
+        }}
+      >
         <ModalHeader className="flex flex-col gap-1">{getTitle(actionKey)}</ModalHeader>
         <ModalBody>
           <Select
