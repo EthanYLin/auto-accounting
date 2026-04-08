@@ -61,7 +61,11 @@ export default function OverviewPage() {
                 variant={dirtyCount === 0 || isBusy ? "light" : "solid"}
                 size="sm"
                 className="justify-start"
-                startContent={busyAction !== "save" ? <CloudArrowUpIcon className="h-4 w-4" aria-hidden /> : undefined}
+                startContent={
+                  busyAction !== "save" ? (
+                    <CloudArrowUpIcon className="h-4 w-4" aria-hidden />
+                  ) : undefined
+                }
                 isLoading={busyAction === "save"}
                 isDisabled={dirtyCount === 0 || isBusy}
                 onPress={async () => {

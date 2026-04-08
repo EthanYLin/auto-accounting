@@ -28,9 +28,19 @@ export function CategorySelectModal({
     onConfirm(draftChainState);
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.nativeEvent.isComposing || event.key !== "Enter") return;
+    if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+    if (!(event.target instanceof HTMLElement)) return;
+    if (event.target.closest("button")) return;
+    if (event.target.closest('[role="listbox"],[role="option"],[role="combobox"]')) return;
+    event.preventDefault();
+    handleConfirm();
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onCancel} size="4xl" scrollBehavior="inside">
-      <ModalContent>
+      <ModalContent onKeyDown={handleKeyDown}>
         <ModalHeader className="flex flex-col gap-1">选择类别</ModalHeader>
         <ModalBody>
           <FourChainSelector mode="listbox" value={draftChainState} onChange={setDraftChainState} />

@@ -107,8 +107,27 @@ export function TransactionListSelector({
     onConfirm([]); // 清空选择并提交
   };
 
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isDisabled) return;
+    handleConfirm();
+  };
+
+  const handleKeyDownCapture = (event: React.KeyboardEvent<HTMLFormElement>) => {
+    if (isDisabled || event.nativeEvent.isComposing) return;
+    if (event.key !== "Enter") return;
+    if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+    if (event.target instanceof HTMLElement && event.target.closest("button")) return;
+    event.preventDefault();
+    event.currentTarget.requestSubmit();
+  };
+
   return (
-    <div className="flex flex-col w-full h-full min-h-0">
+    <form
+      className="flex flex-col w-full h-full min-h-0"
+      onSubmit={handleSubmit}
+      onKeyDownCapture={handleKeyDownCapture}
+    >
       {/* 搜索框 - 固定 */}
       <div className="w-full mb-4 flex-shrink-0">
         <Input
@@ -249,6 +268,7 @@ export function TransactionListSelector({
         <div className="flex gap-2">
           {tempSelectedIds.length > 0 && (
             <Button
+              type="button"
               color="default"
               variant="bordered"
               isDisabled={isDisabled}
@@ -259,6 +279,7 @@ export function TransactionListSelector({
             </Button>
           )}
           <Button
+            type="submit"
             color="primary"
             isDisabled={isDisabled}
             onPress={handleConfirm}
@@ -268,6 +289,6 @@ export function TransactionListSelector({
           </Button>
         </div>
       </div>
-    </div>
+    </form>
   );
 }
