@@ -71,7 +71,7 @@ export default function RegisterPage() {
         setError(result.error);
       } else if (result?.success) {
         setSuccess(true);
-        router.push("/");
+        router.push("/transactions");
         router.refresh();
       }
     } catch (err) {

@@ -62,7 +62,7 @@ function LoginPageContent() {
       if (result?.error) {
         setError(result.error);
       } else if (result?.success) {
-        router.push("/");
+        router.push("/transactions");
         router.refresh();
       }
     } catch (err) {

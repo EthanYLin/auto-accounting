@@ -51,7 +51,7 @@ export function NavbarClient({ user }: NavbarClientProps) {
     >
       <NavbarContent className="basis-1/2 sm:basis-auto" justify="start">
         <NavbarBrand className="max-w-fit">
-          <NextLink className="font-bold text-inherit" href="/">
+          <NextLink className="font-bold text-inherit" href="/transactions">
             自动记账
           </NextLink>
         </NavbarBrand>

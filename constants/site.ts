@@ -6,7 +6,7 @@ export const siteConfig = {
   navItems: [
     {
       label: "账单",
-      href: "/",
+      href: "/transactions",
     },
     {
       label: "导入",

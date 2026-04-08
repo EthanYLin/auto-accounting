@@ -4,6 +4,7 @@ import type { TransactionWithRelations } from "@/types";
 import type { Ref } from "react";
 
 import {
+  type CellDoubleClickedEvent,
   type CellStyle,
   type CellValueChangedEvent,
   type ColDef,
@@ -16,6 +17,7 @@ import {
 import { useCallback, useMemo } from "react";
 import { AgGridReact, type CustomCellRendererProps } from "ag-grid-react";
 import { Chip, Spinner } from "@heroui/react";
+import { useRouter } from "next/navigation";
 
 import { TRANSACTION_STATUS_COLORS, TRANSACTION_TYPES } from "@/constants/transaction-type";
 import { useAppData } from "@/components/context/app-data-context";
@@ -144,6 +146,7 @@ export function OverviewTransactionsGrid({
     subCategories,
     budgetTypes,
   } = useAppData();
+  const router = useRouter();
   const store = useTransactionStore();
   const { transactions, isFetching, error, setTransactionDraft } = store;
 
@@ -178,6 +181,15 @@ export function OverviewTransactionsGrid({
       });
     },
     [setTransactionDraft],
+  );
+
+  const onIdCellDoubleClicked = useCallback(
+    (e: CellDoubleClickedEvent<TransactionWithRelations>) => {
+      const tx = e.data;
+      if (!tx) return;
+      router.push(`/transactions?id=${tx.id}`);
+    },
+    [router],
   );
 
   const columnDefs = useMemo<ColDef<TransactionWithRelations>[]>(
@@ -586,8 +598,9 @@ export function OverviewTransactionsGrid({
           valueFormatter: (p) => (p.value != null ? `#${p.value}` : ""),
           getQuickFilterText: (p) => (p.data?.id != null ? `#${p.data.id}` : ""),
           pinned: "left",
-          cellRendererParams: { suppressCount: true },
+          cellRendererParams: { suppressCount: true, suppressDoubleClickExpand: true },
           cellStyle: { fontWeight: 600, fontFamily: FONT_MONO } as CellStyle,
+          onCellDoubleClicked: onIdCellDoubleClicked,
         }}
         getRowId={(p) => String(p.data.id)}
         quickFilterText={quickFilterText || undefined}
