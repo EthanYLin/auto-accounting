@@ -14,11 +14,17 @@ export default function ExcelUploadPage() {
     <div className="container mx-auto p-6 max-w-7xl">
       <h1 className="text-3xl font-bold mb-6">账单导入</h1>
 
-      <Tabs aria-label="账单类型" className="w-full">
+      <Tabs
+        aria-label="账单类型"
+        className="w-full"
+        classNames={{
+          tab: "w-auto shrink-0",
+        }}
+      >
         <Tab
           key="wechat"
           title={
-            <div className="flex items-center gap-2 w-20">
+            <div className="flex items-center gap-2">
               <Image alt="微信" className="w-5 h-5" height={20} src="/wechat-pay.svg" width={20} />
               <span>微信支付</span>
             </div>
@@ -42,7 +48,7 @@ export default function ExcelUploadPage() {
         <Tab
           key="fudan"
           title={
-            <div className="flex items-center gap-2 w-25">
+            <div className="flex items-center gap-2">
               <Image alt="复旦" className="w-5 h-5" height={20} src="/fudan.svg" width={20} />
               <span>复旦校园卡</span>
             </div>
@@ -54,7 +60,7 @@ export default function ExcelUploadPage() {
         <Tab
           key="custom"
           title={
-            <div className="flex items-center gap-2 px-1">
+            <div className="flex items-center gap-2">
               <span>自定义导入</span>
             </div>
           }
