@@ -153,13 +153,13 @@ export function mergeContentDraft(
   draft?: TransactionContentDraft,
 ): TransactionWithRelations {
   if (!draft) {
-    return { ...baseTx, children_ids: [...baseTx.children_ids] };
+    return baseTx;
   }
   return {
     ...baseTx,
     ...draft,
     parent_id: baseTx.parent_id,
-    children_ids: [...baseTx.children_ids],
+    children_ids: baseTx.children_ids,
   };
 }
 

@@ -8,7 +8,15 @@ import type {
 } from "@/types";
 import type { EditableFields } from "@/lib/transaction/transaction-field-update";
 
-import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+  useRef,
+} from "react";
 
 import { useTransactionStore } from "./transaction-store-context";
 import { useAppData } from "./app-data-context";
@@ -81,6 +89,13 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
   const store = useTransactionStore();
   const appData = useAppData();
   const { clearSaveButtonOverride } = useSaveButtonOverride();
+
+  // Use refs for values that change frequently but are only needed inside callbacks.
+  // This avoids recreating callbacks (and thus the context value) on every keystroke.
+  const storeRef = useRef(store);
+  storeRef.current = store;
+  const appDataRef = useRef(appData);
+  appDataRef.current = appData;
 
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [filteredTxs, setFilteredTxs] = useState<TransactionWithRelations[]>([]);
@@ -156,18 +171,20 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
     (fields: Partial<EditableFields>) => {
       if (currentId === null) return;
       clearSaveButtonOverride();
-      store.setTransactionDraft(currentId, (tx) => applyEditableFields(tx, fields, appData));
+      storeRef.current.setTransactionDraft(currentId, (tx) =>
+        applyEditableFields(tx, fields, appDataRef.current),
+      );
     },
-    [currentId, clearSaveButtonOverride, store, appData],
+    [currentId, clearSaveButtonOverride],
   );
 
   const updateSplits = useCallback(
     (splits: TransactionSplitWithRelations[]) => {
       if (currentId === null) return;
       clearSaveButtonOverride();
-      store.setTransactionDraft(currentId, (draft) => ({ ...draft, splits }));
+      storeRef.current.setTransactionDraft(currentId, (draft) => ({ ...draft, splits }));
     },
-    [currentId, clearSaveButtonOverride, store],
+    [currentId, clearSaveButtonOverride],
   );
 
   const updateChildrenIds = useCallback(
@@ -175,59 +192,59 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
       if (currentId === null || !currentTransaction)
         return { success: false, error: "没有选中的交易" };
       clearSaveButtonOverride();
-      return store.saveChildrenSelection(currentId, selectedIds);
+      return storeRef.current.saveChildrenSelection(currentId, selectedIds);
     },
-    [currentId, currentTransaction, clearSaveButtonOverride, store],
+    [currentId, currentTransaction, clearSaveButtonOverride],
   );
 
   // ==================== 保存 / 丢弃 ====================
 
+  const currentTransactionRef = useRef(currentTransaction);
+  currentTransactionRef.current = currentTransaction;
+  const currentChildTransactionsRef = useRef(currentChildTransactions);
+  currentChildTransactionsRef.current = currentChildTransactions;
+  const transactionsByIdRef = useRef(transactionsById);
+  transactionsByIdRef.current = transactionsById;
+  const getChildTransactionsRef = useRef(getChildTransactions);
+  getChildTransactionsRef.current = getChildTransactions;
+
   const saveCurrentTransaction = useCallback(
     async (status?: TransactionStatus): Promise<SaveResult> => {
-      if (currentId === null || !currentTransaction) {
+      const curTx = currentTransactionRef.current;
+      const curChildren = currentChildTransactionsRef.current;
+      const curAppData = appDataRef.current;
+      const curStore = storeRef.current;
+      if (currentId === null || !curTx) {
         return { success: false, error: "没有选中的交易" };
       }
-      if (store.saveState === "children-selection") {
+      if (curStore.saveState === "children-selection") {
         return { success: false, error: "当前有保存操作进行中" };
       }
 
       try {
         // 1. 校验保存的交易及其子交易
-        const validResult = isValidTransaction(
-          currentTransaction,
-          currentChildTransactions,
-          appData,
-        );
-        const warnResult = isWarningTransaction(
-          currentTransaction,
-          currentChildTransactions,
-          appData,
-        );
+        const validResult = isValidTransaction(curTx, curChildren, curAppData);
+        const warnResult = isWarningTransaction(curTx, curChildren, curAppData);
 
         // 2. 计算交易的保存后状态
-        let finalStatus = currentTransaction.status ?? "待处理";
-        // 若当前交易已是附加交易，则无论用户传递何种状态，都保持为“附加到其他交易”
-        if (currentTransaction.status === "附加到其他交易") {
+        let finalStatus = curTx.status ?? "待处理";
+        if (curTx.status === "附加到其他交易") {
           finalStatus = "附加到其他交易";
-        }
-        // 若用户希望保存为“已完成”状态/未指定状态，但未通过校验，则降级为“稍后处理”
-        else if (!validResult.valid && (status === "已完成" || status === undefined)) {
+        } else if (!validResult.valid && (status === "已完成" || status === undefined)) {
           finalStatus = "稍后处理";
-        }
-        // 若用户传递了新状态，则使用用户传递的状态
-        else if (status !== undefined) {
+        } else if (status !== undefined) {
           finalStatus = status;
         }
 
         // 3. 更新本地 Overlay 并异步保存（非阻塞）
-        const { parent_id, children_ids, ...baseDraft } = currentTransaction;
+        const { parent_id, children_ids, ...baseDraft } = curTx;
 
         void parent_id;
         void children_ids;
 
         const updatedDraft = { ...baseDraft, status: finalStatus };
-        store.setTransactionDraft(currentId, () => updatedDraft);
-        const saveTask = store.saveToServer(currentId, updatedDraft);
+        curStore.setTransactionDraft(currentId, () => updatedDraft);
+        const saveTask = curStore.saveToServer(currentId, updatedDraft);
 
         // 4. 构建校验提示
         let validationAlert: ValidationAlert = null;
@@ -242,7 +259,7 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
         }
         setValidationAlert(validationAlert);
 
-        // 5. 自动切换拦截逻辑：仅“保存并完成”且存在错误/警告时拦截
+        // 5. 自动切换拦截逻辑：仅"保存并完成"且存在错误/警告时拦截
         const blockAutoSwitch = !warnResult.valid && status === "已完成";
         return { success: true, validationAlert, blockAutoSwitch, txId: currentId, saveTask };
       } catch (error) {
@@ -251,47 +268,52 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
         return { success: false, error: errorMessage };
       }
     },
-    [currentId, currentTransaction, currentChildTransactions, store, appData],
+    [currentId],
   );
 
   const discardCurrentChanges = useCallback(async () => {
     if (currentId === null) return;
-    store.discardChanges(currentId);
-  }, [currentId, store]);
+    storeRef.current.discardChanges(currentId);
+  }, [currentId]);
 
   const saveAllDirtyToServer = useCallback(async (): Promise<{
     success: boolean;
     error?: string;
   }> => {
-    if (store.saveState !== "idle") {
+    const curStore = storeRef.current;
+    const curAppData = appDataRef.current;
+    const curTxById = transactionsByIdRef.current;
+    const curGetChildren = getChildTransactionsRef.current;
+    if (curStore.saveState !== "idle") {
       return { success: false, error: "当前有保存操作进行中" };
     }
-    const dirtyIds = store.getDirtyIds();
+    const dirtyIds = curStore.getDirtyIds();
     for (const id of dirtyIds) {
-      // 如果某交易和他的父交易都在脏列表里，则只保存父交易即可，避免重复保存
-      const tx = transactionsById.get(id);
+      const tx = curTxById.get(id);
       if (!tx) continue;
       if (tx.parent_id && dirtyIds.includes(tx.parent_id)) continue;
-      // 校验保存的交易及其子交易
-      const childTransactions = getChildTransactions(tx);
-      const validResult = isValidTransaction(tx, childTransactions, appData);
-      // 如果交易校验不通过且其状态为“已完成”，则将其状态设置为“稍后处理”
+      const childTransactions = curGetChildren(tx);
+      const validResult = isValidTransaction(tx, childTransactions, curAppData);
       let draftOverride: TransactionContentDraft | undefined;
       if (!validResult.valid && tx.status === "已完成") {
         const { parent_id, children_ids, ...baseDraft } = tx;
         draftOverride = { ...baseDraft, status: "稍后处理" };
       }
-      // 保存交易
-      const result = await store.saveToServer(id, draftOverride);
+      const result = await curStore.saveToServer(id, draftOverride);
       if (!result.success) return { success: false, error: result.error };
     }
     return { success: true };
-  }, [store, appData, transactionsById, getChildTransactions]);
+  }, []);
 
   // ==================== 设置过滤列表 ====================
 
   const setFilteredTransactions = useCallback((txs: TransactionWithRelations[]) => {
-    setFilteredTxs(txs);
+    setFilteredTxs((prev) => {
+      if (prev.length === txs.length && prev.every((tx, i) => tx.id === txs[i].id)) {
+        return prev;
+      }
+      return txs;
+    });
   }, []);
 
   // ==================== 新建交易 ====================
@@ -299,11 +321,11 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
   const createEmptyTransaction = useCallback(async () => {
     setIsCreatingTransaction(true);
     try {
-      return await store.createEmptyTransaction();
+      return await storeRef.current.createEmptyTransaction();
     } finally {
       setIsCreatingTransaction(false);
     }
-  }, [store]);
+  }, []);
 
   // ==================== Context Value ====================
 

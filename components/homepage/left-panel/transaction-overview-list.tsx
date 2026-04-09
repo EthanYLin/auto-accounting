@@ -52,8 +52,9 @@ export const TransactionOverviewList = forwardRef<
   const virtualizer = useVirtualizer({
     count: filteredTransactions.length,
     getScrollElement: () => parentRef.current,
+    getItemKey: (index) => filteredTransactions[index].id,
     estimateSize: () => 73,
-    overscan: 8,
+    overscan: 12,
     measureElement:
       typeof window !== "undefined" && navigator.userAgent.indexOf("Firefox") === -1
         ? (element) => element?.getBoundingClientRect().height

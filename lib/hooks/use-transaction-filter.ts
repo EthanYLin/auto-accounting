@@ -3,7 +3,7 @@ import type { TransactionStatus, TransactionWithRelations } from "@/types";
 import { useState, useMemo, useCallback, useEffect } from "react";
 
 import { useSaveButtonOverride } from "@/components/context/save-button-override-context";
-import { compareTxTime, parseTxTime } from "@/lib/transaction/transaction-datetime";
+import { parseTxTime } from "@/lib/transaction/transaction-datetime";
 
 // ==================== 内部工具函数 ====================
 
@@ -91,7 +91,10 @@ export function flattenTransactionsWithChildren(
   const rootTransactions = transactions
     .filter((tx) => !tx.parent_id)
     .sort((a, b) => {
-      return compareTxTime(b.datetime, a.datetime);
+      // datetime 格式为 yyyy-MM-ddTHH:mm:ss，可直接字符串比较（降序）
+      const da = a.datetime ?? "";
+      const db = b.datetime ?? "";
+      return da < db ? 1 : da > db ? -1 : 0;
     });
 
   rootTransactions.forEach((parent) => {
@@ -187,10 +190,35 @@ export function useTransactionFilter(
     [clearSaveButtonOverride],
   );
 
-  const flatTransactions = useMemo(
-    () => flattenTransactionsWithChildren(transactions),
-    [transactions],
+  // 结构指纹：仅在影响排序的属性变化时才会改变
+  // （ID 集合、父子关系、用于排序的日期时间）。
+  // 仅修改内容字段（名称、金额、商户等）不会改变此指纹。
+  const structuralFingerprint = useMemo(() => {
+    let fp = "";
+    for (let i = 0; i < transactions.length; i++) {
+      const tx = transactions[i];
+      if (i > 0) fp += ";";
+      fp += `${tx.id},${tx.parent_id ?? ""},${tx.datetime ?? ""},${tx.children_ids.join("-")}`;
+    }
+    return fp;
+  }, [transactions]);
+
+  // 昂贵的排序（O(n log n) 次 Luxon 日期解析）仅在结构变化时重新执行
+  const sortedIds = useMemo(
+    () => flattenTransactionsWithChildren(transactions).map((tx) => tx.id),
+    [structuralFingerprint],
   );
+
+  // 廉价的 O(n) 重建：使用稳定的排序顺序 + 当前交易数据
+  const flatTransactions = useMemo(() => {
+    const txMap = new Map(transactions.map((tx) => [tx.id, tx]));
+    const result: TransactionWithRelations[] = [];
+    for (const id of sortedIds) {
+      const tx = txMap.get(id);
+      if (tx) result.push(tx);
+    }
+    return result;
+  }, [sortedIds, transactions]);
 
   // 先应用搜索过滤，再应用状态过滤
   const filteredTransactions = useMemo(() => {

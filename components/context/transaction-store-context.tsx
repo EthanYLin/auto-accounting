@@ -91,11 +91,12 @@ export function TransactionStoreProvider({ children }: { children: React.ReactNo
 
   const [localEdits, setLocalEdits] = useState<Map<number, TransactionContentDraft>>(new Map());
   const { saveState, offerSingleSave, offerExclusiveAction } = useSaveQueue();
-  const isDirty = (id: number) => localEdits.has(id);
-  const getDirtyIds = useCallback(() => Array.from(localEdits.keys()), [localEdits]);
 
   const localEditsRef = useRef(localEdits);
   localEditsRef.current = localEdits;
+
+  const isDirty = useCallback((id: number) => localEditsRef.current.has(id), []);
+  const getDirtyIds = useCallback(() => Array.from(localEditsRef.current.keys()), []);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -211,7 +212,7 @@ export function TransactionStoreProvider({ children }: { children: React.ReactNo
       if (saveState === "children-selection") return { success: false, error: SAVE_BUSY_ERROR };
 
       // 1. 计算要保存的交易与子交易
-      const snapshot = new Map(localEdits);
+      const snapshot = new Map(localEditsRef.current);
       if (draftOverride) snapshot.set(id, draftOverride);
       const baseTx = getBaseline(id);
       if (!baseTx) return { success: false, error: "交易记录不存在" };
@@ -260,7 +261,6 @@ export function TransactionStoreProvider({ children }: { children: React.ReactNo
     [
       clearMatchingLocalEdits,
       getBaseline,
-      localEdits,
       offerSingleSave,
       persistSingleTx,
       queryClient,

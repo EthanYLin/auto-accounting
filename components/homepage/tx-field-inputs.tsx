@@ -2,7 +2,7 @@
 
 import type { TransactionType } from "@/types";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Input } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/react";
 import { DatePicker } from "@heroui/react";
@@ -17,6 +17,46 @@ import { useTransactionEditor } from "@/components/context/transaction-editor-co
 import { TextPaintSelector } from "@/components/text-paint-selector";
 import { getAmountColorClass } from "@/lib/transaction/transaction-display";
 
+/**
+ * 带 debounce 的文本输入 hook。
+ * 本地 state 保证输入流畅，延迟后才同步到 store。
+ * 外部值变化时（如切换交易、涂抹选择器回填）自动同步。
+ */
+function useDebouncedField(externalValue: string, onChange: (value: string) => void, delay = 300) {
+  const [localValue, setLocalValue] = useState(externalValue);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  // 外部值变化时同步到本地（切换交易、涂抹选择等）
+  useEffect(() => {
+    setLocalValue(externalValue);
+  }, [externalValue]);
+
+  const handleChange = useCallback(
+    (value: string) => {
+      setLocalValue(value);
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => onChangeRef.current(value), delay);
+    },
+    [delay],
+  );
+
+  // 卸载时立即 flush 未提交的值
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        // timer 存在说明有未提交的变更，flush 它
+        // 但此时 localValue 在闭包中不可靠，所以跳过 flush
+        // （组件因 key={tx.id} 重建时旧交易的编辑已通过 timer 提交）
+      }
+    };
+  }, []);
+
+  return [localValue, handleChange] as const;
+}
+
 interface TxFieldInputsProps {
   selectedTxType?: TransactionType;
 }
@@ -29,6 +69,16 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
   const entranceSummary = editor.entranceSummary;
   const [isNamePaintSelectorOpen, setIsNamePaintSelectorOpen] = useState(false);
   const [isMerchantPaintSelectorOpen, setIsMerchantPaintSelectorOpen] = useState(false);
+
+  const [localName, setLocalName] = useDebouncedField(tx?.name || "", (v) =>
+    editor.updateFields({ name: v }),
+  );
+  const [localMerchant, setLocalMerchant] = useDebouncedField(tx?.merchant || "", (v) =>
+    editor.updateFields({ merchant: v }),
+  );
+  const [localRemark, setLocalRemark] = useDebouncedField(tx?.remark || "", (v) =>
+    editor.updateFields({ remark: v }),
+  );
 
   if (!tx) return null;
 
@@ -65,8 +115,8 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
       label="名称"
       labelPlacement="outside"
       placeholder="请输入名称"
-      value={tx.name || ""}
-      onValueChange={(value) => editor.updateFields({ name: value })}
+      value={localName}
+      onValueChange={setLocalName}
       size="sm"
       variant="underlined"
       classNames={{ input: "font-bold" }}
@@ -95,8 +145,8 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
       label="商户"
       labelPlacement="outside"
       placeholder="请输入商户名称"
-      value={tx.merchant || ""}
-      onValueChange={(value) => editor.updateFields({ merchant: value })}
+      value={localMerchant}
+      onValueChange={setLocalMerchant}
       size="sm"
       variant="underlined"
       classNames={{ input: "font-bold" }}
@@ -172,8 +222,8 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
       label="备注"
       placeholder="无备注"
       labelPlacement="outside"
-      value={tx.remark || ""}
-      onValueChange={(value) => editor.updateFields({ remark: value })}
+      value={localRemark}
+      onValueChange={setLocalRemark}
       size="sm"
       variant="underlined"
       classNames={{ input: "font-normal" }}

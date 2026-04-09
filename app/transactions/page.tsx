@@ -2,7 +2,7 @@
 
 import type { TransactionOverviewListHandle } from "@/components/homepage/left-panel/transaction-overview-list";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Alert, Button, Input, Kbd, Spinner } from "@heroui/react";
 import {
@@ -27,7 +27,15 @@ import { useTransactionStore } from "@/components/context/transaction-store-cont
 import { useTransactionFilter } from "@/lib/hooks/use-transaction-filter";
 import { useTransactionNavigation } from "@/lib/hooks/use-transaction-navigation";
 
-export default function TransactionsRoutePage() {
+export default function TransactionsRoutePageWrapper() {
+  return (
+    <Suspense>
+      <TransactionsRoutePage />
+    </Suspense>
+  );
+}
+
+function TransactionsRoutePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showError } = useError();
