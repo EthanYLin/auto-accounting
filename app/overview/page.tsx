@@ -94,7 +94,7 @@ export default function OverviewPage() {
       <div className="flex min-h-0 flex-1 flex-col gap-2 rounded-lg bg-content1 p-2">
         <div className="px-1 py-1">
           <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-start">
+            <div className="flex flex-row flex-wrap items-center gap-2">
               <Button
                 color="primary"
                 variant={dirtyCount === 0 || isBusy ? "light" : "solid"}

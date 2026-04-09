@@ -13,8 +13,10 @@ import {
   type ValueParserParams,
   type ValueSetterParams,
   themeQuartz,
+  colorSchemeDarkBlue,
 } from "ag-grid-community";
 import { useCallback, useMemo } from "react";
+import { useTheme } from "next-themes";
 import { AgGridReact, type CustomCellRendererProps } from "ag-grid-react";
 import { Chip, Spinner } from "@heroui/react";
 import { useRouter } from "next/navigation";
@@ -113,7 +115,7 @@ function StatusBadgeCell({ data }: CustomCellRendererProps<TransactionWithRelati
   );
 }
 
-const gridTheme = themeQuartz.withParams({
+const gridThemeBase = themeQuartz.withParams({
   headerFontSize: 13,
   rowGroupIndentSize: 12,
 });
@@ -139,6 +141,11 @@ export function OverviewTransactionsGrid({
   quickFilterText,
   onSelectionChange,
 }: OverviewTransactionsGridProps) {
+  const { resolvedTheme } = useTheme();
+  const gridTheme = useMemo(
+    () => (resolvedTheme === "dark" ? gridThemeBase.withPart(colorSchemeDarkBlue) : gridThemeBase),
+    [resolvedTheme],
+  );
   const {
     hasLoaded: appLoaded,
     accounts,

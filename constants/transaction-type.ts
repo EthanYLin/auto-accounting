@@ -15,7 +15,7 @@ export const TRANSACTION_TYPES: TransactionTypeOption[] = [
     icon: "💸",
     back_color: "bg-emerald-100 dark:bg-emerald-900",
     fore_color: "text-emerald-800 dark:text-emerald-200",
-    amount_color: "text-green-700",
+    amount_color: "text-green-700 dark:text-green-400",
     sign: -1,
   },
   {
@@ -23,7 +23,7 @@ export const TRANSACTION_TYPES: TransactionTypeOption[] = [
     icon: "💰",
     back_color: "bg-red-100 dark:bg-red-900",
     fore_color: "text-red-800 dark:text-red-200",
-    amount_color: "text-red-600",
+    amount_color: "text-red-600 dark:text-red-400",
     sign: 1,
   },
   {
@@ -31,7 +31,7 @@ export const TRANSACTION_TYPES: TransactionTypeOption[] = [
     icon: "📤",
     back_color: "bg-cyan-100 dark:bg-cyan-900",
     fore_color: "text-cyan-800 dark:text-cyan-200",
-    amount_color: "text-sky-700",
+    amount_color: "text-sky-700 dark:text-sky-400",
     sign: -1,
   },
   {
@@ -39,7 +39,7 @@ export const TRANSACTION_TYPES: TransactionTypeOption[] = [
     icon: "📥",
     back_color: "bg-cyan-100 dark:bg-cyan-900",
     fore_color: "text-cyan-800 dark:text-cyan-200",
-    amount_color: "text-sky-700",
+    amount_color: "text-sky-700 dark:text-sky-400",
     sign: 1,
   },
   {
@@ -47,7 +47,7 @@ export const TRANSACTION_TYPES: TransactionTypeOption[] = [
     icon: "🧾",
     back_color: "bg-violet-100 dark:bg-violet-900",
     fore_color: "text-violet-800 dark:text-violet-200",
-    amount_color: "text-amber-500",
+    amount_color: "text-amber-500 dark:text-amber-400",
     sign: -1,
   },
   {
@@ -55,7 +55,7 @@ export const TRANSACTION_TYPES: TransactionTypeOption[] = [
     icon: "🏦",
     back_color: "bg-orange-100 dark:bg-orange-900",
     fore_color: "text-orange-800 dark:text-orange-200",
-    amount_color: "text-amber-500",
+    amount_color: "text-amber-500 dark:text-amber-400",
     sign: 1,
   },
 ];
