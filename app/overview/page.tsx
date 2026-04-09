@@ -3,6 +3,7 @@
 import type { TransactionWithRelations } from "@/types";
 
 import { useCallback, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { AgGridReact } from "ag-grid-react";
 import {
   BackspaceIcon,
@@ -86,8 +87,15 @@ export default function OverviewPage() {
     }
   }, [isBusy, clearAllConfirmText, transactions.length, store]);
 
+  const revealTransition = { duration: 0.42, ease: [0.22, 1, 0.36, 1] as const };
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 p-6">
+    <motion.div
+      className="flex min-h-0 flex-1 flex-col gap-4 p-6"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={revealTransition}
+    >
       <div>
         <h1 className="text-2xl font-bold">总览</h1>
       </div>
@@ -316,6 +324,6 @@ export default function OverviewPage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </div>
+    </motion.div>
   );
 }

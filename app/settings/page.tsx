@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Button } from "@heroui/react";
 import { addToast } from "@heroui/react";
 import { Tab, Tabs } from "@heroui/react";
@@ -35,8 +36,15 @@ export default function SettingsPage() {
   const isRefreshing = useIsFetching({ queryKey: appDataQueryKey }) > 0;
   const isInitialLoading = isLoading && !hasLoaded;
 
+  const revealTransition = { duration: 0.42, ease: [0.22, 1, 0.36, 1] as const };
+
   return (
-    <div className="space-y-4 p-4 sm:space-y-6 sm:p-6">
+    <motion.div
+      className="space-y-4 p-4 sm:space-y-6 sm:p-6"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={revealTransition}
+    >
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-xl font-bold sm:text-2xl">配置中心</h1>
         <Button
@@ -119,6 +127,6 @@ export default function SettingsPage() {
       )}
 
       <DeleteConfirmDialog request={deleteRequest} onClose={() => setDeleteRequest(null)} />
-    </div>
+    </motion.div>
   );
 }

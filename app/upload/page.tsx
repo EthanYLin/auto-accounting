@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { motion } from "framer-motion";
 import { Tabs, Tab } from "@heroui/react";
 import Image from "next/image";
 
@@ -10,8 +11,15 @@ import { FudanImport } from "@/components/upload/fudan-import";
 import { WeChatImport } from "@/components/upload/wechat-import";
 
 export default function ExcelUploadPage() {
+  const revealTransition = { duration: 0.42, ease: [0.22, 1, 0.36, 1] as const };
+
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <motion.div
+      className="container mx-auto p-6 max-w-7xl"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={revealTransition}
+    >
       <h1 className="text-3xl font-bold mb-6">账单导入</h1>
 
       <Tabs
@@ -68,6 +76,6 @@ export default function ExcelUploadPage() {
           <CustomImport />
         </Tab>
       </Tabs>
-    </div>
+    </motion.div>
   );
 }

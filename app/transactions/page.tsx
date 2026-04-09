@@ -3,6 +3,7 @@
 import type { TransactionOverviewListHandle } from "@/components/homepage/left-panel/transaction-overview-list";
 
 import { Suspense, useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Alert, Button, Input, Kbd, Spinner } from "@heroui/react";
 import {
@@ -160,7 +161,12 @@ function TransactionsRoutePage() {
   const { currentTransaction, currentIndex } = editor;
 
   return (
-    <div className="flex h-full w-full min-h-0 overflow-hidden">
+    <motion.div
+      className="flex h-full w-full min-h-0 overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+    >
       <aside className="flex h-full min-h-0 w-80 flex-col border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
         <div className="shrink-0 border-b border-gray-200 p-4 dark:border-gray-700">
           <div className="flex items-center gap-2">
@@ -299,6 +305,6 @@ function TransactionsRoutePage() {
           )}
         </div>
       </main>
-    </div>
+    </motion.div>
   );
 }
