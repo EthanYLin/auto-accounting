@@ -104,7 +104,7 @@ export const TransactionListItem = memo(function TransactionListItem({
       role="button"
       tabIndex={0}
       className={`
-        ${isChild ? "pl-8 pr-4 py-2" : "px-4 py-3"} cursor-pointer transition-colors border-b border-gray-100 dark:border-white/[0.05]
+        ${isChild ? "pl-8 pr-3 lg:pr-4 py-2" : "px-3 lg:px-4 py-2.5 lg:py-3"} cursor-pointer transition-colors border-b border-gray-100 dark:border-white/[0.05]
         ${
           isSelected
             ? "bg-primary-50 dark:bg-primary-500/10 dark:border-l-2 dark:border-l-primary-400/70"
@@ -132,7 +132,7 @@ export const TransactionListItem = memo(function TransactionListItem({
         {/* 左侧圆形图标 */}
         <div className="relative">
           <div
-            className={`${isChild ? "w-8 h-8 text-base" : "w-10 h-10 text-lg"} rounded-full ${backColor} ${foreColor} flex items-center justify-center flex-shrink-0`}
+            className={`${isChild ? "w-8 h-8 text-base" : "w-8 h-8 text-base lg:w-10 lg:h-10 lg:text-lg"} rounded-full ${backColor} ${foreColor} flex items-center justify-center flex-shrink-0`}
           >
             {icon}
           </div>
@@ -171,7 +171,7 @@ export const TransactionListItem = memo(function TransactionListItem({
               {displayTxTime(transaction.datetime, "short")}
               {transaction.merchant && ` - ${transaction.merchant}`}
             </span>
-            <span className="ml-2 flex-shrink-0 truncate max-w-[80px]">
+            <span className="ml-2 flex-shrink-0 truncate max-w-[60px] lg:max-w-[80px]">
               {transaction.account?.name || "-"}
             </span>
           </div>

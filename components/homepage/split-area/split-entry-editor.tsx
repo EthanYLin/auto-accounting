@@ -303,7 +303,7 @@ export function SplitEntryEditor({
                     onValueChange={(v) => handleUpdateEntry(entry.localId, "name", v)}
                     size="sm"
                     variant="underlined"
-                    className="w-36 flex-shrink-0"
+                    className="w-28 flex-shrink-0"
                     classNames={{ input: "text-[13px]" }}
                   />
                 )}

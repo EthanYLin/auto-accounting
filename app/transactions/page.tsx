@@ -5,21 +5,16 @@ import type { TransactionOverviewListHandle } from "@/components/homepage/left-p
 import { Suspense, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Alert, Button, Input, Kbd, Spinner } from "@heroui/react";
-import {
-  ArrowDownTrayIcon,
-  DocumentPlusIcon,
-  MagnifyingGlassIcon,
-} from "@heroicons/react/24/outline";
+import { Alert, Button, Spinner } from "@heroui/react";
+import { ArrowDownTrayIcon, Bars3Icon, DocumentPlusIcon } from "@heroicons/react/24/outline";
 
-import { useCommandListener } from "@/lib/commands";
+import { dispatchCommand, useCommandListener } from "@/lib/commands";
 import { useTransactionEditorHotkeys } from "@/lib/hooks/use-transaction-editor-hotkeys";
 import { ActionBar } from "@/components/homepage/action-bar";
 import { TxFieldInputs } from "@/components/homepage/tx-field-inputs";
 import { TxImportInfo } from "@/components/homepage/tx-import-info";
 import { TransactionEditorFourChainSelector } from "@/components/homepage/common/four-chain-selector";
-import { TransactionOverviewList } from "@/components/homepage/left-panel/transaction-overview-list";
-import { StatusFilterDropdown } from "@/components/homepage/left-panel/status-filter-dropdown";
+import { TransactionSidebar } from "@/components/homepage/left-panel/transaction-sidebar";
 import { TxSupplementTabs } from "@/components/homepage/tx-supplement-tabs";
 import { useAppData } from "@/components/context/app-data-context";
 import { useError } from "@/components/context/error-context";
@@ -45,7 +40,6 @@ function TransactionsRoutePage() {
   const mainContentRef = useRef<HTMLDivElement>(null);
   const [selectorMode, setSelectorMode] = useState<"listbox" | "select">("select");
   const [routeTxId, setRouteTxId] = useState<number | null>(null);
-
   const appData = useAppData();
   const store = useTransactionStore();
   const editor = useTransactionEditor();
@@ -167,47 +161,31 @@ function TransactionsRoutePage() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
     >
-      <aside className="flex h-full min-h-0 w-80 flex-col border-r border-gray-200 bg-white dark:border-white/[0.07] dark:bg-[#1f1f1f]">
-        <div className="shrink-0 border-b border-gray-200 p-4 dark:border-white/[0.07]">
-          <div className="flex items-center gap-2">
-            <Input
-              ref={searchInputRef}
-              placeholder="搜索名称, 金额..."
-              value={search.searchQuery}
-              onValueChange={search.setSearchQuery}
-              startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
-              endContent={
-                <Kbd keys={["command"]} className="text-[10px]">
-                  K
-                </Kbd>
-              }
-              variant="bordered"
-              size="sm"
-              className="flex-1"
-            />
-            <StatusFilterDropdown
-              statusFilter={search.statusFilter}
-              onStatusFilterChange={search.setStatusFilter}
-              sortOrder={search.sortOrder}
-              onSortOrderChange={search.setSortOrder}
-            />
-          </div>
-        </div>
-
-        <div className="min-h-0 flex-1">
-          <TransactionOverviewList
-            ref={transactionListRef}
-            currentId={currentTransaction?.id}
-            onSelectTransaction={editor.selectTransaction}
-            filteredTransactions={search.filteredTransactions}
-            isFiltered={search.isFiltered}
-            onClearFilters={search.clearFilters}
-          />
-        </div>
-      </aside>
+      <TransactionSidebar
+        searchInputRef={searchInputRef}
+        transactionListRef={transactionListRef}
+        search={search}
+        currentTransactionId={currentTransaction?.id}
+        onSelectTransaction={editor.selectTransaction}
+      />
 
       <main className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-        {currentTransaction !== null && currentIndex > 0 && <ActionBar />}
+        {currentTransaction !== null && currentIndex > 0 && (
+          <ActionBar
+            sidebarToggle={
+              <Button
+                isIconOnly
+                variant="light"
+                size="sm"
+                onPress={() => dispatchCommand("toggle-sidebar")}
+                aria-label="切换侧栏"
+                className="md:hidden flex-shrink-0"
+              >
+                <Bars3Icon className="h-5 w-5" />
+              </Button>
+            }
+          />
+        )}
 
         <div ref={mainContentRef} className="min-h-0 flex-1 overflow-y-auto">
           {isEditorLoading ? (
@@ -249,6 +227,16 @@ function TransactionsRoutePage() {
                   请先在左侧选择一个账单
                 </p>
                 <div className="flex justify-center gap-3">
+                  <Button
+                    size="sm"
+                    color="default"
+                    variant="flat"
+                    startContent={<Bars3Icon className="h-4 w-4" />}
+                    onPress={() => dispatchCommand("toggle-sidebar")}
+                    className="md:hidden"
+                  >
+                    打开列表
+                  </Button>
                   <Button
                     size="sm"
                     color="default"

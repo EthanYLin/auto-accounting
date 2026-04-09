@@ -1,7 +1,7 @@
 "use client";
 
 import type { TransactionStatus } from "@/types";
-import type { DangerConfirm, QuickActionKey, SplitHint } from "./action-bar-config";
+import type { DangerConfirm, QuickActionKey } from "./action-bar-config";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { addToast, useDisclosure } from "@heroui/react";
@@ -9,7 +9,6 @@ import { addToast, useDisclosure } from "@heroui/react";
 import { NavigationControls } from "./navigation-controls";
 import { PrimarySaveButton } from "./primary-save-button";
 import { QuickActionsDropdownButton } from "./quick-actions-dropdown-button";
-import { SplitHintBadge } from "./split-hint-badge";
 import { TransactionStatusBadge } from "./transaction-status-badge";
 import { QUICK_ACTION_ITEMS } from "./action-bar-config";
 
@@ -18,7 +17,6 @@ import { ALL_TRANSACTION_STATUS } from "@/constants/transaction-status";
 import { useSaveButtonOverride } from "@/components/context/save-button-override-context";
 import { useTransactionEditor } from "@/components/context/transaction-editor-context";
 import { useTransactionStore } from "@/components/context/transaction-store-context";
-import { getExitSplits } from "@/lib/transaction/transaction-split-merge";
 
 const DEFAULT_QUICK_ACTION: QuickActionKey = "save-cancel";
 
@@ -44,13 +42,17 @@ const CHILDREN_SELECTION_DISABLED_KEYS: QuickActionKey[] = [
   ...SINGLE_SAVE_DISABLED_KEYS,
 ];
 
-export function ActionBar() {
+interface ActionBarProps {
+  sidebarToggle?: React.ReactNode;
+}
+
+export function ActionBar({ sidebarToggle }: ActionBarProps) {
   const editor = useTransactionEditor();
   const store = useTransactionStore();
   const { saveButtonOverride, showSaveButtonOverride, clearSaveButtonOverride } =
     useSaveButtonOverride();
 
-  const { currentTransaction, currentChildTransactions, currentId } = editor;
+  const { currentTransaction, currentId } = editor;
   const dirtyCount = store.getDirtyIds().length;
 
   const [quickActionKey, setQuickActionKey] = useState<QuickActionKey>(DEFAULT_QUICK_ACTION);
@@ -65,28 +67,6 @@ export function ActionBar() {
     () => ALL_TRANSACTION_STATUS.find((item) => item.name === currentTransaction?.status) ?? null,
     [currentTransaction?.status],
   );
-
-  const splitHint = useMemo<SplitHint>(() => {
-    if (!currentTransaction || currentTransaction.parent_id) return null;
-    const exitCount = currentTransaction.splits?.length ?? 0;
-    const entryCount = currentChildTransactions.length + 1;
-    if (exitCount > 1) {
-      return { type: "info", message: `该账单会拆分为${exitCount}条记录` };
-    }
-    if (exitCount === 1 && entryCount > 1) {
-      return { type: "info", message: "该账单会合并为1条记录" };
-    }
-    if (exitCount === 1 && entryCount === 1) {
-      return { type: "warn", message: "该账单经过分账修改" };
-    }
-    if (exitCount === 0 && entryCount > 1) {
-      if (getExitSplits(currentTransaction, currentChildTransactions).length === 0) {
-        return { type: "info", message: "该账单正负相抵不会被导出" };
-      }
-      return { type: "warn", message: "该账单会默认按账户进行合并" };
-    }
-    return null;
-  }, [currentChildTransactions, currentTransaction]);
 
   useEffect(() => {
     clearSaveButtonOverride();
@@ -326,37 +306,90 @@ export function ActionBar() {
   useCommandListener("delete-current", () => executeQuickAction("delete"));
   useCommandListener("discard-current", () => executeQuickAction("discard-current"));
 
+  const primarySaveButton = (
+    <PrimarySaveButton
+      saveButtonOverride={saveButtonOverride}
+      disabled={!saveButtonOverride && store.saveState === "children-selection"}
+      onPress={handlePrimaryAction}
+    />
+  );
+
+  const primarySaveButtonFullWidth = (
+    <PrimarySaveButton
+      saveButtonOverride={saveButtonOverride}
+      disabled={!saveButtonOverride && store.saveState === "children-selection"}
+      onPress={handlePrimaryAction}
+      fullWidth
+      size="md"
+    />
+  );
+
+  const quickActionsButton = (
+    <QuickActionsDropdownButton
+      currentQuickActionIcon={currentQuickActionItem.icon}
+      currentQuickActionLabel={currentQuickActionItem.label.replace(
+        "$dirtyCount",
+        String(dirtyCount),
+      )}
+      autoSwitch={autoSwitch}
+      dirtyCount={dirtyCount}
+      disabledKeys={disabledKeys}
+      isCurrentQuickActionDisabled={disabledKeys.includes(currentQuickActionItem.key)}
+      dangerConfirm={dangerConfirm}
+      onCurrentQuickAction={handleCurrentQuickAction}
+      onDropdownAction={executeQuickAction}
+    />
+  );
+
+  const quickActionsButtonFullWidth = (
+    <QuickActionsDropdownButton
+      currentQuickActionIcon={currentQuickActionItem.icon}
+      currentQuickActionLabel={currentQuickActionItem.label.replace(
+        "$dirtyCount",
+        String(dirtyCount),
+      )}
+      autoSwitch={autoSwitch}
+      dirtyCount={dirtyCount}
+      disabledKeys={disabledKeys}
+      isCurrentQuickActionDisabled={disabledKeys.includes(currentQuickActionItem.key)}
+      dangerConfirm={dangerConfirm}
+      onCurrentQuickAction={handleCurrentQuickAction}
+      onDropdownAction={executeQuickAction}
+      fullWidth
+      size="md"
+    />
+  );
+
   return (
     <div className="sticky top-0 z-30 border-b border-gray-200 bg-white shadow-sm dark:border-white/[0.07] dark:bg-[#242424] dark:shadow-none">
       <div className="px-4 py-3">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <NavigationControls />
-
-            <PrimarySaveButton
-              saveButtonOverride={saveButtonOverride}
-              disabled={!saveButtonOverride && store.saveState === "children-selection"}
-              onPress={handlePrimaryAction}
-            />
-
-            <QuickActionsDropdownButton
-              currentQuickActionIcon={currentQuickActionItem.icon}
-              currentQuickActionLabel={currentQuickActionItem.label.replace(
-                "$dirtyCount",
-                String(dirtyCount),
-              )}
-              autoSwitch={autoSwitch}
-              dirtyCount={dirtyCount}
-              disabledKeys={disabledKeys}
-              isCurrentQuickActionDisabled={disabledKeys.includes(currentQuickActionItem.key)}
-              dangerConfirm={dangerConfirm}
-              onCurrentQuickAction={handleCurrentQuickAction}
-              onDropdownAction={executeQuickAction}
-            />
-
-            <SplitHintBadge splitHint={splitHint} />
+        {/* sm 及以下：两行布局 */}
+        <div className="flex flex-col gap-2 sm:hidden">
+          {/* 第一行：sidebar-toggle 左 | 分页器居中 | status-badge 右 */}
+          <div className="flex items-center">
+            <div className="flex-none">{sidebarToggle}</div>
+            <div className="flex flex-1 justify-center">
+              <NavigationControls />
+            </div>
+            <div className="flex-none">
+              <TransactionStatusBadge status={status} />
+            </div>
           </div>
+          {/* 第二行：两个按钮平分宽度 */}
+          <div className="flex gap-2">
+            <div className="flex-1">{primarySaveButtonFullWidth}</div>
+            <div className="flex-1">{quickActionsButtonFullWidth}</div>
+          </div>
+        </div>
 
+        {/* sm 以上：单行布局 */}
+        <div className="hidden sm:flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            {sidebarToggle}
+            <NavigationControls />
+            {primarySaveButton}
+            {quickActionsButton}
+          </div>
           <TransactionStatusBadge status={status} />
         </div>
       </div>

@@ -57,6 +57,7 @@ const BINDINGS: HotkeyBinding[] = [
   { keys: "i", command: "edit-index", scope: "non-input" },
 
   // 界面切换
+  { keys: "meta+b,ctrl+b", command: "toggle-sidebar", scope: "overlay" },
   { keys: "q", command: "toggle-import-info", scope: "non-input" },
   { keys: "a", command: "open-attach-selection", scope: "non-input" },
   { keys: "1", command: "select-tab", scope: "non-input", detail: "tx-info" },

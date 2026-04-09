@@ -24,6 +24,9 @@ interface QuickActionsDropdownButtonProps {
   dangerConfirm: DangerConfirm;
   onCurrentQuickAction: () => void;
   onDropdownAction: (key: QuickActionKey) => void;
+  className?: string;
+  fullWidth?: boolean;
+  size?: "sm" | "md" | "lg";
 }
 
 const SAVE_ACTION_ITEMS = QUICK_ACTION_ITEMS.filter((item) => item.section === 1);
@@ -73,14 +76,19 @@ export function QuickActionsDropdownButton({
   dangerConfirm,
   onCurrentQuickAction,
   onDropdownAction,
+  className,
+  fullWidth,
+  size = "sm",
 }: QuickActionsDropdownButtonProps) {
   return (
     <>
-      <ButtonGroup size="sm" variant="flat">
+      <ButtonGroup size={size} variant="flat" className={className} fullWidth={fullWidth}>
         <Button
+          className={fullWidth ? "flex-1" : undefined}
           startContent={<CurrentQuickActionIcon className="h-4 w-4" />}
           disabled={isCurrentQuickActionDisabled}
           onPress={onCurrentQuickAction}
+          aria-label={currentQuickActionLabel}
         >
           {currentQuickActionLabel}
         </Button>
