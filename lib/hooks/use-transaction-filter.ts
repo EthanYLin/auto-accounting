@@ -6,6 +6,7 @@ import { useSaveButtonOverride } from "@/components/context/save-button-override
 import { parseTxTime } from "@/lib/transaction/transaction-datetime";
 
 // ==================== 内部工具函数 ====================
+export type SortOrder = "newest" | "oldest";
 
 /**
  * 检查交易是否匹配关键字
@@ -84,6 +85,7 @@ function matchesTransactionKeyword(tx: TransactionWithRelations, keyword: string
  */
 export function flattenTransactionsWithChildren(
   transactions: TransactionWithRelations[],
+  sortOrder: SortOrder = "newest",
 ): TransactionWithRelations[] {
   const result: TransactionWithRelations[] = [];
   const transactionMap = new Map(transactions.map((tx) => [tx.id, tx]));
@@ -91,10 +93,14 @@ export function flattenTransactionsWithChildren(
   const rootTransactions = transactions
     .filter((tx) => !tx.parent_id)
     .sort((a, b) => {
-      // datetime 格式为 yyyy-MM-ddTHH:mm:ss，可直接字符串比较（降序）
+      // datetime 格式为 yyyy-MM-ddTHH:mm:ss，可直接字符串比较
       const da = a.datetime ?? "";
       const db = b.datetime ?? "";
-      return da < db ? 1 : da > db ? -1 : 0;
+      if (sortOrder === "newest") {
+        return da < db ? 1 : da > db ? -1 : 0;
+      } else {
+        return da < db ? -1 : da > db ? 1 : 0;
+      }
     });
 
   rootTransactions.forEach((parent) => {
@@ -168,6 +174,7 @@ export function useTransactionFilter(
   const [searchQuery, setSearchQueryState] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [statusFilter, setStatusFilterState] = useState<TransactionStatus | "all">("all");
+  const [sortOrder, setSortOrderState] = useState<SortOrder>("newest");
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
@@ -190,6 +197,10 @@ export function useTransactionFilter(
     [clearSaveButtonOverride],
   );
 
+  const setSortOrder = useCallback((value: SortOrder) => {
+    setSortOrderState(value);
+  }, []);
+
   // 结构指纹：仅在影响排序的属性变化时才会改变
   // （ID 集合、父子关系、用于排序的日期时间）。
   // 仅修改内容字段（名称、金额、商户等）不会改变此指纹。
@@ -205,8 +216,8 @@ export function useTransactionFilter(
 
   // 昂贵的排序（O(n log n) 次 Luxon 日期解析）仅在结构变化时重新执行
   const sortedIds = useMemo(
-    () => flattenTransactionsWithChildren(transactions).map((tx) => tx.id),
-    [structuralFingerprint],
+    () => flattenTransactionsWithChildren(transactions, sortOrder).map((tx) => tx.id),
+    [structuralFingerprint, sortOrder],
   );
 
   // 廉价的 O(n) 重建：使用稳定的排序顺序 + 当前交易数据
@@ -260,6 +271,8 @@ export function useTransactionFilter(
     setSearchQuery,
     statusFilter,
     setStatusFilter,
+    sortOrder,
+    setSortOrder,
     filteredTransactions,
     isFiltered,
     clearFilters,

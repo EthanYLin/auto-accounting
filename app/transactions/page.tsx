@@ -188,6 +188,8 @@ function TransactionsRoutePage() {
             <StatusFilterDropdown
               statusFilter={search.statusFilter}
               onStatusFilterChange={search.setStatusFilter}
+              sortOrder={search.sortOrder}
+              onSortOrderChange={search.setSortOrder}
             />
           </div>
         </div>
