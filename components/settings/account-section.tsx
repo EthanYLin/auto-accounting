@@ -25,6 +25,8 @@ import { useAccountMutations } from "@/components/settings/settings-mutations";
 import {
   SettingsEmptyState,
   SettingsLoadingState,
+  SettingsMobileItem,
+  SettingsMobileList,
   SettingsSectionCard,
 } from "@/components/settings/settings-ui";
 
@@ -68,53 +70,83 @@ export function AccountSection({
         ) : accounts.length === 0 ? (
           <SettingsEmptyState title="还没有账户" />
         ) : (
-          <Table removeWrapper aria-label="账户列表">
-            <TableHeader>
-              <TableColumn>ID</TableColumn>
-              <TableColumn>名称</TableColumn>
-              <TableColumn align="end">操作</TableColumn>
-            </TableHeader>
-            <TableBody items={accounts}>
-              {(account) => (
-                <TableRow key={account.id}>
-                  <TableCell>#{account.id}</TableCell>
-                  <TableCell>{account.name}</TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="light"
-                        onPress={() => {
-                          setEditingAccount(account);
-                          setIsDrawerOpen(true);
-                        }}
-                      >
-                        编辑
-                      </Button>
-                      <Button
-                        color="danger"
-                        size="sm"
-                        variant="flat"
-                        onPress={() => {
-                          onRequestDelete({
-                            title: "删除账户",
-                            description: `确定删除账户“${account.name}”吗？`,
-                            onConfirm: () =>
-                              deleteAccount({
-                                id: account.id,
-                                name: account.name,
-                              }),
-                          });
-                        }}
-                      >
-                        删除
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          <>
+            <div className="sm:hidden">
+              <SettingsMobileList>
+                {accounts.map((account) => (
+                  <SettingsMobileItem
+                    key={account.id}
+                    fields={[{ key: "ID", value: `#${account.id}` }]}
+                    label={account.name}
+                    onDelete={() => {
+                      onRequestDelete({
+                        title: "删除账户",
+                        description: `确定删除账户"${account.name}"吗？`,
+                        onConfirm: () =>
+                          deleteAccount({
+                            id: account.id,
+                            name: account.name,
+                          }),
+                      });
+                    }}
+                    onEdit={() => {
+                      setEditingAccount(account);
+                      setIsDrawerOpen(true);
+                    }}
+                  />
+                ))}
+              </SettingsMobileList>
+            </div>
+            <div className="hidden sm:block">
+              <Table removeWrapper aria-label="账户列表">
+                <TableHeader>
+                  <TableColumn>ID</TableColumn>
+                  <TableColumn>名称</TableColumn>
+                  <TableColumn align="end">操作</TableColumn>
+                </TableHeader>
+                <TableBody items={accounts}>
+                  {(account) => (
+                    <TableRow key={account.id}>
+                      <TableCell>#{account.id}</TableCell>
+                      <TableCell>{account.name}</TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="light"
+                            onPress={() => {
+                              setEditingAccount(account);
+                              setIsDrawerOpen(true);
+                            }}
+                          >
+                            编辑
+                          </Button>
+                          <Button
+                            color="danger"
+                            size="sm"
+                            variant="flat"
+                            onPress={() => {
+                              onRequestDelete({
+                                title: "删除账户",
+                                description: `确定删除账户"${account.name}"吗？`,
+                                onConfirm: () =>
+                                  deleteAccount({
+                                    id: account.id,
+                                    name: account.name,
+                                  }),
+                              });
+                            }}
+                          >
+                            删除
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </SettingsSectionCard>
 

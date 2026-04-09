@@ -29,6 +29,8 @@ import { useMatchingRuleMutations } from "@/components/settings/settings-mutatio
 import {
   SettingsEmptyState,
   SettingsLoadingState,
+  SettingsMobileItem,
+  SettingsMobileList,
   SettingsSectionCard,
   getSingleSelectionValue,
 } from "@/components/settings/settings-ui";
@@ -37,7 +39,7 @@ function formatAmountRule(rule: MatchingRule) {
   if (rule.f_original_amount_ge === null && rule.f_original_amount_le === null) {
     return null;
   } else {
-    return `金额限制: ${rule.f_original_amount_ge || "不限"} - ${rule.f_original_amount_le || "不限"}`;
+    return `${rule.f_original_amount_ge || "不限"} - ${rule.f_original_amount_le || "不限"}`;
   }
 }
 
@@ -86,85 +88,138 @@ export function RuleSection({
         ) : matchingRules.length === 0 ? (
           <SettingsEmptyState title="还没有匹配规则" />
         ) : (
-          <Table removeWrapper aria-label="匹配规则列表">
-            <TableHeader>
-              <TableColumn>ID</TableColumn>
-              <TableColumn>规则</TableColumn>
-              <TableColumn>目标赋值</TableColumn>
-              <TableColumn align="end">操作</TableColumn>
-            </TableHeader>
-            <TableBody items={matchingRules}>
-              {(rule) => {
-                const amountRule = formatAmountRule(rule);
-                const targetSummary = joinRuleTarget([
-                  rule.t_tx_type,
-                  rule.t_main_category_id
-                    ? (mainCategoryMap.get(rule.t_main_category_id)?.label ??
-                      `${rule.t_main_category_id}`)
-                    : null,
-                  rule.t_sub_category_id
-                    ? (subCategoryMap.get(rule.t_sub_category_id)?.label ??
-                      `${rule.t_sub_category_id}`)
-                    : null,
-                  rule.t_budget_type_id
-                    ? (budgetTypeMap.get(rule.t_budget_type_id)?.name ?? `${rule.t_budget_type_id}`)
-                    : null,
-                ]);
-                const namingSummary = joinRuleTarget([rule.t_name, rule.t_merchant]);
+          <>
+            <div className="sm:hidden">
+              <SettingsMobileList>
+                {matchingRules.map((rule) => {
+                  const amountRule = formatAmountRule(rule);
+                  const targetSummary = joinRuleTarget([
+                    rule.t_tx_type,
+                    rule.t_main_category_id
+                      ? (mainCategoryMap.get(rule.t_main_category_id)?.label ??
+                        `${rule.t_main_category_id}`)
+                      : null,
+                    rule.t_sub_category_id
+                      ? (subCategoryMap.get(rule.t_sub_category_id)?.label ??
+                        `${rule.t_sub_category_id}`)
+                      : null,
+                    rule.t_budget_type_id
+                      ? (budgetTypeMap.get(rule.t_budget_type_id)?.name ??
+                        `${rule.t_budget_type_id}`)
+                      : null,
+                  ]);
 
-                return (
-                  <TableRow key={rule.id}>
-                    <TableCell>#{rule.id}</TableCell>
-                    <TableCell>
-                      <div className="space-y-2">
-                        <p className="font-mono text-xs text-foreground">{rule.f_title}</p>
-                        {rule.f_time && (
-                          <p className="text-xs text-default-500">
-                            时间规则: <span className="font-mono">{rule.f_time}</span>
-                          </p>
-                        )}
-                        {amountRule && <p className="text-xs text-default-500">{amountRule}</p>}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1 text-sm text-default-600">
-                        <p className="break-words">{targetSummary}</p>
-                        <p className="break-words">{namingSummary}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="light"
-                          onPress={() => {
-                            setEditingRule(rule);
-                            setIsDrawerOpen(true);
-                          }}
-                        >
-                          编辑
-                        </Button>
-                        <Button
-                          color="danger"
-                          size="sm"
-                          variant="flat"
-                          onPress={() => {
-                            onRequestDelete({
-                              title: "删除匹配规则",
-                              description: `确定删除匹配规则 #${rule.id} 吗？`,
-                              onConfirm: () => deleteMatchingRule({ id: rule.id }),
-                            });
-                          }}
-                        >
-                          删除
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              }}
-            </TableBody>
-          </Table>
+                  return (
+                    <SettingsMobileItem
+                      key={rule.id}
+                      fields={[
+                        { key: "时间", value: rule.f_time },
+                        { key: "金额", value: amountRule },
+                        { key: "目标", value: targetSummary || null },
+                      ]}
+                      fieldsInline={false}
+                      label={rule.f_title}
+                      onDelete={() => {
+                        onRequestDelete({
+                          title: "删除匹配规则",
+                          description: `确定删除匹配规则 #${rule.id} 吗？`,
+                          onConfirm: () => deleteMatchingRule({ id: rule.id }),
+                        });
+                      }}
+                      onEdit={() => {
+                        setEditingRule(rule);
+                        setIsDrawerOpen(true);
+                      }}
+                    />
+                  );
+                })}
+              </SettingsMobileList>
+            </div>
+            <div className="hidden sm:block">
+              <Table removeWrapper aria-label="匹配规则列表">
+                <TableHeader>
+                  <TableColumn>ID</TableColumn>
+                  <TableColumn>规则</TableColumn>
+                  <TableColumn>目标赋值</TableColumn>
+                  <TableColumn align="end">操作</TableColumn>
+                </TableHeader>
+                <TableBody items={matchingRules}>
+                  {(rule) => {
+                    const amountRule = formatAmountRule(rule);
+                    const targetSummary = joinRuleTarget([
+                      rule.t_tx_type,
+                      rule.t_main_category_id
+                        ? (mainCategoryMap.get(rule.t_main_category_id)?.label ??
+                          `${rule.t_main_category_id}`)
+                        : null,
+                      rule.t_sub_category_id
+                        ? (subCategoryMap.get(rule.t_sub_category_id)?.label ??
+                          `${rule.t_sub_category_id}`)
+                        : null,
+                      rule.t_budget_type_id
+                        ? (budgetTypeMap.get(rule.t_budget_type_id)?.name ??
+                          `${rule.t_budget_type_id}`)
+                        : null,
+                    ]);
+                    const namingSummary = joinRuleTarget([rule.t_name, rule.t_merchant]);
+
+                    return (
+                      <TableRow key={rule.id}>
+                        <TableCell>#{rule.id}</TableCell>
+                        <TableCell>
+                          <div className="space-y-2">
+                            <p className="font-mono text-xs text-foreground">{rule.f_title}</p>
+                            {rule.f_time && (
+                              <p className="text-xs text-default-500">
+                                时间规则: <span className="font-mono">{rule.f_time}</span>
+                              </p>
+                            )}
+                            {amountRule && (
+                              <p className="text-xs text-default-500">金额规则: {amountRule}</p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1 text-sm text-default-600">
+                            <p className="break-words">{targetSummary}</p>
+                            <p className="break-words">{namingSummary}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="light"
+                              onPress={() => {
+                                setEditingRule(rule);
+                                setIsDrawerOpen(true);
+                              }}
+                            >
+                              编辑
+                            </Button>
+                            <Button
+                              color="danger"
+                              size="sm"
+                              variant="flat"
+                              onPress={() => {
+                                onRequestDelete({
+                                  title: "删除匹配规则",
+                                  description: `确定删除匹配规则 #${rule.id} 吗？`,
+                                  onConfirm: () => deleteMatchingRule({ id: rule.id }),
+                                });
+                              }}
+                            >
+                              删除
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </SettingsSectionCard>
 
@@ -253,7 +308,7 @@ function RuleDrawer({
       onClose={onClose}
       onSubmit={handleSubmit}
     >
-      <section className="space-y-4 rounded-3xl border border-default-200 bg-default-50/30 p-4">
+      <section className="space-y-4 rounded-2xl border border-default-200 bg-default-50/30 p-3 sm:rounded-3xl sm:p-4">
         <div>
           <h3 className="font-medium">过滤条件</h3>
           <p className="mt-1 text-sm text-default-500">定义导入账单在什么条件下命中当前规则。</p>
@@ -331,7 +386,7 @@ function RuleDrawer({
 
       <Divider />
 
-      <section className="space-y-4 rounded-3xl border border-default-200 bg-content1 p-4">
+      <section className="space-y-4 rounded-2xl border border-default-200 bg-content1 p-3 sm:rounded-3xl sm:p-4">
         <div>
           <h3 className="font-medium">目标赋值</h3>
           <p className="mt-1 text-sm text-default-500">规则命中后，把这些信息写入交易。</p>

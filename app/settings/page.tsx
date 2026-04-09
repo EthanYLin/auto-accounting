@@ -36,14 +36,13 @@ export default function SettingsPage() {
   const isInitialLoading = isLoading && !hasLoaded;
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">配置中心</h1>
-        </div>
+    <div className="space-y-4 p-4 sm:space-y-6 sm:p-6">
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-xl font-bold sm:text-2xl">配置中心</h1>
         <Button
           color="primary"
           isLoading={isRefreshing}
+          size="sm"
           variant="flat"
           onPress={async () => {
             try {
@@ -62,7 +61,7 @@ export default function SettingsPage() {
       </div>
 
       {loadError && (
-        <section className="rounded-3xl border border-warning/25 bg-warning-50 px-5 py-4 text-sm text-warning-800">
+        <section className="rounded-2xl border border-warning/25 bg-warning-50 px-4 py-3 text-sm text-warning-800 sm:rounded-3xl sm:px-5 sm:py-4">
           <p className="font-medium">配置数据加载失败</p>
           <p className="mt-2">{loadError}</p>
         </section>
@@ -72,6 +71,9 @@ export default function SettingsPage() {
         <Tabs
           aria-label="配置项"
           className="w-full"
+          classNames={{
+            tabList: "overflow-x-auto",
+          }}
           color="primary"
           destroyInactiveTabPanel={false}
           variant="solid"

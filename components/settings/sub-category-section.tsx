@@ -27,6 +27,8 @@ import { useSubCategoryMutations } from "@/components/settings/settings-mutation
 import {
   SettingsEmptyState,
   SettingsLoadingState,
+  SettingsMobileItem,
+  SettingsMobileList,
   SettingsSectionCard,
   getSingleSelectionValue,
 } from "@/components/settings/settings-ui";
@@ -128,67 +130,112 @@ export function SubCategorySection({
             {filteredSubCategories.length === 0 ? (
               <SettingsEmptyState title="没有匹配的子类别" />
             ) : (
-              <Table removeWrapper aria-label="子类别列表">
-                <TableHeader>
-                  <TableColumn>ID</TableColumn>
-                  <TableColumn>名称</TableColumn>
-                  <TableColumn>所属主类别</TableColumn>
-                  <TableColumn>预算计划</TableColumn>
-                  <TableColumn>图标</TableColumn>
-                  <TableColumn align="end">操作</TableColumn>
-                </TableHeader>
-                <TableBody items={filteredSubCategories}>
-                  {(item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>#{item.id}</TableCell>
-                      <TableCell>{item.label}</TableCell>
-                      <TableCell>
-                        {mainCategoryMap.get(item.main_category_id)?.label ??
-                          `#${item.main_category_id}`}
-                      </TableCell>
-                      <TableCell>
-                        {item.budget_type_id
-                          ? (budgetTypeMap.get(item.budget_type_id)?.name ??
-                            `#${item.budget_type_id}`)
-                          : "未绑定"}
-                      </TableCell>
-                      <TableCell>{item.icon}</TableCell>
-                      <TableCell>
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="light"
-                            onPress={() => {
-                              setEditingCategory(item);
-                              setIsDrawerOpen(true);
-                            }}
-                          >
-                            编辑
-                          </Button>
-                          <Button
-                            color="danger"
-                            size="sm"
-                            variant="flat"
-                            onPress={() => {
-                              onRequestDelete({
-                                title: "删除子类别",
-                                description: `确定删除子类别“${item.label}”吗？`,
-                                onConfirm: () =>
-                                  deleteSubCategory({
-                                    id: item.id,
-                                    label: item.label,
-                                  }),
-                              });
-                            }}
-                          >
-                            删除
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+              <>
+                <div className="sm:hidden">
+                  <SettingsMobileList>
+                    {filteredSubCategories.map((item) => (
+                      <SettingsMobileItem
+                        key={item.id}
+                        fields={[
+                          {
+                            key: "主类别",
+                            value:
+                              mainCategoryMap.get(item.main_category_id)?.label ??
+                              `#${item.main_category_id}`,
+                          },
+                          {
+                            key: "预算",
+                            value: item.budget_type_id
+                              ? (budgetTypeMap.get(item.budget_type_id)?.name ??
+                                `#${item.budget_type_id}`)
+                              : null,
+                          },
+                          { key: "图标", value: item.icon },
+                        ]}
+                        label={item.label}
+                        onDelete={() => {
+                          onRequestDelete({
+                            title: "删除子类别",
+                            description: `确定删除子类别"${item.label}"吗？`,
+                            onConfirm: () =>
+                              deleteSubCategory({
+                                id: item.id,
+                                label: item.label,
+                              }),
+                          });
+                        }}
+                        onEdit={() => {
+                          setEditingCategory(item);
+                          setIsDrawerOpen(true);
+                        }}
+                      />
+                    ))}
+                  </SettingsMobileList>
+                </div>
+                <div className="hidden sm:block">
+                  <Table removeWrapper aria-label="子类别列表">
+                    <TableHeader>
+                      <TableColumn>ID</TableColumn>
+                      <TableColumn>名称</TableColumn>
+                      <TableColumn>所属主类别</TableColumn>
+                      <TableColumn>预算计划</TableColumn>
+                      <TableColumn>图标</TableColumn>
+                      <TableColumn align="end">操作</TableColumn>
+                    </TableHeader>
+                    <TableBody items={filteredSubCategories}>
+                      {(item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>#{item.id}</TableCell>
+                          <TableCell>{item.label}</TableCell>
+                          <TableCell>
+                            {mainCategoryMap.get(item.main_category_id)?.label ??
+                              `#${item.main_category_id}`}
+                          </TableCell>
+                          <TableCell>
+                            {item.budget_type_id
+                              ? (budgetTypeMap.get(item.budget_type_id)?.name ??
+                                `#${item.budget_type_id}`)
+                              : "未绑定"}
+                          </TableCell>
+                          <TableCell>{item.icon}</TableCell>
+                          <TableCell>
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                size="sm"
+                                variant="light"
+                                onPress={() => {
+                                  setEditingCategory(item);
+                                  setIsDrawerOpen(true);
+                                }}
+                              >
+                                编辑
+                              </Button>
+                              <Button
+                                color="danger"
+                                size="sm"
+                                variant="flat"
+                                onPress={() => {
+                                  onRequestDelete({
+                                    title: "删除子类别",
+                                    description: `确定删除子类别"${item.label}"吗？`,
+                                    onConfirm: () =>
+                                      deleteSubCategory({
+                                        id: item.id,
+                                        label: item.label,
+                                      }),
+                                  });
+                                }}
+                              >
+                                删除
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </div>
         )}

@@ -25,6 +25,8 @@ import { useBudgetMutations } from "@/components/settings/settings-mutations";
 import {
   SettingsEmptyState,
   SettingsLoadingState,
+  SettingsMobileItem,
+  SettingsMobileList,
   SettingsSectionCard,
 } from "@/components/settings/settings-ui";
 
@@ -68,55 +70,86 @@ export function BudgetSection({
         ) : budgetTypes.length === 0 ? (
           <SettingsEmptyState title="还没有预算计划" />
         ) : (
-          <Table removeWrapper aria-label="预算计划列表">
-            <TableHeader>
-              <TableColumn>ID</TableColumn>
-              <TableColumn>名称</TableColumn>
-              <TableColumn>图标</TableColumn>
-              <TableColumn align="end">操作</TableColumn>
-            </TableHeader>
-            <TableBody items={budgetTypes}>
-              {(budget) => (
-                <TableRow key={budget.id}>
-                  <TableCell>#{budget.id}</TableCell>
-                  <TableCell>{budget.name}</TableCell>
-                  <TableCell>{budget.icon || "—"}</TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="light"
-                        onPress={() => {
-                          setEditingBudget(budget);
-                          setIsDrawerOpen(true);
-                        }}
-                      >
-                        编辑
-                      </Button>
-                      <Button
-                        color="danger"
-                        size="sm"
-                        variant="flat"
-                        onPress={() => {
-                          onRequestDelete({
-                            title: "删除预算计划",
-                            description: `确定删除预算计划“${budget.name}”吗？`,
-                            onConfirm: () =>
-                              deleteBudget({
-                                id: budget.id,
-                                name: budget.name,
-                              }),
-                          });
-                        }}
-                      >
-                        删除
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          <>
+            <div className="sm:hidden">
+              <SettingsMobileList>
+                {budgetTypes.map((budget) => (
+                  <SettingsMobileItem
+                    key={budget.id}
+                    fields={[{ key: "图标", value: budget.icon || "—" }]}
+                    fieldsInline={false}
+                    label={budget.name}
+                    onDelete={() => {
+                      onRequestDelete({
+                        title: "删除预算计划",
+                        description: `确定删除预算计划"${budget.name}"吗？`,
+                        onConfirm: () =>
+                          deleteBudget({
+                            id: budget.id,
+                            name: budget.name,
+                          }),
+                      });
+                    }}
+                    onEdit={() => {
+                      setEditingBudget(budget);
+                      setIsDrawerOpen(true);
+                    }}
+                  />
+                ))}
+              </SettingsMobileList>
+            </div>
+            <div className="hidden sm:block">
+              <Table removeWrapper aria-label="预算计划列表">
+                <TableHeader>
+                  <TableColumn>ID</TableColumn>
+                  <TableColumn>名称</TableColumn>
+                  <TableColumn>图标</TableColumn>
+                  <TableColumn align="end">操作</TableColumn>
+                </TableHeader>
+                <TableBody items={budgetTypes}>
+                  {(budget) => (
+                    <TableRow key={budget.id}>
+                      <TableCell>#{budget.id}</TableCell>
+                      <TableCell>{budget.name}</TableCell>
+                      <TableCell>{budget.icon || "—"}</TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="light"
+                            onPress={() => {
+                              setEditingBudget(budget);
+                              setIsDrawerOpen(true);
+                            }}
+                          >
+                            编辑
+                          </Button>
+                          <Button
+                            color="danger"
+                            size="sm"
+                            variant="flat"
+                            onPress={() => {
+                              onRequestDelete({
+                                title: "删除预算计划",
+                                description: `确定删除预算计划"${budget.name}"吗？`,
+                                onConfirm: () =>
+                                  deleteBudget({
+                                    id: budget.id,
+                                    name: budget.name,
+                                  }),
+                              });
+                            }}
+                          >
+                            删除
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </SettingsSectionCard>
 

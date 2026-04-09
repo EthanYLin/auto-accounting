@@ -27,6 +27,8 @@ import { useMainCategoryMutations } from "@/components/settings/settings-mutatio
 import {
   SettingsEmptyState,
   SettingsLoadingState,
+  SettingsMobileItem,
+  SettingsMobileList,
   SettingsSectionCard,
   getSingleSelectionValue,
 } from "@/components/settings/settings-ui";
@@ -71,57 +73,90 @@ export function MainCategorySection({
         ) : mainCategories.length === 0 ? (
           <SettingsEmptyState title="还没有主类别" />
         ) : (
-          <Table removeWrapper aria-label="主类别列表">
-            <TableHeader>
-              <TableColumn>ID</TableColumn>
-              <TableColumn>名称</TableColumn>
-              <TableColumn>交易类型</TableColumn>
-              <TableColumn>图标</TableColumn>
-              <TableColumn align="end">操作</TableColumn>
-            </TableHeader>
-            <TableBody items={mainCategories}>
-              {(item) => (
-                <TableRow key={item.id}>
-                  <TableCell>#{item.id}</TableCell>
-                  <TableCell>{item.label}</TableCell>
-                  <TableCell>{item.transaction_type}</TableCell>
-                  <TableCell>{item.icon}</TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="light"
-                        onPress={() => {
-                          setEditingCategory(item);
-                          setIsDrawerOpen(true);
-                        }}
-                      >
-                        编辑
-                      </Button>
-                      <Button
-                        color="danger"
-                        size="sm"
-                        variant="flat"
-                        onPress={() => {
-                          onRequestDelete({
-                            title: "删除主类别",
-                            description: `确定删除主类别“${item.label}”吗？`,
-                            onConfirm: () =>
-                              deleteMainCategory({
-                                id: item.id,
-                                label: item.label,
-                              }),
-                          });
-                        }}
-                      >
-                        删除
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          <>
+            <div className="sm:hidden">
+              <SettingsMobileList>
+                {mainCategories.map((item) => (
+                  <SettingsMobileItem
+                    key={item.id}
+                    fields={[
+                      { key: "类型", value: item.transaction_type },
+                      { key: "图标", value: item.icon },
+                    ]}
+                    label={item.label}
+                    onDelete={() => {
+                      onRequestDelete({
+                        title: "删除主类别",
+                        description: `确定删除主类别"${item.label}"吗？`,
+                        onConfirm: () =>
+                          deleteMainCategory({
+                            id: item.id,
+                            label: item.label,
+                          }),
+                      });
+                    }}
+                    onEdit={() => {
+                      setEditingCategory(item);
+                      setIsDrawerOpen(true);
+                    }}
+                  />
+                ))}
+              </SettingsMobileList>
+            </div>
+            <div className="hidden sm:block">
+              <Table removeWrapper aria-label="主类别列表">
+                <TableHeader>
+                  <TableColumn>ID</TableColumn>
+                  <TableColumn>名称</TableColumn>
+                  <TableColumn>交易类型</TableColumn>
+                  <TableColumn>图标</TableColumn>
+                  <TableColumn align="end">操作</TableColumn>
+                </TableHeader>
+                <TableBody items={mainCategories}>
+                  {(item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>#{item.id}</TableCell>
+                      <TableCell>{item.label}</TableCell>
+                      <TableCell>{item.transaction_type}</TableCell>
+                      <TableCell>{item.icon}</TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="light"
+                            onPress={() => {
+                              setEditingCategory(item);
+                              setIsDrawerOpen(true);
+                            }}
+                          >
+                            编辑
+                          </Button>
+                          <Button
+                            color="danger"
+                            size="sm"
+                            variant="flat"
+                            onPress={() => {
+                              onRequestDelete({
+                                title: "删除主类别",
+                                description: `确定删除主类别"${item.label}"吗？`,
+                                onConfirm: () =>
+                                  deleteMainCategory({
+                                    id: item.id,
+                                    label: item.label,
+                                  }),
+                              });
+                            }}
+                          >
+                            删除
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </SettingsSectionCard>
 

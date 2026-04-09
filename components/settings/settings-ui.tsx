@@ -7,6 +7,7 @@ import { Card, CardBody, CardHeader } from "@heroui/react";
 import { Chip } from "@heroui/react";
 import { Divider } from "@heroui/react";
 import { Spinner } from "@heroui/react";
+import { Button } from "@heroui/react";
 
 export function SettingsSectionCard({
   title,
@@ -23,9 +24,11 @@ export function SettingsSectionCard({
 }) {
   return (
     <Card className={className}>
-      <CardHeader className="flex flex-col gap-4 px-6 pb-4 pt-5 sm:flex-row sm:items-center sm:justify-between">
+      <CardHeader className="flex items-center justify-between gap-3 px-4 pb-3 pt-4 sm:gap-4 sm:px-6 sm:pb-4 sm:pt-5">
         <div className="flex min-w-0 flex-wrap items-center gap-3">
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">{title}</h2>
+          <h2 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
+            {title}
+          </h2>
           {typeof count === "number" && (
             <Chip color="primary" size="sm" variant="flat">
               {count}
@@ -35,7 +38,7 @@ export function SettingsSectionCard({
         {actions && <div className="flex shrink-0 items-center">{actions}</div>}
       </CardHeader>
       <Divider />
-      <CardBody className="px-6 py-5">{children}</CardBody>
+      <CardBody className="px-4 py-4 sm:px-6 sm:py-5">{children}</CardBody>
     </Card>
   );
 }
@@ -50,7 +53,7 @@ export function SettingsLoadingState({ label = "加载中..." }: { label?: strin
 
 export function SettingsEmptyState({ title }: { title: string }) {
   return (
-    <div className="rounded-3xl border border-dashed border-default-200 bg-default-50/40 px-6 py-10 text-center">
+    <div className="rounded-2xl border border-dashed border-default-200 bg-default-50/40 px-4 py-8 text-center sm:rounded-3xl sm:px-6 sm:py-10">
       <p className="text-sm font-medium text-foreground">{title}</p>
     </div>
   );
@@ -64,6 +67,55 @@ export function SettingsFormError({ message }: { message: string | null }) {
       {message}
     </div>
   );
+}
+
+export function SettingsMobileItem({
+  label,
+  fields,
+  fieldsInline = true,
+  onEdit,
+  onDelete,
+}: {
+  label: ReactNode;
+  fields?: { key: string; value: ReactNode }[];
+  fieldsInline?: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const activeFields = fields?.filter((f) => f.value) ?? [];
+
+  return (
+    <div className="flex items-center justify-between gap-3 py-3">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-foreground">{label}</p>
+        {fieldsInline ? (
+          <p className="mt-1 text-xs text-default-500">
+            {activeFields.map((f) => f.value).join(" ")}
+          </p>
+        ) : (
+          <div className="mt-1 space-y-0.5">
+            {activeFields.map((f) => (
+              <p key={f.key} className="text-xs text-default-500">
+                {f.key}: {f.value}
+              </p>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="flex shrink-0 items-center gap-1">
+        <Button size="sm" variant="light" onPress={onEdit}>
+          编辑
+        </Button>
+        <Button color="danger" size="sm" variant="light" onPress={onDelete}>
+          删除
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function SettingsMobileList({ children }: { children: ReactNode }) {
+  return <div className="divide-y divide-default-100">{children}</div>;
 }
 
 export function getSingleSelectionValue(keys: Selection) {
