@@ -62,8 +62,8 @@ export const TransactionListItem = memo(function TransactionListItem({
     }
     return {
       icon: "📝",
-      backColor: "bg-gray-100 dark:bg-gray-800",
-      foreColor: "text-gray-600 dark:text-gray-400",
+      backColor: "bg-gray-100 dark:bg-[#2a2f3a]",
+      foreColor: "text-gray-600 dark:text-zinc-400",
     };
   };
 
@@ -93,8 +93,8 @@ export const TransactionListItem = memo(function TransactionListItem({
   const isCanceled = transaction.status === "取消";
   const amountColor = transaction.transaction_type
     ? TRANSACTION_TYPES.find((t) => t.type === transaction.transaction_type)?.amount_color ||
-      "text-gray-600 dark:text-gray-400"
-    : "text-gray-600 dark:text-gray-400";
+      "text-gray-600 dark:text-zinc-400"
+    : "text-gray-600 dark:text-zinc-400";
   const splitsCount = transaction.splits?.length || 0;
   const childrenCount = transaction.children_ids.length;
   const isChild = !!transaction.parent_id;
@@ -104,8 +104,12 @@ export const TransactionListItem = memo(function TransactionListItem({
       role="button"
       tabIndex={0}
       className={`
-        ${isChild ? "pl-8 pr-4 py-2" : "px-4 py-3"} cursor-pointer transition-colors border-b border-gray-200 dark:border-gray-700
-        ${isSelected ? "bg-primary-50 dark:bg-primary-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-800/50"}
+        ${isChild ? "pl-8 pr-4 py-2" : "px-4 py-3"} cursor-pointer transition-colors border-b border-gray-100 dark:border-white/[0.05]
+        ${
+          isSelected
+            ? "bg-primary-50 dark:bg-primary-500/10 dark:border-l-2 dark:border-l-primary-400/70"
+            : "hover:bg-gray-50 dark:hover:bg-white/[0.04]"
+        }
       `}
       onClick={onSelect ? onClick : undefined}
       onKeyDown={(e) => {
@@ -119,7 +123,7 @@ export const TransactionListItem = memo(function TransactionListItem({
         {/* 子记录的引导线 */}
         {isChild && (
           <div className="flex items-center h-full flex-shrink-0">
-            <svg width="20" height="24" className="text-gray-300 dark:text-gray-600">
+            <svg width="20" height="24" className="text-gray-300 dark:text-white/20">
               <path d="M 4 0 L 4 12 L 20 12" stroke="currentColor" strokeWidth="1" fill="none" />
             </svg>
           </div>
@@ -135,7 +139,7 @@ export const TransactionListItem = memo(function TransactionListItem({
           {/* 未保存指示点 */}
           {isDirty && (
             <div
-              className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-warning border-2 border-white dark:border-gray-900"
+              className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-warning border-2 border-white dark:border-[#161b22]"
               title="未保存的更改"
             />
           )}
@@ -146,7 +150,7 @@ export const TransactionListItem = memo(function TransactionListItem({
           {/* 第一行：名称和金额 */}
           <div className="flex items-baseline justify-between mb-1">
             <span
-              className={`${isChild ? "text-xs" : "text-sm"} ${isChild ? "font-normal" : "font-medium"} text-gray-900 dark:text-gray-100 truncate`}
+              className={`${isChild ? "text-xs" : "text-sm"} ${isChild ? "font-normal" : "font-medium"} text-gray-900 dark:text-zinc-100 truncate`}
             >
               {getDisplayName()}
             </span>
@@ -161,7 +165,7 @@ export const TransactionListItem = memo(function TransactionListItem({
 
           {/* 第二行：日期时间和账户 */}
           <div
-            className={`flex items-center justify-between ${isChild ? "text-[10px]" : "text-xs"} text-gray-500 dark:text-gray-400 mb-1`}
+            className={`flex items-center justify-between ${isChild ? "text-[10px]" : "text-xs"} text-gray-500 dark:text-zinc-500 mb-1`}
           >
             <span className="truncate">
               {displayTxTime(transaction.datetime, "short")}
@@ -176,7 +180,7 @@ export const TransactionListItem = memo(function TransactionListItem({
           <div className="flex items-center justify-between">
             <div className={`flex items-center gap-1.5 ${isChild ? "text-[10px]" : "text-xs"}`}>
               <span
-                className={`${isChild ? "font-normal" : "font-semibold"} text-gray-600 dark:text-gray-400`}
+                className={`${isChild ? "font-normal" : "font-semibold"} text-gray-600 dark:text-zinc-500`}
               >
                 #{transaction.id}
               </span>

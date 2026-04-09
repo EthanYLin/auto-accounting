@@ -9,6 +9,7 @@ import { DatePicker } from "@heroui/react";
 import { Button } from "@heroui/react";
 import { EllipsisHorizontalIcon } from "@heroicons/react/24/outline";
 import { parseDateTime } from "@internationalized/date";
+import { useTheme } from "next-themes";
 
 import { AmountInput } from "./common/amount-input";
 
@@ -64,6 +65,10 @@ interface TxFieldInputsProps {
 export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
   const { accounts } = useAppData();
   const editor = useTransactionEditor();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+  const labelPlacement = isDark ? "inside" : "outside";
+  const inputVariant = isDark ? "bordered" : "underlined";
   const tx = editor.currentTransaction;
   const children = editor.currentChildTransactions;
   const entranceSummary = editor.entranceSummary;
@@ -113,12 +118,12 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
   const nameInput = (
     <Input
       label="名称"
-      labelPlacement="outside"
+      labelPlacement={labelPlacement}
       placeholder="请输入名称"
       value={localName}
       onValueChange={setLocalName}
-      size="sm"
-      variant="underlined"
+      size={isDark ? "md" : "sm"}
+      variant={inputVariant}
       classNames={{ input: "font-bold" }}
       endContent={
         tx.title ? (
@@ -131,7 +136,7 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
             aria-label="涂抹选择文字"
           >
             <EllipsisHorizontalIcon
-              className="w-4 h-4 text-gray-500 dark:text-gray-400"
+              className="w-4 h-4 text-gray-500 dark:text-zinc-500"
               strokeWidth={2}
             />
           </Button>
@@ -143,12 +148,12 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
   const merchantInput = (
     <Input
       label="商户"
-      labelPlacement="outside"
+      labelPlacement={labelPlacement}
       placeholder="请输入商户名称"
       value={localMerchant}
       onValueChange={setLocalMerchant}
-      size="sm"
-      variant="underlined"
+      size={isDark ? "md" : "sm"}
+      variant={inputVariant}
       classNames={{ input: "font-bold" }}
       endContent={
         <div className="flex gap-1">
@@ -162,7 +167,7 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
               aria-label="涂抹选择文字"
             >
               <EllipsisHorizontalIcon
-                className="w-4 h-4 text-gray-500 dark:text-gray-400"
+                className="w-4 h-4 text-gray-500 dark:text-zinc-500"
                 strokeWidth={2}
               />
             </Button>
@@ -175,15 +180,15 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
   const accountSelect = (
     <Select
       label="账户"
-      labelPlacement="outside"
+      labelPlacement={labelPlacement}
       placeholder="请选择账户"
       selectedKeys={tx.account ? [String(tx.account.id)] : []}
       onSelectionChange={(keys) => {
         const account = Array.from(keys)[0] as string;
         editor.updateFields({ account });
       }}
-      size="sm"
-      variant="underlined"
+      size={isDark ? "md" : "sm"}
+      variant={inputVariant}
       classNames={{ value: "font-normal" }}
     >
       {accounts.map((account) => (
@@ -195,7 +200,7 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
   const dateField = (
     <DatePicker
       label="日期时间"
-      labelPlacement="outside"
+      labelPlacement={labelPlacement}
       granularity="second"
       hourCycle={24}
       value={(() => {
@@ -211,8 +216,8 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
           datetime: date ? date.toString() : null,
         })
       }
-      size="sm"
-      variant="underlined"
+      size={isDark ? "md" : "sm"}
+      variant={inputVariant}
       classNames={{ input: "font-normal" }}
     />
   );
@@ -221,11 +226,11 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
     <Input
       label="备注"
       placeholder="无备注"
-      labelPlacement="outside"
+      labelPlacement={labelPlacement}
       value={localRemark}
       onValueChange={setLocalRemark}
-      size="sm"
-      variant="underlined"
+      size={isDark ? "md" : "sm"}
+      variant={inputVariant}
       classNames={{ input: "font-normal" }}
     />
   );

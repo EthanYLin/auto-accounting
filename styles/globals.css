@@ -2,6 +2,17 @@
 
 @config "../tailwind.config.js";
 
+/* Dark mode background override — prevent pure black */
+.dark body {
+  background-color: #171717;
+}
+
+/* Dark mode: neutralize saturated listbox selected-item backgrounds */
+.dark [role="option"][aria-selected="true"],
+.dark [role="option"][data-selected="true"] {
+  background-color: rgba(255, 255, 255, 0.09) !important;
+}
+
 /* Font configurations - using system fonts for better reliability */
 :root {
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;

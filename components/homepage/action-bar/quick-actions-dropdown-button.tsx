@@ -180,7 +180,7 @@ export function QuickActionsDropdownButton({
         >
           <ModalHeader>{dangerConfirm.title}</ModalHeader>
           <ModalBody>
-            <p className="text-sm text-gray-600 dark:text-gray-400">{dangerConfirm.description}</p>
+            <p className="text-sm text-gray-600 dark:text-zinc-400">{dangerConfirm.description}</p>
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={dangerConfirm.onClose}>

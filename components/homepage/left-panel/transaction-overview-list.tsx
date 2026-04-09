@@ -76,7 +76,7 @@ export const TransactionOverviewList = forwardRef<
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center">
         <p className="text-danger text-sm mb-2">加载失败</p>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{error}</p>
+        <p className="text-xs text-gray-500 dark:text-zinc-500">{error}</p>
       </div>
     );
   }
@@ -97,7 +97,7 @@ export const TransactionOverviewList = forwardRef<
     return (
       <div className="flex h-full w-full">
         <div className="m-auto flex flex-col items-center justify-center text-center gap-3">
-          <p className="text-sm text-gray-500 dark:text-gray-400">暂无交易记录</p>
+          <p className="text-sm text-gray-500 dark:text-zinc-500">暂无交易记录</p>
           {isFiltered && transactions.length > 0 ? (
             <Button
               size="sm"

@@ -327,7 +327,7 @@ export function ActionBar() {
   useCommandListener("discard-current", () => executeQuickAction("discard-current"));
 
   return (
-    <div className="sticky top-0 z-30 border-b border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+    <div className="sticky top-0 z-30 border-b border-gray-200 bg-white shadow-sm dark:border-white/[0.07] dark:bg-[#242424] dark:shadow-none">
       <div className="px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">

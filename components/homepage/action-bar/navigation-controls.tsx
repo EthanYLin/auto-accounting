@@ -53,10 +53,10 @@ export function NavigationControls() {
         <ChevronLeftIcon className="h-4 w-4" />
       </Button>
 
-      <div className="flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-2 text-sm dark:bg-gray-800">
+      <div className="flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-2 text-sm dark:bg-white/[0.06]">
         {isEditingIndex ? (
           <input
-            className="w-[4ch] bg-transparent text-center font-semibold text-gray-900 outline-none [appearance:textfield] dark:text-gray-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="w-[4ch] bg-transparent text-center font-semibold text-gray-900 outline-none [appearance:textfield] dark:text-zinc-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             max={totalCount}
             min={1}
             ref={inputRef}
@@ -75,7 +75,7 @@ export function NavigationControls() {
         ) : (
           <button
             aria-label="输入序号跳转"
-            className="min-w-[2ch] cursor-pointer text-center font-semibold text-gray-900 hover:underline dark:text-gray-100"
+            className="min-w-[2ch] cursor-pointer text-center font-semibold text-gray-900 hover:underline dark:text-zinc-100"
             title="点击输入序号跳转"
             type="button"
             onClick={startEditing}
@@ -83,8 +83,8 @@ export function NavigationControls() {
             {currentIndex}
           </button>
         )}
-        <span className="text-gray-500 dark:text-gray-400">/</span>
-        <span className="font-medium text-gray-700 dark:text-gray-300">{totalCount}</span>
+        <span className="text-gray-500 dark:text-zinc-500">/</span>
+        <span className="font-medium text-gray-700 dark:text-zinc-300">{totalCount}</span>
       </div>
 
       <Button

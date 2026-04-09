@@ -167,8 +167,8 @@ function TransactionsRoutePage() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
     >
-      <aside className="flex h-full min-h-0 w-80 flex-col border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-        <div className="shrink-0 border-b border-gray-200 p-4 dark:border-gray-700">
+      <aside className="flex h-full min-h-0 w-80 flex-col border-r border-gray-200 bg-white dark:border-white/[0.07] dark:bg-[#1f1f1f]">
+        <div className="shrink-0 border-b border-gray-200 p-4 dark:border-white/[0.07]">
           <div className="flex items-center gap-2">
             <Input
               ref={searchInputRef}
@@ -215,8 +215,8 @@ function TransactionsRoutePage() {
           ) : store.transactions.length === 0 ? (
             <div className="flex h-full items-center justify-center">
               <div className="text-center">
-                <p className="mb-2 text-lg text-gray-500 dark:text-gray-400">暂无账单</p>
-                <p className="mb-6 text-sm text-gray-400 dark:text-gray-500">请先新建或导入账单</p>
+                <p className="mb-2 text-lg text-gray-500 dark:text-zinc-400">暂无账单</p>
+                <p className="mb-6 text-sm text-gray-400 dark:text-zinc-500">请先新建或导入账单</p>
                 <div className="flex justify-center gap-3">
                   <Button
                     size="sm"
@@ -242,8 +242,8 @@ function TransactionsRoutePage() {
           ) : currentTransaction === null ? (
             <div className="flex h-full items-center justify-center">
               <div className="text-center">
-                <p className="mb-2 text-lg text-gray-500 dark:text-gray-400">未选择账单</p>
-                <p className="mb-6 text-sm text-gray-400 dark:text-gray-500">
+                <p className="mb-2 text-lg text-gray-500 dark:text-zinc-400">未选择账单</p>
+                <p className="mb-6 text-sm text-gray-400 dark:text-zinc-500">
                   请先在左侧选择一个账单
                 </p>
                 <div className="flex justify-center gap-3">

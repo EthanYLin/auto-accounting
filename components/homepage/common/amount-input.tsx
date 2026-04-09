@@ -124,7 +124,7 @@ export function AmountInput({
       onBlur={handleAmountBlur}
       onKeyDown={handleAmountKeyDown}
       classNames={{
-        inputWrapper: `h-full ${minHeight} flex items-center`,
+        inputWrapper: `h-full ${minHeight} flex items-center dark:border-white/[0.12] dark:bg-white/[0.03]`,
         input: `${textSize} font-bold text-right pr-3 ${colorClass}`,
       }}
       size="sm"

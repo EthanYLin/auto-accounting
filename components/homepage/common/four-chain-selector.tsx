@@ -145,8 +145,8 @@ function ListboxDisplayMode({
 
   return (
     <div className="flex-1 min-w-[165px]">
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{title}</p>
-      <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-800 shadow-sm">
+      <p className="text-xs text-gray-500 dark:text-zinc-500 mb-2">{title}</p>
+      <div className="border border-gray-200 dark:border-white/[0.08] rounded-lg p-2 bg-white dark:bg-[#222222] shadow-sm dark:shadow-none">
         <div ref={scrollRef} className="h-52 overflow-y-auto overscroll-contain">
           <Listbox
             aria-label={title}
@@ -340,8 +340,8 @@ export function FourChainSelector({
         label: txType,
         textValue: txType,
         icon: t?.icon || "🔄",
-        backColor: t?.back_color || "bg-gray-100 dark:bg-gray-800",
-        foreColor: t?.fore_color || "text-gray-800 dark:text-gray-200",
+        backColor: t?.back_color || "bg-gray-100 dark:bg-[#2a2f3a]",
+        foreColor: t?.fore_color || "text-gray-800 dark:text-zinc-200",
       };
     });
   }, [allowedTxTypes]);
@@ -381,8 +381,8 @@ export function FourChainSelector({
         label: i.name,
         textValue: i.name,
         icon: i.icon || "📊",
-        backColor: "bg-blue-100 dark:bg-blue-800",
-        foreColor: "text-blue-800 dark:text-blue-200",
+        backColor: "bg-blue-100 dark:bg-blue-950/60",
+        foreColor: "text-blue-800 dark:text-blue-300",
       })),
     [budgetTypes],
   );

@@ -59,7 +59,9 @@ export function TxImportInfo() {
           <div className="space-y-4">
             {/* 状态 */}
             <div>
-              <h3 className="text-sm font-semibold text-foreground-600 mb-1">状态</h3>
+              <h3 className="text-sm font-semibold text-foreground-600 dark:text-zinc-400 mb-1">
+                状态
+              </h3>
               <p className="text-sm">{tx.status || "无"}</p>
             </div>
 
@@ -90,7 +92,7 @@ export function TxImportInfo() {
                     ([_, value]) => value !== null && value !== undefined && value !== "",
                   );
                   return filteredEntries.length > 0 ? (
-                    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3 space-y-2">
+                    <div className="bg-gray-100 dark:bg-white/[0.04] rounded-lg p-3 space-y-2">
                       {filteredEntries.map(([key, value]) => (
                         <div key={key} className="flex gap-2">
                           <span className="text-xs font-medium text-foreground-600 min-w-[100px]">
@@ -101,11 +103,11 @@ export function TxImportInfo() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500">无原始信息</p>
+                    <p className="text-sm text-gray-500 dark:text-zinc-500">无原始信息</p>
                   );
                 })()
               ) : (
-                <p className="text-sm text-gray-500">无原始信息</p>
+                <p className="text-sm text-gray-500 dark:text-zinc-500">无原始信息</p>
               )}
             </div>
           </div>
