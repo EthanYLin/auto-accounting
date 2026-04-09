@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Accordion, AccordionItem } from "@heroui/react";
+import { Accordion, AccordionItem, Kbd } from "@heroui/react";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 
 import { useCommandListener } from "@/lib/commands";
@@ -44,7 +44,14 @@ export function TxImportInfo() {
           key="import-info"
           aria-label="导入信息"
           title={tx.title || "导入信息"}
-          subtitle="点按展开导入信息"
+          subtitle={
+            <span className="flex items-center gap-1">
+              点按展开导入信息{" "}
+              <Kbd keys={[]} className="text-[10px] w-4 h-4 p-0 flex items-center justify-center">
+                Q
+              </Kbd>
+            </span>
+          }
           startContent={
             <InformationCircleIcon className="w-4 h-4 shrink-0 text-default-500" aria-hidden />
           }

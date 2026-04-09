@@ -2,7 +2,7 @@
 
 import type { TransactionWithRelations } from "@/types";
 
-import React, { memo } from "react";
+import React, { memo, useCallback } from "react";
 import { Chip } from "@heroui/react";
 import { LinkIcon, RectangleStackIcon, ScissorsIcon } from "@heroicons/react/24/outline";
 
@@ -26,13 +26,14 @@ export const TransactionListItem = memo(function TransactionListItem({
   transaction,
   isSelected = false,
   isDirty = false,
-  onClick,
+  onSelect,
 }: {
   transaction: TransactionWithRelations;
   isSelected?: boolean;
   isDirty?: boolean;
-  onClick?: () => void;
+  onSelect?: (id: number) => void;
 }) {
+  const onClick = useCallback(() => onSelect?.(transaction.id), [onSelect, transaction.id]);
   // 获取图标和颜色（优先级：子类别 > 主类别 > 交易类型 > 默认）
   const getIconAndColor = () => {
     if (transaction.sub_category) {
@@ -97,25 +98,22 @@ export const TransactionListItem = memo(function TransactionListItem({
   const splitsCount = transaction.splits?.length || 0;
   const childrenCount = transaction.children_ids.length;
   const isChild = !!transaction.parent_id;
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!onClick) return;
-
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      onClick();
-    }
-  };
 
   return (
     <div
-      role={onClick ? "button" : undefined}
-      tabIndex={onClick ? 0 : undefined}
+      role="button"
+      tabIndex={0}
       className={`
         ${isChild ? "pl-8 pr-4 py-2" : "px-4 py-3"} cursor-pointer transition-colors border-b border-gray-200 dark:border-gray-700
         ${isSelected ? "bg-primary-50 dark:bg-primary-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-800/50"}
       `}
-      onClick={onClick}
-      onKeyDown={handleKeyDown}
+      onClick={onSelect ? onClick : undefined}
+      onKeyDown={(e) => {
+        if ((e.key === "Enter" || e.key === " ") && onSelect) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
     >
       <div className="flex items-center gap-3">
         {/* 子记录的引导线 */}

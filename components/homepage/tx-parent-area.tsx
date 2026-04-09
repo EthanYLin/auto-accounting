@@ -6,6 +6,7 @@ import { useDisclosure } from "@heroui/react";
 import { Chip } from "@heroui/react";
 import { addToast } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/react";
+import { Kbd } from "@heroui/react";
 import {
   PlusIcon,
   XMarkIcon,
@@ -91,6 +92,12 @@ export function TxParentArea() {
             onPress={() => onOpen()}
           >
             {childTransactions.length > 0 ? "选择附加账单" : "添加附加账单"}
+            <Kbd
+              keys={[]}
+              className="text-[10px] w-4 h-4 p-0 flex items-center justify-center ml-1"
+            >
+              A
+            </Kbd>
           </Button>
         </div>
       )}

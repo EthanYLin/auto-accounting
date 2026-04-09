@@ -2,7 +2,7 @@
 
 import type { TransactionWithRelations } from "@/types";
 
-import React, { forwardRef, useImperativeHandle, useRef, useCallback } from "react";
+import React, { forwardRef, useImperativeHandle, useRef } from "react";
 import { Spinner } from "@heroui/react";
 import { Button } from "@heroui/react";
 import { CloudArrowDownIcon, XMarkIcon } from "@heroicons/react/24/outline";
@@ -69,11 +69,6 @@ export const TransactionOverviewList = forwardRef<
       virtualizer.scrollToIndex(index, { behavior: "smooth", align: "center" });
     },
   }));
-
-  const handleClick = useCallback(
-    (id: number) => () => onSelectTransaction(id),
-    [onSelectTransaction],
-  );
 
   // 错误状态
   if (error) {
@@ -162,7 +157,7 @@ export const TransactionOverviewList = forwardRef<
                 transaction={transaction}
                 isSelected={currentId !== undefined && transaction.id === currentId}
                 isDirty={isDirty(transaction.id)}
-                onClick={handleClick(transaction.id)}
+                onSelect={onSelectTransaction}
               />
             </div>
           );

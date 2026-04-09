@@ -1,4 +1,4 @@
-import { Button } from "@heroui/react";
+import { Button, Kbd } from "@heroui/react";
 import { CheckCircleIcon, ForwardIcon } from "@heroicons/react/24/outline";
 
 interface PrimarySaveButtonProps {
@@ -29,6 +29,14 @@ export function PrimarySaveButton({
       onPress={onPress}
     >
       {saveButtonOverride ? "仍切换到下一条" : "保存并完成"}
+      {
+        <Kbd
+          keys={["command"]}
+          className="text-[10px] ml-1 bg-white/20 border-white/30 text-white shadow-none"
+        >
+          ↵
+        </Kbd>
+      }
     </Button>
   );
 }

@@ -1,6 +1,7 @@
 import type { DangerConfirm, QuickActionIcon, QuickActionKey } from "./action-bar-config";
 
-import { Button, ButtonGroup } from "@heroui/react";
+import React from "react";
+import { Button, ButtonGroup, Kbd } from "@heroui/react";
 import {
   Dropdown,
   DropdownItem,
@@ -28,6 +29,39 @@ interface QuickActionsDropdownButtonProps {
 const SAVE_ACTION_ITEMS = QUICK_ACTION_ITEMS.filter((item) => item.section === 1);
 const NAVIGATION_ACTION_ITEMS = QUICK_ACTION_ITEMS.filter((item) => item.section === 2);
 const DANGER_ACTION_ITEMS = QUICK_ACTION_ITEMS.filter((item) => item.section === 3);
+
+const ITEM_KBD: Partial<Record<string, React.ReactNode>> = {
+  save: (
+    <Kbd keys={["command"]} className="text-[10px]">
+      S
+    </Kbd>
+  ),
+  "save-cancel": (
+    <Kbd keys={["command"]} className="text-[10px]">
+      E
+    </Kbd>
+  ),
+  "save-later": (
+    <Kbd keys={["command", "shift"]} className="text-[10px]">
+      S
+    </Kbd>
+  ),
+  new: (
+    <Kbd keys={["option"]} className="text-[10px]">
+      N
+    </Kbd>
+  ),
+  "locate-current": (
+    <Kbd keys={[]} className="text-[10px] w-4 h-4 p-0 flex items-center justify-center">
+      L
+    </Kbd>
+  ),
+  delete: (
+    <Kbd keys={["option"]} className="text-[10px]">
+      ⌫
+    </Kbd>
+  ),
+};
 
 export function QuickActionsDropdownButton({
   currentQuickActionIcon: CurrentQuickActionIcon,
@@ -84,6 +118,7 @@ export function QuickActionsDropdownButton({
                         <ItemIcon className="h-4 w-4" />
                       )
                     }
+                    endContent={ITEM_KBD[item.key]}
                   >
                     {item.key === "auto-switch"
                       ? `已${autoSwitch ? "开启" : "关闭"} ${item.label}`
@@ -97,7 +132,11 @@ export function QuickActionsDropdownButton({
               {NAVIGATION_ACTION_ITEMS.map((item) => {
                 const ItemIcon = item.icon;
                 return (
-                  <DropdownItem key={item.key} startContent={<ItemIcon className="h-4 w-4" />}>
+                  <DropdownItem
+                    key={item.key}
+                    startContent={<ItemIcon className="h-4 w-4" />}
+                    endContent={ITEM_KBD[item.key]}
+                  >
                     {item.label.replace("$dirtyCount", String(dirtyCount))}
                   </DropdownItem>
                 );
@@ -119,6 +158,7 @@ export function QuickActionsDropdownButton({
                     key={item.key}
                     color="danger"
                     startContent={<ItemIcon className="h-4 w-4" />}
+                    endContent={ITEM_KBD[item.key]}
                   >
                     {item.label.replace("$dirtyCount", String(dirtyCount))}
                   </DropdownItem>

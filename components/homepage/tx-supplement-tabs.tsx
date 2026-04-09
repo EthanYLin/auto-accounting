@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Divider, Tab, Tabs } from "@heroui/react";
+import { Divider, Kbd, Tab, Tabs } from "@heroui/react";
 
 import { useCommandListener } from "@/lib/commands";
 import { useTransactionEditor } from "@/components/context/transaction-editor-context";
@@ -53,17 +53,47 @@ export function TxSupplementTabs() {
       variant="underlined"
       classNames={{ base: "mb-0", panel: "mb-0 px-0 py-0" }}
     >
-      <Tab key="tx-info" title="交易信息">
+      <Tab
+        key="tx-info"
+        title={
+          <span className="flex items-center gap-1">
+            交易信息
+            <Kbd keys={[]} className="text-[10px] w-4 h-4 p-0 flex items-center justify-center">
+              1
+            </Kbd>
+          </span>
+        }
+      >
         <div className="py-1" />
       </Tab>
-      <Tab key="parent" title={`附加交易${childrenCount > 0 ? `(${childrenCount})` : ""}`}>
+      <Tab
+        key="parent"
+        title={
+          <span className="flex items-center gap-1">
+            {`附加交易${childrenCount > 0 ? `(${childrenCount})` : ""}`}
+            <Kbd keys={[]} className="text-[10px] w-4 h-4 p-0 flex items-center justify-center">
+              2
+            </Kbd>
+          </span>
+        }
+      >
         <div className="py-3 flex flex-col space-y-3">
           <TxParentArea />
           <Divider />
         </div>
       </Tab>
       {hasSplitTab && (
-        <Tab key="split" title={`分账${splitCount > 0 ? `(${splitCount})` : ""}`}>
+        <Tab
+          key="split"
+          title={
+            <span className="flex items-center gap-1">
+              {`分账${splitCount > 0 ? `(${splitCount})` : ""}`}
+              <Kbd keys={[]} className="text-[10px] w-4 h-4 p-0 flex items-center justify-center">
+                3
+              </Kbd>
+            </span>
+          }
+        >
           <div className="py-3 flex flex-col space-y-3">
             <SplitEntryArea isActive={activeTab === "split"} />
             <Divider />

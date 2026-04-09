@@ -4,7 +4,7 @@ import type { TransactionOverviewListHandle } from "@/components/homepage/left-p
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Alert, Button, Input, Spinner } from "@heroui/react";
+import { Alert, Button, Input, Kbd, Spinner } from "@heroui/react";
 import {
   ArrowDownTrayIcon,
   DocumentPlusIcon,
@@ -162,6 +162,11 @@ export default function TransactionsRoutePage() {
               value={search.searchQuery}
               onValueChange={search.setSearchQuery}
               startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
+              endContent={
+                <Kbd keys={["command"]} className="text-[10px]">
+                  K
+                </Kbd>
+              }
               variant="bordered"
               size="sm"
               className="flex-1"
