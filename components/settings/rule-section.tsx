@@ -331,7 +331,7 @@ function RuleDrawer({
 
       <Divider />
 
-      <section className="space-y-4 rounded-3xl border border-default-200 bg-white p-4">
+      <section className="space-y-4 rounded-3xl border border-default-200 bg-content1 p-4">
         <div>
           <h3 className="font-medium">目标赋值</h3>
           <p className="mt-1 text-sm text-default-500">规则命中后，把这些信息写入交易。</p>
