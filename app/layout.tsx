@@ -23,6 +23,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "white" },
     { media: "(prefers-color-scheme: dark)", color: "black" },
@@ -35,15 +36,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head />
       <body
         className={clsx(
-          "min-h-screen text-foreground bg-background font-sans antialiased",
+          "min-h-dvh text-foreground bg-background font-sans antialiased",
           fontSans.variable,
           fontMono.variable,
         )}
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
-          <div className="relative flex flex-col h-screen">
+          <div className="relative flex flex-col h-dvh">
             <Navbar />
-            <main className="w-full flex-grow flex flex-col min-h-0">{children}</main>
+            <main
+              className="w-full flex-grow flex flex-col min-h-0"
+              style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+            >
+              {children}
+            </main>
           </div>
         </Providers>
       </body>

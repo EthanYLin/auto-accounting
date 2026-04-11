@@ -87,33 +87,60 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
 
   if (!tx) return null;
 
-  const isMultiEntranceCompact = entranceSummary.length >= 2;
+  const multiAccount = entranceSummary.length >= 2;
+  const sameAccountMerge = entranceSummary.length === 1 && children.length > 0;
 
-  const amountInput =
-    entranceSummary.length === 1 && children.length > 0 ? (
-      <>
-        <span
-          className={`text-xs font-bold ${getAmountColorClass(entranceSummary[0]!.transaction_type)} shrink-0`}
-        >
-          {entranceSummary[0]!.amount === 0 ? "该账单正负相抵" : "汇总后"}
-        </span>
-        <div className="flex-1 min-h-0">
-          <AmountInput
-            value={Math.abs(entranceSummary[0]!.amount).toFixed(2)}
-            transactionType={entranceSummary[0]!.transaction_type}
-            isDisabled
-          />
-        </div>
-      </>
-    ) : (
+  /* 普通金额输入框 (lg) */
+  const amountInputLg = sameAccountMerge ? (
+    <>
+      <span
+        className={`text-xs font-bold ${getAmountColorClass(entranceSummary[0]!.transaction_type)} shrink-0`}
+      >
+        {entranceSummary[0]!.amount === 0 ? "该账单正负相抵" : "汇总后"}
+      </span>
       <div className="flex-1 min-h-0">
         <AmountInput
-          value={Math.abs(tx.amount).toFixed(2)}
-          onChange={(value) => editor.updateFields({ amount: value })}
-          transactionType={selectedTxType}
+          value={Math.abs(entranceSummary[0]!.amount).toFixed(2)}
+          transactionType={entranceSummary[0]!.transaction_type}
+          isDisabled
         />
       </div>
-    );
+    </>
+  ) : (
+    <div className="flex-1 min-h-0">
+      <AmountInput
+        value={Math.abs(tx.amount).toFixed(2)}
+        onChange={(value) => editor.updateFields({ amount: value })}
+        transactionType={selectedTxType}
+      />
+    </div>
+  );
+
+  /* 单行金额输入 (xs,sm,md) */
+  const amountInputSm = sameAccountMerge ? (
+    <div className="flex min-h-0 flex-col gap-1">
+      <span
+        className={`text-xs font-bold ${getAmountColorClass(entranceSummary[0]!.transaction_type)} shrink-0`}
+      >
+        {entranceSummary[0]!.amount === 0 ? "该账单正负相抵" : "汇总后"}
+      </span>
+      <div className="min-h-0 flex-1">
+        <AmountInput
+          value={Math.abs(entranceSummary[0]!.amount).toFixed(2)}
+          transactionType={entranceSummary[0]!.transaction_type}
+          isDisabled
+          size="md"
+        />
+      </div>
+    </div>
+  ) : (
+    <AmountInput
+      value={Math.abs(tx.amount).toFixed(2)}
+      onChange={(value) => editor.updateFields({ amount: value })}
+      transactionType={selectedTxType}
+      size="md"
+    />
+  );
 
   const nameInput = (
     <Input
@@ -124,7 +151,7 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
       onValueChange={setLocalName}
       size={isDark ? "md" : "sm"}
       variant={inputVariant}
-      classNames={{ input: "font-bold" }}
+      classNames={{ input: "font-bold text-base sm:text-small" }}
       endContent={
         tx.title ? (
           <Button
@@ -154,7 +181,7 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
       onValueChange={setLocalMerchant}
       size={isDark ? "md" : "sm"}
       variant={inputVariant}
-      classNames={{ input: "font-bold" }}
+      classNames={{ input: "font-bold text-base sm:text-small" }}
       endContent={
         <div className="flex gap-1">
           {tx.title && (
@@ -189,7 +216,7 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
       }}
       size={isDark ? "md" : "sm"}
       variant={inputVariant}
-      classNames={{ value: "font-normal" }}
+      classNames={{ value: "font-normal text-base sm:text-small" }}
     >
       {accounts.map((account) => (
         <SelectItem key={account.id.toString()}>{account.name}</SelectItem>
@@ -218,7 +245,7 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
       }
       size={isDark ? "md" : "sm"}
       variant={inputVariant}
-      classNames={{ input: "font-normal" }}
+      classNames={{ input: "font-normal text-small" }}
     />
   );
 
@@ -231,45 +258,90 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
       onValueChange={setLocalRemark}
       size={isDark ? "md" : "sm"}
       variant={inputVariant}
-      classNames={{ input: "font-normal" }}
+      classNames={{ input: "font-normal text-base sm:text-small" }}
     />
+  );
+
+  const multiAccountTxFieldInputs = (
+    <div className="grid min-w-0 items-end gap-3 grid-cols-2 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,1.35fr)_minmax(0,1.35fr)]">
+      <div className="min-w-0">{nameInput}</div>
+      <div className="min-w-0">{merchantInput}</div>
+      <div className="min-w-0">{dateField}</div>
+      <div className="min-w-0">{remarkInput}</div>
+    </div>
   );
 
   return (
     <div className="w-full min-w-0">
-      {isMultiEntranceCompact ? (
-        <div
-          className="grid gap-3 min-w-0 items-end"
-          style={{
-            gridTemplateColumns:
-              "minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,1.35fr) minmax(0,1.35fr)",
-          }}
-        >
-          <div className="min-w-0">{nameInput}</div>
-          <div className="min-w-0">{merchantInput}</div>
-          <div className="min-w-0">{dateField}</div>
-          <div className="min-w-0">{remarkInput}</div>
-        </div>
+      {multiAccount ? (
+        multiAccountTxFieldInputs
       ) : (
-        <div className="grid gap-3 min-h-28 min-w-0" style={{ gridTemplateColumns: "200px 1fr" }}>
-          {/* 左侧：金额输入 */}
-          <div className="row-span-2 flex flex-col gap-1 min-h-0" style={{ position: "relative" }}>
-            {amountInput}
+        <>
+          {/* ── lg+ ── 两列布局：左金额 + 右字段 (第一行：名称、商家、账户；第二行：日期、备注) */}
+          <div
+            className="hidden lg:grid gap-3 min-h-28 min-w-0"
+            style={{ gridTemplateColumns: "200px 1fr" }}
+          >
+            <div
+              className="row-span-2 flex flex-col gap-1 min-h-0"
+              style={{ position: "relative" }}
+            >
+              {amountInputLg}
+            </div>
+            <div
+              className="grid gap-3"
+              style={{ gridTemplateColumns: "minmax(0,7fr) minmax(0,7fr) minmax(0,5fr)" }}
+            >
+              {nameInput}
+              {merchantInput}
+              {accountSelect}
+            </div>
+            <div
+              className="grid gap-3 items-end"
+              style={{ gridTemplateColumns: "minmax(0,2fr) minmax(0,3fr)" }}
+            >
+              {dateField}
+              {remarkInput}
+            </div>
           </div>
 
-          {/* 右侧第一行：名称、商户、账户 */}
-          <div className="grid gap-3" style={{ gridTemplateColumns: "7fr 7fr 5fr" }}>
-            {nameInput}
-            {merchantInput}
-            {accountSelect}
+          {/* ── sm~md ── 两行布局：金额+名称+商家 / 账户+日期+备注 */}
+          <div className="hidden sm:grid lg:hidden gap-3 min-w-0">
+            <div className="grid gap-3 items-end" style={{ gridTemplateColumns: "auto 1fr 1fr" }}>
+              <div className="min-h-0 w-[150px]">{amountInputSm}</div>
+              {nameInput}
+              {merchantInput}
+            </div>
+            <div
+              className="grid gap-3 items-end"
+              style={{ gridTemplateColumns: "minmax(0,5fr) minmax(0,7fr) minmax(0,7fr)" }}
+            >
+              {accountSelect}
+              {dateField}
+              {remarkInput}
+            </div>
           </div>
 
-          {/* 右侧第二行：日期时间、备注 */}
-          <div className="grid gap-3 items-end" style={{ gridTemplateColumns: "2fr 3fr" }}>
-            {dateField}
-            {remarkInput}
+          {/* ── <sm ── 四行：金额 / 名称+商家 / 账户+备注/ 日期 */}
+          <div className="grid sm:hidden gap-3 min-w-0">
+            <div className="min-h-0">{amountInputSm}</div>
+            <div
+              className="grid gap-3"
+              style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)" }}
+            >
+              {nameInput}
+              {merchantInput}
+            </div>
+            <div
+              className="grid gap-3 items-end"
+              style={{ gridTemplateColumns: "minmax(0,4fr) minmax(0,6fr)" }}
+            >
+              {accountSelect}
+              {dateField}
+            </div>
+            <div className="min-h-0">{remarkInput}</div>
           </div>
-        </div>
+        </>
       )}
 
       {/* 名称文字涂抹选择器 */}

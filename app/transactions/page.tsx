@@ -43,7 +43,10 @@ function TransactionsRoutePage() {
   const appData = useAppData();
   const store = useTransactionStore();
   const editor = useTransactionEditor();
-  const isEditorLoading = !appData.hasLoaded || editor.isCreatingTransaction;
+  const isEditorLoading =
+    !appData.hasLoaded ||
+    (appData.accounts.length > 0 && !store.hasLoaded) ||
+    editor.isCreatingTransaction;
 
   useEffect(() => {
     if (appData.error) {
@@ -156,7 +159,7 @@ function TransactionsRoutePage() {
 
   return (
     <motion.div
-      className="flex h-full w-full min-h-0 overflow-hidden"
+      className="flex flex-1 w-full min-h-0 overflow-hidden"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
@@ -169,7 +172,7 @@ function TransactionsRoutePage() {
         onSelectTransaction={editor.selectTransaction}
       />
 
-      <main className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {currentTransaction !== null && currentIndex > 0 && (
           <ActionBar
             sidebarToggle={
@@ -187,7 +190,7 @@ function TransactionsRoutePage() {
           />
         )}
 
-        <div ref={mainContentRef} className="min-h-0 flex-1 overflow-y-auto">
+        <div ref={mainContentRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           {isEditorLoading ? (
             <div className="flex h-full items-center justify-center">
               <Spinner size="sm" />

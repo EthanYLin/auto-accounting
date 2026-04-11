@@ -7,6 +7,11 @@ import { Input } from "@heroui/react";
 
 import { getAmountColorClass, getAmountSymbol } from "@/lib/transaction/transaction-display";
 
+const SIZE_PRESETS = {
+  lg: { textSize: "text-2xl", minHeight: "min-h-[106px]" },
+  md: { textSize: "text-xl", minHeight: "min-h-[60px]" },
+};
+
 interface AmountInputProps {
   value: string;
   /** 失焦确认金额时回调；默认无操作 */
@@ -14,9 +19,11 @@ interface AmountInputProps {
   transactionType?: TransactionType;
   /** 是否禁用输入，默认 false */
   isDisabled?: boolean;
-  /** 金额数字与符号的字体大小，默认 "text-2xl" */
+  /** 预设尺寸: "md" 紧凑 / "lg" 默认 */
+  size?: "md" | "lg";
+  /** 金额数字与符号的字体大小（覆盖 size 预设） */
   textSize?: string;
-  /** inputWrapper 的最小高度，默认 "min-h-[106px]" */
+  /** inputWrapper 的最小高度（覆盖 size 预设） */
   minHeight?: string;
   /** 组件根元素额外的 className（如宽度），默认 "h-full" */
   className?: string;
@@ -27,10 +34,14 @@ export function AmountInput({
   onChange = () => {},
   transactionType,
   isDisabled = false,
-  textSize = "text-2xl",
-  minHeight = "min-h-[106px]",
+  size,
+  textSize: textSizeProp,
+  minHeight: minHeightProp,
   className = "h-full",
 }: AmountInputProps) {
+  const preset = SIZE_PRESETS[size ?? "lg"];
+  const textSize = textSizeProp ?? preset.textSize;
+  const minHeight = minHeightProp ?? preset.minHeight;
   // 金额输入的临时状态（用于实时输入，不影响外部value）
   const [amountInput, setAmountInput] = useState(value);
 
