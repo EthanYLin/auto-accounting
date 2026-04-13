@@ -209,117 +209,219 @@ export function SplitEntryEditor({
                 onDragOver={(e) => handleRowDragOver(e, index)}
                 onDrop={handleRowDrop}
                 onDragEnd={handleRowDragEnd}
-                className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all
+                className={`px-2 py-1.5 rounded-lg transition-all
                           ${isDragging ? "opacity-40 bg-gray-100 dark:bg-gray-700" : "bg-gray-50 dark:bg-gray-800/50"}
                           ${isOver ? "ring-2 ring-blue-400 ring-offset-1 dark:ring-offset-gray-900" : ""}
                         `}
               >
-                {/* 拖动柄 + 序号 */}
-                <div
-                  onPointerDown={handleHandlePointerDown}
-                  className="flex items-center gap-1 flex-shrink-0 w-[38px] cursor-grab active:cursor-grabbing text-gray-400 dark:text-gray-500 select-none"
-                >
-                  <Bars2Icon className="w-4 h-4" />
-                  <span className="text-xs font-medium w-4 text-center">{index + 1}</span>
-                </div>
-
-                {/* 勾选框 */}
-                <Checkbox
-                  size="sm"
-                  isSelected={selectedIds.has(entry.localId)}
-                  onValueChange={() => handleToggleSelect(entry.localId)}
-                  className="flex-shrink-0"
-                />
-
-                {/* 账户下拉框 */}
-                <Select
-                  aria-label="账户"
-                  placeholder="账户"
-                  selectedKeys={entry.accountId ? [entry.accountId] : []}
-                  onSelectionChange={(keys) => {
-                    const key = Array.from(keys)[0] as string;
-                    handleUpdateEntry(entry.localId, "accountId", key || "");
-                  }}
-                  size="sm"
-                  variant="underlined"
-                  className="w-36 flex-shrink-0"
-                  classNames={{ value: "text-[13px]", trigger: "min-h-8" }}
-                >
-                  {accounts.map((account) => (
-                    <SelectItem key={account.id.toString()}>{account.name}</SelectItem>
-                  ))}
-                </Select>
-
-                {/* 金额输入框 */}
-                <div className="w-32 flex-shrink-0">
-                  <AmountInput
-                    value={entry.amount}
-                    onChange={(v) => handleUpdateEntry(entry.localId, "amount", v)}
-                    transactionType={entry.chainState.txType}
-                    textSize="text-sm"
-                    minHeight="min-h-[36px]"
-                    className="h-full"
-                  />
-                </div>
-
-                {/* 类别展示 */}
-                <div
-                  className="flex-1 min-w-[120px] flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors overflow-hidden"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openCategoryModal(entry.localId)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      openCategoryModal(entry.localId);
-                    }
-                  }}
-                >
-                  {categoryDisplay ? (
-                    <>
-                      <CategoryIcon
-                        icon={categoryDisplay.icon}
-                        backColor={categoryDisplay.backColor}
+                {/* xs：两行布局 */}
+                <div className="sm:hidden flex flex-col gap-1">
+                  {/* 第一行：拖动柄+序号 · 勾选 · 类别（flex-1）· 金额输入 */}
+                  <div className="flex items-center gap-2">
+                    <div
+                      onPointerDown={handleHandlePointerDown}
+                      className="flex items-center gap-1 flex-shrink-0 w-[38px] cursor-grab active:cursor-grabbing text-gray-400 dark:text-gray-500 select-none"
+                    >
+                      <Bars2Icon className="w-4 h-4" />
+                      <span className="text-xs font-medium w-4 text-center">{index + 1}</span>
+                    </div>
+                    <Checkbox
+                      size="sm"
+                      isSelected={selectedIds.has(entry.localId)}
+                      onValueChange={() => handleToggleSelect(entry.localId)}
+                      className="flex-shrink-0"
+                    />
+                    <div
+                      className="flex-1 min-w-0 flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors overflow-hidden"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openCategoryModal(entry.localId)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          openCategoryModal(entry.localId);
+                        }
+                      }}
+                    >
+                      {categoryDisplay ? (
+                        <>
+                          <CategoryIcon
+                            icon={categoryDisplay.icon}
+                            backColor={categoryDisplay.backColor}
+                          />
+                          <span
+                            className={`text-[13px] font-medium truncate ${categoryDisplay.foreColor || "text-default-900"}`}
+                          >
+                            {categoryDisplay.label}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-[13px] text-gray-400 dark:text-gray-500">
+                          点击选择类别
+                        </span>
+                      )}
+                    </div>
+                    <div className="w-30 flex-shrink-0">
+                      <AmountInput
+                        value={entry.amount}
+                        onChange={(v) => handleUpdateEntry(entry.localId, "amount", v)}
+                        transactionType={entry.chainState.txType}
+                        textSize="text-sm"
+                        minHeight="min-h-[36px]"
+                        className="h-full"
                       />
-                      <span
-                        className={`text-[13px] font-medium truncate ${categoryDisplay.foreColor || "text-default-900"}`}
-                      >
-                        {categoryDisplay.label}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-[13px] text-gray-400 dark:text-gray-500">
-                      点击选择类别
-                    </span>
-                  )}
+                    </div>
+                  </div>
+                  {/* 第二行：账户 · 名称（可选，flex-1）· 删除 */}
+                  <div className="flex items-center gap-2">
+                    <Select
+                      aria-label="账户"
+                      placeholder="账户"
+                      selectedKeys={entry.accountId ? [entry.accountId] : []}
+                      onSelectionChange={(keys) => {
+                        const key = Array.from(keys)[0] as string;
+                        handleUpdateEntry(entry.localId, "accountId", key || "");
+                      }}
+                      size="sm"
+                      variant="underlined"
+                      className="w-32 flex-shrink-0"
+                      classNames={{ value: "text-[13px]", trigger: "min-h-8" }}
+                    >
+                      {accounts.map((account) => (
+                        <SelectItem key={account.id.toString()}>{account.name}</SelectItem>
+                      ))}
+                    </Select>
+                    {showName ? (
+                      <Input
+                        aria-label="名称"
+                        placeholder={placeholderName ?? "名称"}
+                        value={entry.name}
+                        onValueChange={(v) => handleUpdateEntry(entry.localId, "name", v)}
+                        size="sm"
+                        variant="underlined"
+                        className="flex-1 min-w-0"
+                        classNames={{ input: "text-[13px]" }}
+                      />
+                    ) : (
+                      <div className="flex-1" />
+                    )}
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      color="danger"
+                      onPress={() => handleDelete(entry.localId)}
+                      aria-label="删除"
+                      className="flex-shrink-0"
+                    >
+                      <XMarkIcon className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
 
-                {/* 名称输入框 */}
-                {showName && (
-                  <Input
-                    aria-label="名称"
-                    placeholder={placeholderName ?? "名称"}
-                    value={entry.name}
-                    onValueChange={(v) => handleUpdateEntry(entry.localId, "name", v)}
+                {/* sm+：单行布局（账户、类别、名称允许收缩） */}
+                <div className="hidden sm:flex items-center gap-2">
+                  {/* 拖动柄 + 序号 */}
+                  <div
+                    onPointerDown={handleHandlePointerDown}
+                    className="flex items-center gap-1 flex-shrink-0 w-[38px] cursor-grab active:cursor-grabbing text-gray-400 dark:text-gray-500 select-none"
+                  >
+                    <Bars2Icon className="w-4 h-4" />
+                    <span className="text-xs font-medium w-4 text-center">{index + 1}</span>
+                  </div>
+                  {/* 勾选框 */}
+                  <Checkbox
+                    size="sm"
+                    isSelected={selectedIds.has(entry.localId)}
+                    onValueChange={() => handleToggleSelect(entry.localId)}
+                    className="flex-shrink-0"
+                  />
+                  {/* 账户下拉框（可收缩） */}
+                  <Select
+                    aria-label="账户"
+                    placeholder="账户"
+                    selectedKeys={entry.accountId ? [entry.accountId] : []}
+                    onSelectionChange={(keys) => {
+                      const key = Array.from(keys)[0] as string;
+                      handleUpdateEntry(entry.localId, "accountId", key || "");
+                    }}
                     size="sm"
                     variant="underlined"
-                    className="w-28 flex-shrink-0"
-                    classNames={{ input: "text-[13px]" }}
-                  />
-                )}
-
-                {/* 删除按钮 */}
-                <Button
-                  isIconOnly
-                  size="sm"
-                  variant="light"
-                  color="danger"
-                  onPress={() => handleDelete(entry.localId)}
-                  aria-label="删除"
-                  className="flex-shrink-0"
-                >
-                  <XMarkIcon className="w-4 h-4" />
-                </Button>
+                    className="w-36 min-w-[4rem]"
+                    classNames={{ value: "text-[13px]", trigger: "min-h-8" }}
+                  >
+                    {accounts.map((account) => (
+                      <SelectItem key={account.id.toString()}>{account.name}</SelectItem>
+                    ))}
+                  </Select>
+                  {/* 金额输入框（固定宽度） */}
+                  <div className="w-32 flex-shrink-0">
+                    <AmountInput
+                      value={entry.amount}
+                      onChange={(v) => handleUpdateEntry(entry.localId, "amount", v)}
+                      transactionType={entry.chainState.txType}
+                      textSize="text-sm"
+                      minHeight="min-h-[36px]"
+                      className="h-full"
+                    />
+                  </div>
+                  {/* 类别展示（可收缩） */}
+                  <div
+                    className="flex-1 min-w-[3rem] flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors overflow-hidden"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openCategoryModal(entry.localId)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        openCategoryModal(entry.localId);
+                      }
+                    }}
+                  >
+                    {categoryDisplay ? (
+                      <>
+                        <CategoryIcon
+                          icon={categoryDisplay.icon}
+                          backColor={categoryDisplay.backColor}
+                        />
+                        <span
+                          className={`text-[13px] font-medium truncate ${categoryDisplay.foreColor || "text-default-900"}`}
+                        >
+                          {categoryDisplay.label}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-[13px] text-gray-400 dark:text-gray-500">
+                        点击选择类别
+                      </span>
+                    )}
+                  </div>
+                  {/* 名称输入框（可收缩） */}
+                  {showName && (
+                    <Input
+                      aria-label="名称"
+                      placeholder={placeholderName ?? "名称"}
+                      value={entry.name}
+                      onValueChange={(v) => handleUpdateEntry(entry.localId, "name", v)}
+                      size="sm"
+                      variant="underlined"
+                      className="w-28 min-w-[3rem]"
+                      classNames={{ input: "text-[13px]" }}
+                    />
+                  )}
+                  {/* 删除按钮 */}
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="light"
+                    color="danger"
+                    onPress={() => handleDelete(entry.localId)}
+                    aria-label="删除"
+                    className="flex-shrink-0"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             );
           })}

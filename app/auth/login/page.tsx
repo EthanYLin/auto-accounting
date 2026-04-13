@@ -93,6 +93,7 @@ function LoginPageContent() {
             <Input
               isRequired
               autoComplete="email"
+              classNames={{ input: "text-base" }}
               label="邮箱"
               labelPlacement="outside-top"
               type="email"
@@ -103,6 +104,7 @@ function LoginPageContent() {
             <Input
               isRequired
               autoComplete="current-password"
+              classNames={{ input: "text-base" }}
               label="密码"
               labelPlacement="outside-top"
               type="password"

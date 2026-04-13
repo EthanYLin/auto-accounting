@@ -176,6 +176,7 @@ export default function RegisterPage() {
                   label="昵称"
                   variant="bordered"
                   labelPlacement="outside-top"
+                  classNames={{ input: "text-base" }}
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
                   isRequired
@@ -186,6 +187,7 @@ export default function RegisterPage() {
                   label="邮箱"
                   variant="bordered"
                   labelPlacement="outside-top"
+                  classNames={{ input: "text-base" }}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   isRequired
@@ -196,6 +198,7 @@ export default function RegisterPage() {
                   label="密码"
                   variant="bordered"
                   labelPlacement="outside-top"
+                  classNames={{ input: "text-base" }}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   isRequired
@@ -207,6 +210,7 @@ export default function RegisterPage() {
                   label="确认密码"
                   variant="bordered"
                   labelPlacement="outside-top"
+                  classNames={{ input: "text-base" }}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   isRequired

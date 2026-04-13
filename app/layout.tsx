@@ -24,6 +24,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   viewportFit: "cover",
+  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "white" },
     { media: "(prefers-color-scheme: dark)", color: "black" },
@@ -41,11 +42,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           fontMono.variable,
         )}
       >
-        <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
-          <div className="relative flex flex-col h-dvh">
+        <Providers themeProps={{ attribute: "class", defaultTheme: "system", enableSystem: true }}>
+          <div className="relative flex flex-col h-dvh overflow-hidden">
             <Navbar />
             <main
-              className="w-full flex-grow flex flex-col min-h-0"
+              className="w-full flex-grow flex flex-col min-h-0 overflow-auto"
               style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
             >
               {children}

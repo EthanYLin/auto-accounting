@@ -115,6 +115,7 @@ function ForgotPasswordContent() {
             <Input
               isRequired
               autoComplete="email"
+              classNames={{ input: "text-base" }}
               isDisabled={isSent}
               label="邮箱"
               labelPlacement="outside-top"

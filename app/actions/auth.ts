@@ -183,7 +183,6 @@ export async function signOut() {
       return { error: error.message };
     }
 
-    revalidatePath("/", "layout");
     return { success: true };
   } catch (err) {
     console.error("signOut 错误:", err);

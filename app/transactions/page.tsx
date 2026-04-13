@@ -37,8 +37,6 @@ function TransactionsRoutePage() {
   const { showError } = useError();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const transactionListRef = useRef<TransactionOverviewListHandle>(null);
-  const mainContentRef = useRef<HTMLDivElement>(null);
-  const [selectorMode, setSelectorMode] = useState<"listbox" | "select">("select");
   const [routeTxId, setRouteTxId] = useState<number | null>(null);
   const appData = useAppData();
   const store = useTransactionStore();
@@ -120,22 +118,6 @@ function TransactionsRoutePage() {
     search.filteredTransactions,
   ]);
 
-  useEffect(() => {
-    const container = mainContentRef.current;
-    if (!container) return;
-
-    const MIN_WIDTH_FOR_LISTBOX = 810;
-    const updateSelectorMode = () => {
-      setSelectorMode(container.offsetWidth >= MIN_WIDTH_FOR_LISTBOX ? "listbox" : "select");
-    };
-
-    const resizeObserver = new ResizeObserver(() => updateSelectorMode());
-    resizeObserver.observe(container);
-    updateSelectorMode();
-
-    return () => resizeObserver.disconnect();
-  }, []);
-
   useTransactionEditorHotkeys();
 
   useCommandListener("focus-search", () => {
@@ -190,7 +172,7 @@ function TransactionsRoutePage() {
           />
         )}
 
-        <div ref={mainContentRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           {isEditorLoading ? (
             <div className="flex h-full items-center justify-center">
               <Spinner size="sm" />
@@ -280,19 +262,39 @@ function TransactionsRoutePage() {
 
               <TxSupplementTabs />
 
-              <div>
+              <div className="min-w-0">
                 <TxImportInfo key={currentTransaction.id} />
 
-                <div className="mb-5 mt-5">
+                <section aria-labelledby="tx-detail-section-title" className="mt-5 min-w-0 sm:mt-6">
+                  <h2
+                    id="tx-detail-section-title"
+                    className="mb-3 text-sm font-semibold text-foreground-600 dark:text-zinc-400 sm:mb-3.5"
+                  >
+                    交易明细
+                  </h2>
                   <TxFieldInputs
                     key={currentTransaction.id}
                     selectedTxType={currentTransaction.transaction_type || undefined}
                   />
-                </div>
+                </section>
 
-                <div className="h-2" />
-
-                <TransactionEditorFourChainSelector mode={selectorMode} />
+                <section
+                  aria-labelledby="tx-classification-section-title"
+                  className="mt-6 min-w-0 sm:mt-8"
+                >
+                  <h2
+                    id="tx-classification-section-title"
+                    className="mb-1.5 text-sm font-semibold text-foreground-600 dark:text-zinc-400 sm:mb-2"
+                  >
+                    交易分类
+                  </h2>
+                  <div className="lg:block hidden">
+                    <TransactionEditorFourChainSelector mode="listbox" />
+                  </div>
+                  <div className="lg:hidden block">
+                    <TransactionEditorFourChainSelector mode="select" />
+                  </div>
+                </section>
               </div>
             </div>
           )}

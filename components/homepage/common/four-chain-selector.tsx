@@ -4,6 +4,7 @@ import type { TransactionType } from "@/types";
 
 import { useMemo, useEffect, useCallback, useRef } from "react";
 import { Listbox, ListboxItem, Select, SelectItem } from "@heroui/react";
+import { useTheme } from "next-themes";
 
 import { TRANSACTION_TYPES } from "@/constants/transaction-type";
 import { useAppData } from "@/components/context/app-data-context";
@@ -49,12 +50,12 @@ const SELECT_FIELD_SIZE_STYLES: Record<
   { container: string; icon: string; itemBase: string }
 > = {
   sm: {
-    container: "min-w-[128px]",
+    container: "min-w-[118px]",
     icon: "w-5 h-5 text-[11px]",
     itemBase: "min-h-unit-9 px-2 py-1.5",
   },
   md: {
-    container: "min-w-[150px]",
+    container: "min-w-[140px]",
     icon: "w-6 h-6 text-xs",
     itemBase: "min-h-unit-10 px-2.5 py-2",
   },
@@ -65,13 +66,31 @@ const SELECT_FIELD_SIZE_STYLES: Record<
   },
 };
 
+const SELECT_GRID_MIN_WIDTHS: Record<SelectFieldSize, string> = {
+  sm: "118px",
+  md: "140px",
+  lg: "176px",
+};
+
 const SELECT_TEXT_SIZE_STYLES: Record<
   SelectTextSize,
   { label: string; value: string; item: string }
 > = {
-  sm: { label: "text-[11px]", value: "text-xs", item: "text-xs" },
-  md: { label: "text-xs", value: "text-sm", item: "text-sm" },
-  lg: { label: "text-sm", value: "text-base", item: "text-base" },
+  sm: {
+    label: "text-[11px] !text-gray-500 dark:!text-zinc-500 !font-light",
+    value: "text-xs",
+    item: "text-xs",
+  },
+  md: {
+    label: "text-xs !text-gray-500 dark:!text-zinc-500 !font-light",
+    value: "text-sm",
+    item: "text-sm",
+  },
+  lg: {
+    label: "text-sm !text-gray-500 dark:!text-zinc-500 !font-light",
+    value: "text-base",
+    item: "text-base",
+  },
 };
 
 function isSameFourChainState(a: FourChainState, b: FourChainState): boolean {
@@ -144,7 +163,7 @@ function ListboxDisplayMode({
   }, [selectedKey]);
 
   return (
-    <div className="flex-1 min-w-[165px]">
+    <div className="flex-1 min-w-[150px]">
       <p className="text-xs text-gray-500 dark:text-zinc-500 mb-2">{title}</p>
       <div className="border border-gray-200 dark:border-white/[0.08] rounded-lg p-2 bg-white dark:bg-[#222222] shadow-sm dark:shadow-none">
         <div ref={scrollRef} className="h-52 overflow-y-auto overscroll-contain">
@@ -212,12 +231,16 @@ function SelectDisplayMode({
   resolvedSelectFieldSize: SelectFieldSize;
 }) {
   const selectedOption = selectedKey ? options.find((o) => o.key === selectedKey) : undefined;
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   return (
     <div className={`flex-1 ${selectFieldStyles.container}`}>
       <Select
         size={resolvedSelectFieldSize}
         label={title}
+        variant={isDark ? "bordered" : "underlined"}
+        labelPlacement="outside"
         placeholder={placeholder || `选择${title}`}
         selectedKeys={selectedKey ? [selectedKey] : []}
         onSelectionChange={(keys) => onChange(Array.from(keys)[0] as string | undefined)}
@@ -426,7 +449,14 @@ export function FourChainSelector({
   return (
     <div className={`w-full space-y-3 ${className}`}>
       <div
-        className={`${mode === "select" ? "grid grid-cols-2 md:grid-cols-4" : "flex flex-wrap"} gap-3`}
+        className={`${mode === "select" ? "grid" : "flex flex-wrap"} gap-3`}
+        style={
+          mode === "select"
+            ? {
+                gridTemplateColumns: `repeat(auto-fit, minmax(${SELECT_GRID_MIN_WIDTHS[resolvedSelectFieldSize]}, 1fr))`,
+              }
+            : undefined
+        }
       >
         {renderSelector("交易类型", txTypeOptions, value.txType, "tx")}
         {renderSelector(

@@ -47,7 +47,10 @@ export function TxImportInfo() {
           subtitle={
             <span className="flex items-center gap-1">
               点按展开导入信息{" "}
-              <Kbd keys={[]} className="text-[10px] w-4 h-4 p-0 flex items-center justify-center">
+              <Kbd
+                keys={[]}
+                className="text-[10px] w-4 h-4 p-0 hidden md:flex items-center justify-center"
+              >
                 Q
               </Kbd>
             </span>

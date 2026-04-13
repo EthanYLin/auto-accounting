@@ -207,6 +207,7 @@ export function FudanImport() {
             <div className="flex flex-col sm:flex-row gap-4">
               <Input
                 className="w-auto"
+                classNames={{ input: "text-base sm:text-small" }}
                 label="统一身份认证账号"
                 labelPlacement="outside"
                 placeholder="请输入学号 / 工号"
@@ -216,6 +217,7 @@ export function FudanImport() {
               />
               <Input
                 className="w-auto"
+                classNames={{ input: "text-base sm:text-small" }}
                 endContent={
                   <button
                     className="focus:outline-none text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -244,6 +246,7 @@ export function FudanImport() {
             <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-start sm:items-end">
               <DateRangePicker
                 className="w-auto"
+                classNames={{ input: "text-base sm:text-small" }}
                 granularity="day"
                 label="查询日期范围"
                 labelPlacement="outside"

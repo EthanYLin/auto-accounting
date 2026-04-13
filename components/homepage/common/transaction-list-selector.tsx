@@ -1,21 +1,24 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import { Input } from "@heroui/react";
-import { Button } from "@heroui/react";
-import { Checkbox } from "@heroui/react";
-import { Chip } from "@heroui/react";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/react";
-import { Pagination } from "@heroui/react";
-import { MagnifyingGlassIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import type { TransactionWithRelations } from "@/types";
 
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { Input, Button, Checkbox, Chip } from "@heroui/react";
+import { MagnifyingGlassIcon, CheckCircleIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { useVirtualizer } from "@tanstack/react-virtual";
+
+import { ChildIndentIcon } from "@/components/icons";
 import { useTransactionStore } from "@/components/context/transaction-store-context";
 import {
   filterTransactionsBySearch,
   flattenTransactionsWithChildren,
 } from "@/lib/hooks/use-transaction-filter";
 import { TRANSACTION_STATUS_COLORS } from "@/constants/transaction-type";
-import { calculateAmount, formatCategoryDisplay } from "@/lib/transaction/transaction-display";
+import {
+  calculateAmount,
+  formatCategoryDisplay,
+  getAmountColorClass,
+} from "@/lib/transaction/transaction-display";
 import { displayTxTime } from "@/lib/transaction/transaction-datetime";
 
 interface TransactionListSelectorProps {
@@ -33,9 +36,17 @@ export function TransactionListSelector({
 }: TransactionListSelectorProps) {
   const { transactions } = useTransactionStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [tempSelectedIds, setTempSelectedIds] = useState<number[]>(() => [...selectedIds]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const headerScrollRef = useRef<HTMLDivElement>(null);
+  const hasScrolledRef = useRef(false);
+
+  // 300ms debounce
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // 当外部 selectedIds 变化时，同步到内部状态
   useEffect(() => {
@@ -49,63 +60,47 @@ export function TransactionListSelector({
 
   // 使用搜索过滤
   const filteredTransactions = useMemo(() => {
-    const ids = filterTransactionsBySearch(orderedTransactions, searchQuery);
+    const ids = filterTransactionsBySearch(orderedTransactions, debouncedSearchQuery);
     return orderedTransactions.filter((tx) => ids.has(tx.id));
-  }, [orderedTransactions, searchQuery]);
+  }, [orderedTransactions, debouncedSearchQuery]);
 
-  // 计算总页数
-  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  const virtualizer = useVirtualizer({
+    count: filteredTransactions.length,
+    getScrollElement: () => scrollRef.current,
+    getItemKey: (index) => filteredTransactions[index].id,
+    estimateSize: (index) => (filteredTransactions[index].parent_id ? 38 : 44),
+    overscan: 18,
+    measureElement:
+      typeof window !== "undefined" && navigator.userAgent.indexOf("Firefox") === -1
+        ? (element) => element?.getBoundingClientRect().height
+        : undefined,
+  });
 
-  // 当前页的数据
-  const paginatedTransactions = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    return filteredTransactions.slice(start, end);
-  }, [filteredTransactions, currentPage]);
-
-  // 搜索时重置到第一页
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
-
-  // 如果有 currentTransactionId，自动定位到该交易所在页
-  useEffect(() => {
-    if (currentTransactionId) {
-      const index = filteredTransactions.findIndex((tx) => tx.id === currentTransactionId);
-      if (index !== -1) {
-        const page = Math.floor(index / itemsPerPage) + 1;
-        setCurrentPage(page);
-      }
+    if (hasScrolledRef.current || !currentTransactionId) return;
+    const index = filteredTransactions.findIndex((tx) => tx.id === currentTransactionId);
+    if (index !== -1) {
+      hasScrolledRef.current = true;
+      requestAnimationFrame(() => {
+        virtualizer.scrollToIndex(index, { align: "center" });
+      });
     }
-  }, [currentTransactionId, filteredTransactions]);
-
-  const short = (s?: string | null) => (s && s.length > 13 ? s.slice(0, 13) + "..." : s);
+  }, [currentTransactionId, filteredTransactions, virtualizer]);
 
   // 切换选择状态
-  const toggleSelection = (id: number) => {
-    // 如果是当前交易，不允许选择
-    if (isDisabled || id === currentTransactionId) {
-      return;
-    }
+  const toggleSelection = useCallback(
+    (id: number) => {
+      // 如果是当前交易，不允许选择
+      if (isDisabled || id === currentTransactionId) return;
+      setTempSelectedIds((prev) =>
+        prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id],
+      );
+    },
+    [isDisabled, currentTransactionId],
+  );
 
-    setTempSelectedIds((prev) => {
-      if (prev.includes(id)) {
-        return prev.filter((selectedId) => selectedId !== id);
-      } else {
-        return [...prev, id];
-      }
-    });
-  };
-
-  // 处理完成按钮
-  const handleConfirm = () => {
-    onConfirm(tempSelectedIds);
-  };
-
-  // 处理清空选择按钮
-  const handleClearAndConfirm = () => {
-    onConfirm([]); // 清空选择并提交
-  };
+  const handleConfirm = () => onConfirm(tempSelectedIds);
+  const handleClearAndConfirm = () => onConfirm([]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -122,14 +117,22 @@ export function TransactionListSelector({
     event.currentTarget.requestSubmit();
   };
 
+  const handleBodyScroll = useCallback(() => {
+    if (headerScrollRef.current && scrollRef.current) {
+      headerScrollRef.current.scrollLeft = scrollRef.current.scrollLeft;
+    }
+  }, []);
+
+  const virtualItems = virtualizer.getVirtualItems();
+
   return (
     <form
       className="flex flex-col w-full h-full min-h-0"
       onSubmit={handleSubmit}
       onKeyDownCapture={handleKeyDownCapture}
     >
-      {/* 搜索框 - 固定 */}
-      <div className="w-full mb-4 flex-shrink-0">
+      {/* Search */}
+      <div className="w-full mb-3 flex-shrink-0">
         <Input
           placeholder="搜索交易记录..."
           value={searchQuery}
@@ -138,149 +141,88 @@ export function TransactionListSelector({
           startContent={<MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />}
           variant="bordered"
           size="sm"
+          classNames={{ input: "text-base sm:text-small" }}
         />
       </div>
 
-      {/* 表格 - 可滚动区域 */}
-      <div className="flex-1 min-h-0 overflow-y-auto w-full">
-        <Table aria-label="交易列表" className="min-w-full" removeWrapper>
-          <TableHeader>
-            <TableColumn>选择</TableColumn>
-            <TableColumn>ID</TableColumn>
-            <TableColumn>名称</TableColumn>
-            <TableColumn>金额</TableColumn>
-            <TableColumn>账户</TableColumn>
-            <TableColumn>类别</TableColumn>
-            <TableColumn>日期时间</TableColumn>
-            <TableColumn>状态</TableColumn>
-          </TableHeader>
-          <TableBody emptyContent="暂无交易记录">
-            {paginatedTransactions.map((tx) => {
-              const isSelected = tempSelectedIds.includes(tx.id);
-              const isCurrent = tx.id === currentTransactionId;
-              const isChild = !!tx.parent_id;
-              const cellClassName = isChild
-                ? "text-xs text-gray-500 dark:text-gray-400"
-                : isCurrent
-                  ? "font-bold text-success-600 dark:text-success-400"
-                  : "";
-              const rowClassName = `cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${
-                isSelected ? "bg-primary-50 dark:bg-primary-900/20" : ""
-              } ${isCurrent ? "cursor-not-allowed bg-success-50 dark:bg-success-900/20" : ""}`;
-
-              return (
-                <TableRow
-                  key={tx.id}
-                  className={rowClassName}
-                  onClick={() => toggleSelection(tx.id)}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {isChild && (
-                        <div className="flex items-center h-full">
-                          <svg width="20" height="24" className="text-gray-300 dark:text-gray-600">
-                            <path
-                              d="M 4 0 L 4 12 L 20 12"
-                              stroke="currentColor"
-                              strokeWidth="1"
-                              fill="none"
-                            />
-                          </svg>
-                        </div>
-                      )}
-                      <div className={cellClassName}>
-                        <Checkbox
-                          isSelected={isSelected}
-                          onValueChange={() => toggleSelection(tx.id)}
-                          size="sm"
-                          isDisabled={isDisabled || isCurrent}
-                        />
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className={cellClassName}>#{tx.id}</span>
-                  </TableCell>
-                  <TableCell>
-                    <span className={cellClassName}>
-                      {short(tx.name) || short(tx.title) || "-"}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className={cellClassName}>¥{calculateAmount(tx).toFixed(2)}</span>
-                  </TableCell>
-                  <TableCell>
-                    <span className={cellClassName}>{tx.account?.name || "-"}</span>
-                  </TableCell>
-                  <TableCell>
-                    {(() => {
-                      const cat = formatCategoryDisplay(tx);
-                      if (!cat) return <span className={cellClassName}>-</span>;
-                      return (
-                        <span className={`flex items-center gap-1.5 ${cellClassName}`}>
-                          <span
-                            className={`inline-flex items-center justify-center rounded-full flex-shrink-0 w-5 h-5 text-[11px] ${cat.backColor || "bg-gray-200 dark:bg-gray-600"}`}
-                          >
-                            {cat.icon}
-                          </span>
-                          {cat.label}
-                        </span>
-                      );
-                    })()}
-                  </TableCell>
-                  <TableCell>
-                    <span className={cellClassName}>{displayTxTime(tx.datetime, "short")}</span>
-                  </TableCell>
-                  <TableCell>
-                    <div className={cellClassName}>
-                      {!isChild && tx.status && (
-                        <Chip size="sm" color={TRANSACTION_STATUS_COLORS[tx.status]} variant="flat">
-                          {tx.status}
-                        </Chip>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+      {/* 表头：独立于纵向滚动，横向通过 JS 同步 */}
+      <div ref={headerScrollRef} className="flex-shrink-0 min-w-0 w-full overflow-hidden">
+        <div className="min-w-[774px] flex items-center border-b border-divider bg-background px-3 py-1.5 text-[11px] font-medium text-default-400">
+          <span className="w-[64px] flex-shrink-0" />
+          <span className="w-[80px] flex-shrink-0">ID</span>
+          <span className="min-w-0 flex-1 basis-0">名称</span>
+          <span className="w-[105px] flex-shrink-0">金额</span>
+          <span className="w-[100px] flex-shrink-0">账户</span>
+          <span className="w-[95px] flex-shrink-0">类别</span>
+          <span className="w-[110px] flex-shrink-0">日期时间</span>
+          <span className="w-[120px] flex-shrink-0">状态</span>
+        </div>
       </div>
 
-      {/* 底部控制栏 - 固定不滚动 */}
-      <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0">
-        {/* 左侧：分页器 */}
-        <div className="flex-shrink-0">
-          {totalPages > 1 ? (
-            <Pagination
-              total={totalPages}
-              page={currentPage}
-              onChange={setCurrentPage}
-              showControls
-              size="sm"
-            />
-          ) : (
-            <div className="h-8"></div>
+      {/* 表体：纵向+横向滚动，横向滚动时同步表头 */}
+      <div
+        ref={scrollRef}
+        className="min-h-0 min-w-0 w-full flex-1 overflow-auto overscroll-contain"
+        onScroll={handleBodyScroll}
+      >
+        {filteredTransactions.length === 0 ? (
+          <div className="flex items-center justify-center py-12 text-sm text-default-400">
+            暂无交易记录
+          </div>
+        ) : (
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              position: "relative",
+            }}
+            className="w-full min-w-[774px]"
+          >
+            {virtualItems.map((virtualItem) => {
+              const tx = filteredTransactions[virtualItem.index];
+              return (
+                <SelectorRow
+                  key={tx.id}
+                  tx={tx}
+                  virtualItem={virtualItem}
+                  measureElement={virtualizer.measureElement}
+                  isSelected={tempSelectedIds.includes(tx.id)}
+                  isCurrent={tx.id === currentTransactionId}
+                  isDisabled={isDisabled}
+                  onToggle={toggleSelection}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between pt-3 border-t border-divider mt-2 flex-shrink-0">
+        <div className="text-sm text-primary">
+          {tempSelectedIds.length > 0 && (
+            <>
+              已选 <span className="font-bold">{tempSelectedIds.length}</span> 项
+            </>
           )}
         </div>
-
-        {/* 右侧：按钮 */}
         <div className="flex gap-2">
           {tempSelectedIds.length > 0 && (
             <Button
               type="button"
-              color="default"
-              variant="bordered"
+              color="danger"
+              variant="light"
+              size="sm"
               isDisabled={isDisabled}
               onPress={handleClearAndConfirm}
-              startContent={<XCircleIcon className="w-5 h-5" />}
+              startContent={<TrashIcon className="w-4 h-4" />}
             >
-              清空选择
+              清空
             </Button>
           )}
           <Button
             type="submit"
             color="primary"
+            size="sm"
             isDisabled={isDisabled}
             onPress={handleConfirm}
             startContent={<CheckCircleIcon className="w-5 h-5" />}
@@ -292,3 +234,129 @@ export function TransactionListSelector({
     </form>
   );
 }
+
+// ========== Row component ==========
+
+interface SelectorRowProps {
+  tx: TransactionWithRelations;
+  virtualItem: { index: number; start: number };
+  measureElement: (node: Element | null) => void;
+  isSelected: boolean;
+  isCurrent: boolean;
+  isDisabled: boolean;
+  onToggle: (id: number) => void;
+}
+
+const SelectorRow = React.memo(function SelectorRow({
+  tx,
+  virtualItem,
+  measureElement,
+  isSelected,
+  isCurrent,
+  isDisabled,
+  onToggle,
+}: SelectorRowProps) {
+  const isChild = !!tx.parent_id;
+
+  const bgClass = isCurrent
+    ? "bg-success-50 dark:bg-success-900/20"
+    : isSelected
+      ? "bg-primary-50 dark:bg-primary-900/20"
+      : "hover:bg-default-100";
+
+  const textClass = isChild
+    ? "text-xs text-gray-500 dark:text-gray-400"
+    : isCurrent
+      ? "font-bold text-success-600 dark:text-success-400"
+      : "";
+
+  return (
+    <div
+      data-index={virtualItem.index}
+      ref={measureElement}
+      role="button"
+      tabIndex={0}
+      className={`absolute top-0 left-0 w-full min-w-[774px] flex items-center px-3 text-sm cursor-pointer transition-colors ${bgClass} ${isCurrent ? "cursor-not-allowed" : ""} ${isChild ? "py-1.5" : "py-2"}`}
+      style={{ transform: `translateY(${virtualItem.start}px)` }}
+      onClick={() => onToggle(tx.id)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onToggle(tx.id);
+        }
+      }}
+    >
+      {/* 选择 */}
+      <div className="w-[64px] flex-shrink-0 flex items-center gap-1 overflow-hidden">
+        {isChild && <ChildIndentIcon className="text-gray-300 dark:text-gray-600 flex-shrink-0" />}
+        <Checkbox
+          isSelected={isSelected}
+          onValueChange={() => onToggle(tx.id)}
+          size="sm"
+          isDisabled={isDisabled || isCurrent}
+          className="flex-shrink-0"
+        />
+      </div>
+
+      {/* ID */}
+      <div className={`w-[80px] flex-shrink-0 truncate ${textClass}`}>#{tx.id}</div>
+
+      {/* 名称 */}
+      <div className={`min-w-0 flex-1 basis-0 truncate ${textClass}`}>
+        {tx.name || tx.title || "-"}
+      </div>
+
+      {/* 金额 */}
+      <div
+        className={`w-[105px] flex-shrink-0 truncate tabular-nums ${isChild ? "text-xs" : ""} ${isCurrent ? "font-bold" : ""} ${getAmountColorClass(tx.transaction_type)}`}
+      >
+        ¥{calculateAmount(tx).toFixed(2)}
+      </div>
+
+      {/* 账户 */}
+      <div className={`w-[100px] flex-shrink-0 truncate ${textClass}`}>
+        {tx.account?.name || "-"}
+      </div>
+
+      {/* 类别 */}
+      <div className="w-[95px] flex-shrink-0 overflow-hidden">
+        {(() => {
+          const cat = formatCategoryDisplay(tx);
+          if (!cat) return <div className={`truncate ${textClass}`}>-</div>;
+          return (
+            <div className={`flex items-center gap-1 overflow-hidden ${textClass}`}>
+              <span
+                className={`inline-flex items-center justify-center rounded-full flex-shrink-0 w-4 h-4 text-[10px] ${cat.backColor || "bg-gray-200 dark:bg-gray-600"}`}
+              >
+                {cat.icon}
+              </span>
+              <span className="truncate">{cat.label}</span>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* 日期时间 */}
+      <div className={`w-[110px] flex-shrink-0 truncate ${textClass}`}>
+        {displayTxTime(tx.datetime, "short")}
+      </div>
+
+      {/* 状态 */}
+      <div className="w-[120px] flex-shrink-0 overflow-hidden">
+        {!isChild && tx.status && (
+          <Chip
+            size="sm"
+            color={TRANSACTION_STATUS_COLORS[tx.status]}
+            variant="flat"
+            classNames={{
+              base: "max-w-full",
+              content: "truncate text-[11px] px-1",
+            }}
+          >
+            {tx.status}
+          </Chip>
+        )}
+      </div>
+    </div>
+  );
+});

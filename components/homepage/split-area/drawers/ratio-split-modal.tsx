@@ -6,15 +6,7 @@ import type { FourChainState } from "@/components/homepage/common/four-chain-sel
 import type { TransactionWithRelations } from "@/types";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Input,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from "@heroui/react";
+import { Input } from "@heroui/react";
 
 import { FourChainSelector } from "@/components/homepage/common/four-chain-selector";
 import { getAmountColorClass, getAmountSymbol } from "@/lib/transaction/transaction-display";
@@ -139,7 +131,7 @@ export function RatioSplitModal({
       onSave={handleSave}
       onCancel={onCancel}
     >
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <SplitRowCountPresets
           preset={preset}
           customCountStr={customCountStr}
@@ -163,70 +155,67 @@ export function RatioSplitModal({
         />
       </div>
 
-      <div className="rounded-medium border border-divider">
-        <Table
-          removeWrapper
-          aria-label="按比例分账明细"
-          classNames={{
-            th: "text-xs uppercase text-default-500 first:pl-4 last:pr-4",
-            td: "align-middle first:pl-4 last:pr-4 py-3",
-          }}
-        >
-          <TableHeader>
-            <TableColumn width={84}>比例</TableColumn>
-            <TableColumn width={120}>金额</TableColumn>
-            <TableColumn>类别</TableColumn>
-          </TableHeader>
-          <TableBody>
-            {ratios.map((ratio, index) => {
-              const cents = splitCents[index] ?? 0;
-              const txType = chainStates[index]?.txType;
-              const symbol = getAmountSymbol(txType);
-              const amountStr = (cents / 100).toFixed(2);
-              return (
-                <TableRow key={index}>
-                  <TableCell>
-                    <Input
-                      size="sm"
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={String(ratio)}
-                      className="w-20"
-                      classNames={{ input: "text-center tabular-nums" }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.currentTarget.blur();
-                        }
-                      }}
-                      onValueChange={(val) => {
-                        setRatioAt(index, parseInt(val, 10));
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-block font-medium tabular-nums ${getAmountColorClass(txType)}`}
-                    >
-                      ￥{symbol}
-                      {amountStr}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <FourChainSelector
-                      value={chainStates[index]}
-                      onChange={(next) => setChainAt(index, next)}
-                      allowedTxTypes={allowedTxTypes}
-                      mode="select"
-                      selectModeOptions={{ size: "sm", textSize: "sm" }}
-                      className="min-w-0 [&>div]:!grid-cols-2 [&>div]:gap-2 sm:[&>div]:!grid-cols-4"
-                    />
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+      <div className="divide-y divide-divider rounded-medium border border-divider">
+        <div className="hidden md:grid md:grid-cols-[84px_120px_1fr] md:gap-3 px-4 py-2">
+          <span className="text-xs uppercase text-default-500">比例</span>
+          <span className="text-xs uppercase text-default-500">金额</span>
+          <span className="text-xs uppercase text-default-500">类别</span>
+        </div>
+        {ratios.map((ratio, index) => {
+          const cents = splitCents[index] ?? 0;
+          const txType = chainStates[index]?.txType;
+          const symbol = getAmountSymbol(txType);
+          const amountStr = (cents / 100).toFixed(2);
+          return (
+            <div
+              key={index}
+              className="flex flex-col gap-2 px-4 py-3 md:grid md:grid-cols-[84px_120px_1fr] md:items-center md:gap-3"
+            >
+              <div className="flex items-center gap-3 md:contents">
+                <span className="md:hidden inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-default-100 text-xs font-medium text-default-400">
+                  {index + 1}
+                </span>
+                <div className="flex items-center gap-1.5 md:contents">
+                  <span className="text-xs text-default-500 md:hidden">比例</span>
+                  <Input
+                    size="sm"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={String(ratio)}
+                    className="w-20"
+                    classNames={{ input: "text-center tabular-nums" }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.currentTarget.blur();
+                      }
+                    }}
+                    onValueChange={(val) => {
+                      setRatioAt(index, parseInt(val, 10));
+                    }}
+                  />
+                </div>
+                <div className="flex items-center gap-1.5 md:contents">
+                  <span className="text-xs text-default-500 md:hidden">金额</span>
+                  <span className={`font-medium tabular-nums ${getAmountColorClass(txType)}`}>
+                    ￥{symbol}
+                    {amountStr}
+                  </span>
+                </div>
+              </div>
+              <div className="min-w-0">
+                <FourChainSelector
+                  value={chainStates[index]}
+                  onChange={(next) => setChainAt(index, next)}
+                  allowedTxTypes={allowedTxTypes}
+                  mode="select"
+                  selectModeOptions={{ size: "sm", textSize: "sm" }}
+                  className="min-w-0 [&>div]:gap-2"
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
     </SplitDrawerShell>
   );

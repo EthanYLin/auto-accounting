@@ -36,6 +36,12 @@ export const SunFilledIcon = ({ size = 24, width, height, ...props }: IconSvgPro
   </svg>
 );
 
+export const ChildIndentIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg width="20" height="24" aria-hidden="true" {...props}>
+    <path d="M 4 0 L 4 12 L 20 12" stroke="currentColor" strokeWidth="1" fill="none" />
+  </svg>
+);
+
 export const SearchIcon = (props: IconSvgProps) => (
   <svg
     aria-hidden="true"

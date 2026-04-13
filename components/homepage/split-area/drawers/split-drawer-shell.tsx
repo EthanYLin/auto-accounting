@@ -41,10 +41,16 @@ export function SplitDrawerShell({
     >
       <DrawerContent
         onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            onSave();
-          }
+          if (e.key !== "Enter") return;
+          if (e.nativeEvent.isComposing) return;
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+          const tag = (e.target as HTMLElement).tagName;
+          if (tag === "BUTTON" || tag === "A") return;
+          const role = (e.target as HTMLElement).getAttribute("role");
+          if (role === "button" || role === "option" || role === "menuitem") return;
+          if (!canSave) return;
+          e.preventDefault();
+          onSave();
         }}
       >
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">

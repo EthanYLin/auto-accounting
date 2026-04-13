@@ -217,63 +217,68 @@ export function SplitEntryArea({ isActive }: { isActive: boolean }) {
 
   return (
     <div>
-      {/* 工具栏 */}
-      <div className="flex items-center gap-1 mb-3">
-        {/* 全选按钮 */}
-        <Button
-          isIconOnly
-          size="sm"
-          variant="light"
-          onPress={handleSelectAll}
-          isDisabled={entries.length === 0}
-          aria-label={allSelected ? "取消全选" : "全选"}
-          title={allSelected ? "取消全选" : "全选"}
-        >
-          {allSelected ? (
-            <CheckCircleSolid className="w-5 h-5 text-primary" />
-          ) : someSelected ? (
-            <CheckCircleOutline className="w-5 h-5 text-default-800" />
-          ) : (
-            <CheckCircleOutline className="w-5 h-5 text-default-400" />
-          )}
-        </Button>
-        {/* 名称列显隐 */}
-        <Button
-          isIconOnly
-          size="sm"
-          variant="light"
-          onPress={() => setShowName((v) => !v)}
-          aria-label={showName ? "隐藏名称列" : "显示名称列"}
-          title={showName ? "隐藏名称列" : "显示名称列"}
-        >
-          {showName ? <EyeIcon className="w-4 h-4" /> : <EyeSlashIcon className="w-4 h-4" />}
-        </Button>
-        {/* 增加 */}
-        <Button
-          size="sm"
-          variant="flat"
-          startContent={<PlusIcon className="w-3.5 h-3.5" />}
-          onPress={handleAdd}
-        >
-          增加
-        </Button>
-
-        {entries.length === 0 && (
+      {/* 工具栏（整行可横向滚动） */}
+      <div className="mb-3 overflow-x-auto overflow-y-hidden">
+        <div className="flex flex-nowrap items-center gap-1 w-max pr-1">
+          {/* 全选按钮 */}
+          <Button
+            isIconOnly
+            size="sm"
+            variant="light"
+            onPress={handleSelectAll}
+            isDisabled={entries.length === 0}
+            aria-label={allSelected ? "取消全选" : "全选"}
+            title={allSelected ? "取消全选" : "全选"}
+            className="flex-shrink-0"
+          >
+            {allSelected ? (
+              <CheckCircleSolid className="w-5 h-5 text-primary" />
+            ) : someSelected ? (
+              <CheckCircleOutline className="w-5 h-5 text-default-800" />
+            ) : (
+              <CheckCircleOutline className="w-5 h-5 text-default-400" />
+            )}
+          </Button>
+          {/* 名称列显隐 */}
+          <Button
+            isIconOnly
+            size="sm"
+            variant="light"
+            onPress={() => setShowName((v) => !v)}
+            aria-label={showName ? "隐藏名称列" : "显示名称列"}
+            title={showName ? "隐藏名称列" : "显示名称列"}
+            className="flex-shrink-0"
+          >
+            {showName ? <EyeIcon className="w-4 h-4" /> : <EyeSlashIcon className="w-4 h-4" />}
+          </Button>
+          {/* 增加 */}
           <Button
             size="sm"
             variant="flat"
-            color={availableActions.length > 0 ? "default" : "primary"}
-            startContent={<InboxArrowDownIcon className="w-3.5 h-3.5" />}
-            onPress={() => replaceSelectedEntries(selectedEntries)}
+            startContent={<PlusIcon className="w-3.5 h-3.5" />}
+            onPress={handleAdd}
+            className="flex-shrink-0 whitespace-nowrap"
           >
-            打开分账
+            增加
           </Button>
-        )}
 
-        {/* 操作按钮组（可横向滚动） */}
-        {availableActions.length > 0 && (
-          <div className="ml-2 flex-1 min-w-0 overflow-x-auto">
-            <div className="flex items-center gap-1 w-max">
+          {entries.length === 0 && (
+            <Button
+              size="sm"
+              variant="flat"
+              color={availableActions.length > 0 ? "default" : "primary"}
+              startContent={<InboxArrowDownIcon className="w-3.5 h-3.5" />}
+              onPress={() => replaceSelectedEntries(selectedEntries)}
+              className="flex-shrink-0 whitespace-nowrap"
+            >
+              打开分账
+            </Button>
+          )}
+
+          {/* 操作按钮组 */}
+          {availableActions.length > 0 && (
+            <>
+              <div className="w-2 flex-shrink-0" aria-hidden />
               {availableActions.map((action) => {
                 const ActionIcon = action.icon;
                 return (
@@ -292,9 +297,9 @@ export function SplitEntryArea({ isActive }: { isActive: boolean }) {
                   </Button>
                 );
               })}
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* 数据区 */}

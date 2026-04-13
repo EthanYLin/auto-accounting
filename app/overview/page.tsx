@@ -189,6 +189,7 @@ export default function OverviewPage() {
               <Input
                 aria-label="快速搜索表格"
                 className="min-w-0 flex-1"
+                classNames={{ input: "text-base sm:text-small" }}
                 size="sm"
                 placeholder="快速搜索（用空格分隔多个关键词）"
                 value={quickFilterDraft}

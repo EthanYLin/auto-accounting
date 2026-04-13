@@ -28,29 +28,30 @@ function useDebouncedField(externalValue: string, onChange: (value: string) => v
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const localValueRef = useRef(localValue);
 
   // 外部值变化时同步到本地（切换交易、涂抹选择等）
   useEffect(() => {
     setLocalValue(externalValue);
+    localValueRef.current = externalValue;
   }, [externalValue]);
 
   const handleChange = useCallback(
     (value: string) => {
       setLocalValue(value);
+      localValueRef.current = value;
       clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => onChangeRef.current(value), delay);
     },
     [delay],
   );
 
-  // 卸载时立即 flush 未提交的值
+  // 卸载时 flush 尚未提交的值，防止切换交易时丢失输入
   useEffect(() => {
     return () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
-        // timer 存在说明有未提交的变更，flush 它
-        // 但此时 localValue 在闭包中不可靠，所以跳过 flush
-        // （组件因 key={tx.id} 重建时旧交易的编辑已通过 timer 提交）
+        onChangeRef.current(localValueRef.current);
       }
     };
   }, []);
@@ -67,7 +68,7 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
   const editor = useTransactionEditor();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
-  const labelPlacement = isDark ? "inside" : "outside";
+  const labelPlacement = "outside";
   const inputVariant = isDark ? "bordered" : "underlined";
   const tx = editor.currentTransaction;
   const children = editor.currentChildTransactions;
@@ -262,19 +263,16 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
     />
   );
 
-  const multiAccountTxFieldInputs = (
-    <div className="grid min-w-0 items-end gap-3 grid-cols-2 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,1.35fr)_minmax(0,1.35fr)]">
-      <div className="min-w-0">{nameInput}</div>
-      <div className="min-w-0">{merchantInput}</div>
-      <div className="min-w-0">{dateField}</div>
-      <div className="min-w-0">{remarkInput}</div>
-    </div>
-  );
-
   return (
     <div className="w-full min-w-0">
       {multiAccount ? (
-        multiAccountTxFieldInputs
+        /* 多账户布局 */
+        <div className="grid min-w-0 items-end gap-3 grid-cols-2 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,1.35fr)_minmax(0,1.35fr)]">
+          <div className="min-w-0">{nameInput}</div>
+          <div className="min-w-0">{merchantInput}</div>
+          <div className="min-w-0 col-span-2 lg:col-span-1">{dateField}</div>
+          <div className="min-w-0 col-span-2 lg:col-span-1">{remarkInput}</div>
+        </div>
       ) : (
         <>
           {/* ── lg+ ── 两列布局：左金额 + 右字段 (第一行：名称、商家、账户；第二行：日期、备注) */}
@@ -282,10 +280,7 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
             className="hidden lg:grid gap-3 min-h-28 min-w-0"
             style={{ gridTemplateColumns: "200px 1fr" }}
           >
-            <div
-              className="row-span-2 flex flex-col gap-1 min-h-0"
-              style={{ position: "relative" }}
-            >
+            <div className="row-span-2 flex flex-col gap-1 h-full" style={{ position: "relative" }}>
               {amountInputLg}
             </div>
             <div

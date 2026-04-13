@@ -56,9 +56,10 @@ export function TxSupplementTabs() {
   const [tab, setTab] = useState<TabKey>(defaultTab);
   const activeTab = hasSplitTab || tab !== "split" ? tab : "tx-info";
 
+  const txId = tx?.id;
   useEffect(() => {
-    setTab(defaultTab);
-  }, [tx?.id, defaultTab]);
+    setTab(getDefaultTab(childrenCount, splitCount, !!tx?.parent_id));
+  }, [txId]);
 
   useCommandListener("open-attach-selection", () => setTab("parent"));
 

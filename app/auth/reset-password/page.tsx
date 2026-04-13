@@ -199,6 +199,7 @@ function ResetPasswordContent() {
             <Input
               isRequired
               autoComplete="new-password"
+              classNames={{ input: "text-base" }}
               description="密码长度至少为 6 个字符"
               label="新密码"
               labelPlacement="outside-top"
@@ -210,6 +211,7 @@ function ResetPasswordContent() {
             <Input
               isRequired
               autoComplete="new-password"
+              classNames={{ input: "text-base" }}
               label="确认新密码"
               labelPlacement="outside-top"
               type="password"

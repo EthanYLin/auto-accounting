@@ -35,32 +35,32 @@ const DANGER_ACTION_ITEMS = QUICK_ACTION_ITEMS.filter((item) => item.section ===
 
 const ITEM_KBD: Partial<Record<string, React.ReactNode>> = {
   save: (
-    <Kbd keys={["command"]} className="text-[10px]">
+    <Kbd keys={["command"]} className="text-[10px] hidden md:inline-flex">
       S
     </Kbd>
   ),
   "save-cancel": (
-    <Kbd keys={["command"]} className="text-[10px]">
+    <Kbd keys={["command"]} className="text-[10px] hidden md:inline-flex">
       E
     </Kbd>
   ),
   "save-later": (
-    <Kbd keys={["command", "shift"]} className="text-[10px]">
+    <Kbd keys={["command", "shift"]} className="text-[10px] hidden md:inline-flex">
       S
     </Kbd>
   ),
   new: (
-    <Kbd keys={["option"]} className="text-[10px]">
+    <Kbd keys={["option"]} className="text-[10px] hidden md:inline-flex">
       N
     </Kbd>
   ),
   "locate-current": (
-    <Kbd keys={[]} className="text-[10px] w-4 h-4 p-0 flex items-center justify-center">
+    <Kbd keys={[]} className="text-[10px] w-4 h-4 p-0 hidden md:flex items-center justify-center">
       L
     </Kbd>
   ),
   delete: (
-    <Kbd keys={["option"]} className="text-[10px]">
+    <Kbd keys={["option"]} className="text-[10px] hidden md:inline-flex">
       ⌫
     </Kbd>
   ),

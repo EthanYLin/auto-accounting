@@ -392,12 +392,12 @@ export function CustomImport() {
                       }}
                     >
                       <TableHeader>
-                        <TableColumn>交易时间</TableColumn>
-                        <TableColumn>金额</TableColumn>
-                        <TableColumn>名称</TableColumn>
-                        <TableColumn>商户</TableColumn>
-                        <TableColumn>描述</TableColumn>
-                        <TableColumn className="w-[92px] text-right">操作</TableColumn>
+                        <TableColumn className="min-w-[100px]">交易时间</TableColumn>
+                        <TableColumn className="min-w-[80px]">金额</TableColumn>
+                        <TableColumn className="min-w-[100px]">名称</TableColumn>
+                        <TableColumn className="min-w-[80px]">商户</TableColumn>
+                        <TableColumn className="min-w-[100px]">描述</TableColumn>
+                        <TableColumn className="w-[92px] min-w-[92px] text-right">操作</TableColumn>
                       </TableHeader>
                       <TableBody emptyContent="暂无解析结果">
                         {rows.map((row) => (
@@ -467,6 +467,7 @@ export function CustomImport() {
                   placeholder="请选择账户"
                   size="sm"
                   variant="underlined"
+                  classNames={{ value: "text-base sm:text-small" }}
                   selectedKeys={selectedAccountId ? [selectedAccountId] : []}
                   onSelectionChange={(keys) => {
                     const next = Array.from(keys)[0];
@@ -484,6 +485,7 @@ export function CustomImport() {
                   placeholder="如：中国银行截图"
                   size="sm"
                   variant="underlined"
+                  classNames={{ input: "text-base sm:text-small" }}
                   value={customSource}
                   onValueChange={setCustomSource}
                 />

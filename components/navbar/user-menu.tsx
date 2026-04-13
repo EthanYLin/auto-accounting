@@ -24,9 +24,9 @@ export function UserMenu({ user }: UserMenuProps) {
   const handleSignOut = async () => {
     const result = await signOut();
     if (result?.success) {
-      // 清空缓存的数据
       clearData();
       router.push("/auth/login");
+      router.refresh();
     }
   };
 

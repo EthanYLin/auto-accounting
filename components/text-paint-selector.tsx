@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 import { Button } from "@heroui/react";
 import { Input } from "@heroui/react";
@@ -93,83 +93,122 @@ export function TextPaintSelector({
     }
   }, [selectedIndices, tokens]);
 
-  const handleMouseDown = (index: number) => {
-    setIsDragging(true);
-    setDragStartIndex(index);
-    setDragEndIndex(index);
+  const dragRef = useRef({
+    isDragging: false,
+    startIndex: null as number | null,
+    endIndex: null as number | null,
+    isRemoveMode: false,
+  });
+  const paintAreaRef = useRef<HTMLDivElement>(null);
 
-    // 判断是添加模式还是移除模式
-    // 如果点击的是已选中的，则进入移除模式
-    setIsRemoveMode(selectedIndices.has(index));
-  };
-
-  const handleMouseEnter = (index: number) => {
-    if (isDragging && dragStartIndex !== null) {
-      setDragEndIndex(index);
-    }
-  };
-
-  const handleMouseUp = () => {
-    if (isDragging && dragStartIndex !== null && dragEndIndex !== null) {
-      // 确定选择范围：从开始到结束的所有索引
-      const start = Math.min(dragStartIndex, dragEndIndex);
-      const end = Math.max(dragStartIndex, dragEndIndex);
-
-      const newSelectedIndices = new Set(selectedIndices);
-
-      // 根据模式添加或移除
-      for (let i = start; i <= end; i++) {
-        if (isRemoveMode) {
-          newSelectedIndices.delete(i);
-        } else {
-          newSelectedIndices.add(i);
+  const commitDrag = useCallback(() => {
+    const { isDragging: d, startIndex, endIndex, isRemoveMode: rm } = dragRef.current;
+    if (d && startIndex !== null && endIndex !== null) {
+      const lo = Math.min(startIndex, endIndex);
+      const hi = Math.max(startIndex, endIndex);
+      setSelectedIndices((prev) => {
+        const next = new Set(prev);
+        for (let i = lo; i <= hi; i++) {
+          if (rm) next.delete(i);
+          else next.add(i);
         }
-      }
-
-      setSelectedIndices(newSelectedIndices);
+        return next;
+      });
     }
-
+    dragRef.current = { isDragging: false, startIndex: null, endIndex: null, isRemoveMode: false };
     setIsDragging(false);
     setDragStartIndex(null);
     setDragEndIndex(null);
     setIsRemoveMode(false);
-  };
+  }, []);
 
-  // 添加全局鼠标抬起监听
-  useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      if (isDragging && dragStartIndex !== null && dragEndIndex !== null) {
-        // 确定选择范围：从开始到结束的所有索引
-        const start = Math.min(dragStartIndex, dragEndIndex);
-        const end = Math.max(dragStartIndex, dragEndIndex);
+  const startDrag = useCallback(
+    (index: number) => {
+      const rm = selectedIndices.has(index);
+      dragRef.current = { isDragging: true, startIndex: index, endIndex: index, isRemoveMode: rm };
+      setIsDragging(true);
+      setDragStartIndex(index);
+      setDragEndIndex(index);
+      setIsRemoveMode(rm);
+    },
+    [selectedIndices],
+  );
 
-        setSelectedIndices((prev) => {
-          const newSelectedIndices = new Set(prev);
-
-          // 根据模式添加或移除
-          for (let i = start; i <= end; i++) {
-            if (isRemoveMode) {
-              newSelectedIndices.delete(i);
-            } else {
-              newSelectedIndices.add(i);
-            }
-          }
-
-          return newSelectedIndices;
-        });
-      }
-
-      setIsDragging(false);
-      setDragStartIndex(null);
-      setDragEndIndex(null);
-      setIsRemoveMode(false);
-    };
-
-    if (isDragging) {
-      window.addEventListener("mouseup", handleGlobalMouseUp);
-      return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
+  const moveDrag = useCallback((index: number) => {
+    if (dragRef.current.isDragging && dragRef.current.startIndex !== null) {
+      dragRef.current.endIndex = index;
+      setDragEndIndex(index);
     }
-  }, [isDragging, dragStartIndex, dragEndIndex, isRemoveMode]);
+  }, []);
+
+  const handleMouseDown = (index: number) => startDrag(index);
+  const handleMouseEnter = (index: number) => moveDrag(index);
+  const handleMouseUp = () => commitDrag();
+
+  const getIndexFromPoint = useCallback((x: number, y: number): number | null => {
+    const el = document.elementFromPoint(x, y);
+    if (!el) return null;
+    const btn = (el as HTMLElement).closest("[data-token-index]") as HTMLElement | null;
+    if (!btn) return null;
+    const idx = parseInt(btn.dataset.tokenIndex!, 10);
+    return isNaN(idx) ? null : idx;
+  }, []);
+
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      const touch = e.touches[0];
+      const idx = getIndexFromPoint(touch.clientX, touch.clientY);
+      if (idx !== null) {
+        e.preventDefault();
+        startDrag(idx);
+      }
+    },
+    [getIndexFromPoint, startDrag],
+  );
+
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!dragRef.current.isDragging) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const idx = getIndexFromPoint(touch.clientX, touch.clientY);
+      if (idx !== null) {
+        moveDrag(idx);
+      }
+    },
+    [getIndexFromPoint, moveDrag],
+  );
+
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      e.preventDefault();
+      commitDrag();
+    },
+    [commitDrag],
+  );
+
+  // 全局 mouseup / touchend 兜底
+  useEffect(() => {
+    if (!isDragging) return;
+    const onEnd = () => commitDrag();
+    window.addEventListener("mouseup", onEnd);
+    window.addEventListener("touchend", onEnd);
+    return () => {
+      window.removeEventListener("mouseup", onEnd);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, [isDragging, commitDrag]);
+
+  // 涂抹区域内禁止 touchmove 的被动滚动，使 preventDefault 生效
+  useEffect(() => {
+    const el = paintAreaRef.current;
+    if (!el) return;
+    const preventScroll = (e: TouchEvent) => {
+      if (dragRef.current.isDragging) e.preventDefault();
+    };
+    el.addEventListener("touchmove", preventScroll, { passive: false });
+    return () => el.removeEventListener("touchmove", preventScroll);
+  }, []);
 
   // 获取当前拖动预览的索引集合
   const getPreviewIndices = () => {
@@ -229,14 +268,16 @@ export function TextPaintSelector({
         <ModalBody>
           <div className="space-y-4">
             {/* 提示文字 */}
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              按住鼠标左键并拖动来选择文字。
-            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">按住并拖动来涂抹选择文字。</p>
 
             {/* 文字方格区域 */}
             <div
-              className="flex flex-wrap gap-1 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 select-none"
+              ref={paintAreaRef}
+              className="flex flex-wrap gap-1 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 select-none touch-none"
               onMouseLeave={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             >
               {tokens.map((token, index) => {
                 const isSelected = previewIndices.has(index);
@@ -255,6 +296,7 @@ export function TextPaintSelector({
                   <button
                     aria-pressed={isSelected}
                     key={index}
+                    data-token-index={index}
                     className={`
                       inline-flex items-center justify-center px-2 py-1 rounded cursor-pointer
                       transition-colors duration-100

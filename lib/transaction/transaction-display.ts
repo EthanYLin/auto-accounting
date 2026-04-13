@@ -106,11 +106,12 @@ export function formatCategoryDisplay(tx: TransactionWithRelations): CategoryDis
   const foreColor =
     tx.sub_category?.fore_color ?? tx.main_category?.fore_color ?? txType?.fore_color ?? "";
 
-  const parts: string[] = [];
-  if (tx.main_category?.label) parts.push(tx.main_category.label);
-  if (tx.sub_category?.label) parts.push(tx.sub_category.label);
+  let label = "-";
+  if (tx.sub_category?.label) label = tx.sub_category.label;
+  else if (tx.main_category?.label) label = tx.main_category.label;
+  else if (tx.transaction_type) label = tx.transaction_type;
 
-  return { icon, backColor, foreColor, label: parts.join("-") || "-" };
+  return { icon, backColor, foreColor, label };
 }
 
 /**

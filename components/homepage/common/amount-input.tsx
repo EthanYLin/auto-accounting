@@ -110,7 +110,7 @@ export function AmountInput({
           <span className="text-default-400">¥ </span>
           <span className={colorClass}>{getAmountSymbol(transactionType)}</span>
         </span>
-        <span className={`flex-1 ${textSize} font-bold text-right pr-3 ${colorClass}`}>
+        <span className={`flex-1 ${textSize} font-bold text-right pr-1 ${colorClass}`}>
           {value}
         </span>
       </div>
@@ -135,8 +135,9 @@ export function AmountInput({
       onBlur={handleAmountBlur}
       onKeyDown={handleAmountKeyDown}
       classNames={{
-        inputWrapper: `h-full ${minHeight} flex items-center dark:border-white/[0.12] dark:bg-white/[0.03]`,
-        input: `${textSize} font-bold text-right pr-3 ${colorClass}`,
+        base: "h-full",
+        inputWrapper: `!h-full ${minHeight} flex items-center dark:border-white/[0.12] dark:bg-white/[0.03]`,
+        input: `${textSize} font-bold text-right pr-1 ${colorClass}`,
       }}
       size="sm"
       variant="bordered"

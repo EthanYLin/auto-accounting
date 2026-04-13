@@ -27,7 +27,7 @@ function matchesTransactionKeyword(tx: TransactionWithRelations, keyword: string
   if (/^\d+(\.\d+)?$/.test(lowerKeyword)) {
     const searchInt = Math.floor(parseFloat(lowerKeyword));
     const txInt = Math.floor(Math.abs(tx.amount));
-    return txInt === searchInt;
+    if (txInt === searchInt) return true;
   }
 
   // 3. 日期时间搜索
@@ -257,13 +257,15 @@ export function useTransactionFilter(
     return flatTransactions.filter((tx) => resultIds.has(tx.id));
   }, [flatTransactions, debouncedSearchQuery, statusFilter, selectedTransactionId]);
 
-  const isFiltered = debouncedSearchQuery.trim() !== "" || statusFilter !== "all";
+  const isFiltered =
+    debouncedSearchQuery.trim() !== "" || statusFilter !== "all" || sortOrder !== "newest";
 
   const clearFilters = useCallback(() => {
     clearSaveButtonOverride();
     setSearchQueryState("");
     setDebouncedSearchQuery("");
     setStatusFilterState("all");
+    setSortOrderState("newest");
   }, [clearSaveButtonOverride]);
 
   return {

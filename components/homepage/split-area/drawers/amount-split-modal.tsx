@@ -6,7 +6,6 @@ import type { SplitEntryData } from "@/components/homepage/split-area/split-entr
 import type { TransactionWithRelations } from "@/types";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
 
 import { AmountInput } from "@/components/homepage/common/amount-input";
 import { FourChainSelector } from "@/components/homepage/common/four-chain-selector";
@@ -149,7 +148,7 @@ export function AmountSplitModal({
       onSave={handleSave}
       onCancel={onCancel}
     >
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <SplitRowCountPresets
           preset={preset}
           customCountStr={customCountStr}
@@ -173,58 +172,54 @@ export function AmountSplitModal({
         />
       </div>
 
-      <div className="rounded-medium border border-divider">
-        <Table
-          removeWrapper
-          aria-label="按金额分账明细"
-          classNames={{
-            th: "text-xs uppercase text-default-500 first:pl-4 last:pr-4",
-            td: "align-middle first:pl-4 last:pr-4 py-3",
-          }}
-        >
-          <TableHeader>
-            <TableColumn width={140}>金额</TableColumn>
-            <TableColumn>类别</TableColumn>
-          </TableHeader>
-          <TableBody>
-            {splitCents.map((cents, index) => {
-              const txType = chainStates[index]?.txType;
-              const isLast = index === splitCents.length - 1;
-              return (
-                <TableRow key={index}>
-                  <TableCell>
-                    <div className="w-28">
-                      <AmountInput
-                        value={((isLast ? cents : partialAbsCents[index]) / 100).toFixed(2)}
-                        onChange={(v) => {
-                          if (isLast) return;
-                          const parsed = parseFloat(v);
-                          const next = Number.isFinite(parsed) ? Math.round(parsed * 100) : 0;
-                          setPartialCentsAt(index, next);
-                        }}
-                        transactionType={txType}
-                        isDisabled={isLast}
-                        textSize="text-sm"
-                        minHeight="min-h-[36px]"
-                        className="h-full"
-                      />
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <FourChainSelector
-                      value={chainStates[index]}
-                      onChange={(next) => setChainAt(index, next)}
-                      allowedTxTypes={allowedTxTypes}
-                      mode="select"
-                      selectModeOptions={{ size: "sm", textSize: "sm" }}
-                      className="min-w-0 [&>div]:!grid-cols-2 [&>div]:gap-2 sm:[&>div]:!grid-cols-4"
-                    />
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+      <div className="divide-y divide-divider rounded-medium border border-divider">
+        <div className="hidden md:grid md:grid-cols-[140px_1fr] md:gap-3 px-4 py-2">
+          <span className="text-xs uppercase text-default-500">金额</span>
+          <span className="text-xs uppercase text-default-500">类别</span>
+        </div>
+        {splitCents.map((cents, index) => {
+          const txType = chainStates[index]?.txType;
+          const isLast = index === splitCents.length - 1;
+          return (
+            <div
+              key={index}
+              className="flex flex-col gap-2 px-4 py-3 md:grid md:grid-cols-[140px_1fr] md:items-center md:gap-3"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="md:hidden inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-default-100 text-xs font-medium text-default-400">
+                  {index + 1}
+                </span>
+                <span className="text-xs text-default-500 md:hidden">金额</span>
+                <div className="w-28">
+                  <AmountInput
+                    value={((isLast ? cents : partialAbsCents[index]) / 100).toFixed(2)}
+                    onChange={(v) => {
+                      if (isLast) return;
+                      const parsed = parseFloat(v);
+                      const next = Number.isFinite(parsed) ? Math.round(parsed * 100) : 0;
+                      setPartialCentsAt(index, next);
+                    }}
+                    transactionType={txType}
+                    isDisabled={isLast}
+                    textSize="text-sm"
+                    minHeight="min-h-[36px]"
+                    className="h-full"
+                  />
+                </div>
+              </div>
+              <div className="min-w-0">
+                <FourChainSelector
+                  value={chainStates[index]}
+                  onChange={(next) => setChainAt(index, next)}
+                  allowedTxTypes={allowedTxTypes}
+                  mode="select"
+                  selectModeOptions={{ size: "sm", textSize: "sm" }}
+                  className="min-w-0 [&>div]:gap-2"
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
     </SplitDrawerShell>
   );
