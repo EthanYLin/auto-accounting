@@ -17,8 +17,8 @@ export const metadata: Metadata = {
     template: `%s - ${siteConfig.name}`,
   },
   description: siteConfig.description,
-  icons: {
-    icon: "/favicon.ico",
+  appleWebApp: {
+    title: "自动记账",
   },
 };
 
