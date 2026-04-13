@@ -40,6 +40,8 @@ export class ExcelRow {
 
     if (value === undefined || value === null || String(value).trim() === "") return null;
 
+    if (value instanceof Date) return value.toISOString();
+
     return String(value).trim();
   }
 

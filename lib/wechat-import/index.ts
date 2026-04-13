@@ -33,7 +33,7 @@ function resolveImporters(importerIndices?: number[]): Importer[] {
  *
  * @param file 用户选择的 Excel 文件（.xlsx / .xls）
  * @param onProgress 进度回调函数
- * @returns 解析后的 ExcelTable，跳过前 16 行说明，第 17 行为列名
+ * @returns 解析后的 ExcelTable，跳过前 17 行说明，第 18 行为列名
  * @throws Error 文件类型不符、工作表缺失、行数不足时抛出
  */
 export async function parseWeChatFile(
@@ -46,7 +46,7 @@ export async function parseWeChatFile(
 
   onProgress?.("正在读取 Excel 文件…");
   const arrayBuffer = await file.arrayBuffer();
-  const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
+  const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array", cellDates: true });
 
   const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
@@ -58,11 +58,11 @@ export async function parseWeChatFile(
     defval: "",
   }) as any[][];
 
-  if (jsonData.length < 18) throw new Error("Excel文件行数不足，需要至少18行数据");
+  if (jsonData.length < 19) throw new Error("Excel文件行数不足，需要至少19行数据");
 
-  // 微信账单前 16 行为账户信息，第 17 行（index 16）为列名，第 18 行起为数据
-  const headers = (jsonData[16] ?? []).map((h: any) => String(h));
-  const rows = jsonData.slice(17);
+  // 微信账单前 17 行为账户信息，第 18 行（index 17）为列名，第 19 行起为数据
+  const headers = (jsonData[17] ?? []).map((h: any) => String(h));
+  const rows = jsonData.slice(18);
 
   return new ExcelTable(headers, rows);
 }

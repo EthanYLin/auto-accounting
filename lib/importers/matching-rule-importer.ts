@@ -90,11 +90,6 @@ export class MatchingRuleImporter implements Importer {
       if (!this.regexTest(rule.f_time.trim(), timeStr)) return false;
     }
 
-    if (rule.f_time != null && rule.f_time.trim() !== "") {
-      const timeStr = tx.datetime ?? "";
-      if (!this.regexTest(rule.f_time.trim(), timeStr)) return false;
-    }
-
     if (rule.f_title != null && rule.f_title.trim() !== "") {
       const titleStr = tx.title ?? "";
       if (!this.regexTest(rule.f_title.trim(), titleStr)) return false;
