@@ -1,39 +1,45 @@
-import { type NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
-  const { supabaseResponse, user } = await updateSession(request);
+  try {
+    const { supabaseResponse, user } = await updateSession(request);
 
-  const { pathname } = request.nextUrl;
+    const { pathname } = request.nextUrl;
 
-  // 公开路由 - 不需要认证
-  const publicPaths = [
-    "/auth/login",
-    "/auth/register",
-    "/auth/forgot-password",
-    "/auth/reset-password",
-  ];
+    // 公开路由 - 不需要认证
+    const publicPaths = [
+      "/auth/login",
+      "/auth/register",
+      "/auth/forgot-password",
+      "/auth/reset-password",
+    ];
 
-  // 检查是否是公开路径
-  const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
+    // 检查是否是公开路径
+    const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
 
-  // 已登录用户访问登录/注册页面，重定向到首页
-  if (user && (pathname === "/auth/login" || pathname === "/auth/register")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return Response.redirect(url);
+    // 已登录用户访问登录/注册页面，重定向到首页
+    if (user && (pathname === "/auth/login" || pathname === "/auth/register")) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return Response.redirect(url);
+    }
+
+    // 未登录用户访问受保护路由，重定向到登录页
+    if (!user && !isPublicPath) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/login";
+      url.searchParams.set("redirect", pathname);
+      return Response.redirect(url);
+    }
+
+    return supabaseResponse;
+  } catch {
+    // 兜底：middleware 出现未预期异常时，放行请求而不是返回 500
+    // 避免 MIDDLEWARE_INVOCATION_FAILED 导致整站不可用
+    return NextResponse.next({ request });
   }
-
-  // 未登录用户访问受保护路由，重定向到登录页
-  if (!user && !isPublicPath) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
-    url.searchParams.set("redirect", pathname);
-    return Response.redirect(url);
-  }
-
-  return supabaseResponse;
 }
 
 export const config = {
