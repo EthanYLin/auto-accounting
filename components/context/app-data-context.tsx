@@ -11,7 +11,6 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { usePathname } from "next/navigation";
 import { addToast } from "@heroui/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -22,7 +21,7 @@ import {
   getBudgetTypes,
   getMatchingRules,
 } from "@/app/actions/data";
-import { getUser } from "@/app/actions/auth";
+import { createClient } from "@/lib/supabase/client";
 
 // ==================== 数据获取函数 ====================
 
@@ -94,7 +93,6 @@ const AppDataContext = createContext<AppDataContextValue | undefined>(undefined)
 
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
-  const pathname = usePathname();
   const [enabled, setEnabled] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const syncedUserRef = useRef<string | null>(null);
@@ -118,45 +116,57 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     await queryClient.invalidateQueries({ queryKey: appDataQueryKey });
   }, [queryClient]);
 
+  const syncUser = useCallback(
+    (nextUserId: string | null) => {
+      const previousUserId = syncedUserRef.current;
+
+      if (nextUserId === previousUserId) return;
+
+      syncedUserRef.current = nextUserId;
+      setCurrentUserId(nextUserId);
+
+      if (!nextUserId) {
+        clearData();
+        return;
+      }
+      if (previousUserId !== null && previousUserId !== nextUserId) {
+        clearData();
+      }
+      loadData();
+    },
+    [clearData, loadData],
+  );
+
   useEffect(() => {
     let isActive = true;
+    const supabase = createClient();
 
-    const checkUserAndSyncData = async () => {
-      try {
-        const user = await getUser();
+    // 订阅认证状态变化事件，仅在真正登录/登出/token 刷新时触发
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (isActive) syncUser(session?.user?.id ?? null);
+    });
 
-        if (!isActive) return;
-        const nextUserId = user?.id || null;
-        const previousUserId = syncedUserRef.current;
-
-        if (nextUserId === previousUserId) return;
-
-        syncedUserRef.current = nextUserId;
-        setCurrentUserId(nextUserId);
-        if (!nextUserId) {
-          clearData();
-
-          return;
-        }
-        if (previousUserId !== null && previousUserId !== nextUserId) {
-          clearData();
-        }
-        loadData();
-      } catch (error) {
+    // 初始化：读取当前 session（读取本地缓存，无需网络往返）
+    void supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (!isActive) return;
+      if (error) {
         addToast({
           title: "用户状态同步失败",
-          description: error instanceof Error ? error.message : "检查用户状态时出错",
+          description: error.message,
           color: "danger",
         });
+        return;
       }
-    };
-
-    void checkUserAndSyncData();
+      syncUser(session?.user?.id ?? null);
+    });
 
     return () => {
       isActive = false;
+      subscription.unsubscribe();
     };
-  }, [pathname, loadData, clearData]);
+  }, [syncUser]);
 
   const appData = query.data ?? emptyAppData;
   const { accounts, mainCategories, subCategories, budgetTypes, matchingRules } = appData;

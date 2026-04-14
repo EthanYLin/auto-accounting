@@ -69,10 +69,10 @@ export default function RegisterPage() {
       const result = await verifySignupOtp(email, code, password);
       if (result?.error) {
         setError(result.error);
+        setLoading(false);
       } else if (result?.success) {
         setSuccess(true);
         router.push("/transactions");
-        router.refresh();
       }
     } catch (err) {
       console.error("注册错误:", err);
@@ -85,7 +85,6 @@ export default function RegisterPage() {
       } else {
         setError("注册失败，请重试");
       }
-    } finally {
       setLoading(false);
     }
   };

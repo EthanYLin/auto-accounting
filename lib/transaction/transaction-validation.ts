@@ -12,7 +12,7 @@ import type {
   BudgetType,
 } from "@/types";
 
-import { calculateAmount } from "@/lib/transaction/transaction-display";
+import { amountToCents, calculateAmount } from "@/lib/transaction/transaction-display";
 import { parseTxTime } from "@/lib/transaction/transaction-datetime";
 import { getExitSplits } from "@/lib/transaction/transaction-split-merge";
 
@@ -205,7 +205,7 @@ export function isValidTransaction(
       if (inList.length !== 1 || outList.length !== 1) {
         hint.push("转账必须恰好包含一条转入和一条转出记录");
       } else {
-        if (inList[0].amount !== outList[0].amount) {
+        if (amountToCents(inList[0].amount) !== amountToCents(outList[0].amount)) {
           hint.push("转入与转出金额必须相同");
         }
         if (inList[0].account?.id === outList[0].account?.id) {
@@ -251,7 +251,10 @@ export function isWarningTransaction(
   }
 
   // 2. original_amount非null且与amount不一致
-  if (tx.original_amount != null && tx.amount !== tx.original_amount) {
+  if (
+    tx.original_amount != null &&
+    amountToCents(tx.amount) !== amountToCents(tx.original_amount)
+  ) {
     hints.push(`金额已修改，原金额为￥${tx.original_amount}`);
   }
 
@@ -261,8 +264,8 @@ export function isWarningTransaction(
   entranceRecords.forEach((record) => {
     if (record.account?.name) {
       const accountName = record.account.name;
-      const amount = calculateAmount(record);
-      entranceAccountMap.set(accountName, (entranceAccountMap.get(accountName) ?? 0) + amount);
+      const cents = amountToCents(calculateAmount(record));
+      entranceAccountMap.set(accountName, (entranceAccountMap.get(accountName) ?? 0) + cents);
     }
   });
 
@@ -271,8 +274,8 @@ export function isWarningTransaction(
   exitSplits.forEach((split) => {
     if (split.account?.name) {
       const accountName = split.account.name;
-      const amount = calculateAmount(split);
-      exitAccountMap.set(accountName, (exitAccountMap.get(accountName) ?? 0) + amount);
+      const cents = amountToCents(calculateAmount(split));
+      exitAccountMap.set(accountName, (exitAccountMap.get(accountName) ?? 0) + cents);
     }
   });
 
@@ -281,11 +284,11 @@ export function isWarningTransaction(
     ...Array.from(exitAccountMap.keys()),
   ]);
   allAccountNames.forEach((accountName) => {
-    const entranceAmount = entranceAccountMap.get(accountName) ?? 0;
-    const exitAmount = exitAccountMap.get(accountName) ?? 0;
-    if (entranceAmount !== exitAmount) {
+    const entranceCents = entranceAccountMap.get(accountName) ?? 0;
+    const exitCents = exitAccountMap.get(accountName) ?? 0;
+    if (entranceCents !== exitCents) {
       hints.push(
-        `账户${accountName}的金额发生变化，原金额￥${entranceAmount}，现金额￥${exitAmount}`,
+        `账户${accountName}的金额发生变化，原金额￥${(entranceCents / 100).toFixed(2)}，现金额￥${(exitCents / 100).toFixed(2)}`,
       );
     }
   });

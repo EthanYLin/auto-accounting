@@ -16,14 +16,22 @@ import { AmountInput } from "./common/amount-input";
 import { useAppData } from "@/components/context/app-data-context";
 import { useTransactionEditor } from "@/components/context/transaction-editor-context";
 import { TextPaintSelector } from "@/components/text-paint-selector";
-import { getAmountColorClass } from "@/lib/transaction/transaction-display";
+import { amountToCents, getAmountColorClass } from "@/lib/transaction/transaction-display";
 
 /**
  * 带 debounce 的文本输入 hook。
  * 本地 state 保证输入流畅，延迟后才同步到 store。
  * 外部值变化时（如切换交易、涂抹选择器回填）自动同步。
+ *
+ * @param registerFlush 可选的 flush 注册函数（来自 editor context），
+ *   保存前会调用已注册的 flush 回调，确保未提交的 debounce 值被同步写入 store。
  */
-function useDebouncedField(externalValue: string, onChange: (value: string) => void, delay = 300) {
+function useDebouncedField(
+  externalValue: string,
+  onChange: (value: string) => void,
+  delay = 300,
+  registerFlush?: (callback: () => void) => () => void,
+) {
   const [localValue, setLocalValue] = useState(externalValue);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const onChangeRef = useRef(onChange);
@@ -45,6 +53,19 @@ function useDebouncedField(externalValue: string, onChange: (value: string) => v
     },
     [delay],
   );
+
+  // 注册 flush 回调，保存前会被调用以立即提交待处理的 debounce 值
+  useEffect(() => {
+    if (!registerFlush) return;
+    const flush = () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = undefined;
+        onChangeRef.current(localValueRef.current);
+      }
+    };
+    return registerFlush(flush);
+  }, [registerFlush]);
 
   // 卸载时 flush 尚未提交的值，防止切换交易时丢失输入
   useEffect(() => {
@@ -76,14 +97,23 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
   const [isNamePaintSelectorOpen, setIsNamePaintSelectorOpen] = useState(false);
   const [isMerchantPaintSelectorOpen, setIsMerchantPaintSelectorOpen] = useState(false);
 
-  const [localName, setLocalName] = useDebouncedField(tx?.name || "", (v) =>
-    editor.updateFields({ name: v }),
+  const [localName, setLocalName] = useDebouncedField(
+    tx?.name || "",
+    (v) => editor.updateFields({ name: v }),
+    300,
+    editor.registerPendingFlush,
   );
-  const [localMerchant, setLocalMerchant] = useDebouncedField(tx?.merchant || "", (v) =>
-    editor.updateFields({ merchant: v }),
+  const [localMerchant, setLocalMerchant] = useDebouncedField(
+    tx?.merchant || "",
+    (v) => editor.updateFields({ merchant: v }),
+    300,
+    editor.registerPendingFlush,
   );
-  const [localRemark, setLocalRemark] = useDebouncedField(tx?.remark || "", (v) =>
-    editor.updateFields({ remark: v }),
+  const [localRemark, setLocalRemark] = useDebouncedField(
+    tx?.remark || "",
+    (v) => editor.updateFields({ remark: v }),
+    300,
+    editor.registerPendingFlush,
   );
 
   if (!tx) return null;
@@ -97,7 +127,7 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
       <span
         className={`text-xs font-bold ${getAmountColorClass(entranceSummary[0]!.transaction_type)} shrink-0`}
       >
-        {entranceSummary[0]!.amount === 0 ? "该账单正负相抵" : "汇总后"}
+        {amountToCents(entranceSummary[0]!.amount) === 0 ? "该账单正负相抵" : "汇总后"}
       </span>
       <div className="flex-1 min-h-0">
         <AmountInput
@@ -123,7 +153,7 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
       <span
         className={`text-xs font-bold ${getAmountColorClass(entranceSummary[0]!.transaction_type)} shrink-0`}
       >
-        {entranceSummary[0]!.amount === 0 ? "该账单正负相抵" : "汇总后"}
+        {amountToCents(entranceSummary[0]!.amount) === 0 ? "该账单正负相抵" : "汇总后"}
       </span>
       <div className="min-h-0 flex-1">
         <AmountInput

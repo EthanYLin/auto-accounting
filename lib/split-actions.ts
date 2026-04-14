@@ -16,6 +16,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 import { TRANSACTION_TYPES } from "@/constants/transaction-type";
+import { amountToCents } from "@/lib/transaction/transaction-display";
 
 // ==================== 类型定义 ====================
 
@@ -262,7 +263,7 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       Array.from(groups.values()).forEach((entries) => {
         // (1) 金额求和
         const sum = entries.reduce((acc, e) => acc + getSignedAmount(e), 0);
-        if (sum === 0) return; // 完全抵消
+        if (amountToCents(sum) === 0) return; // 完全抵消
 
         // (2) 确定名称：第一条有名称的记录
         const name = entries.find((e) => e.name)?.name || "";
@@ -404,7 +405,7 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       selected.length >= 1 &&
       sameAccount(selected) &&
       allHaveTxType(selected) &&
-      sumSignedAmounts(selected) !== 0,
+      amountToCents(sumSignedAmounts(selected)) !== 0,
     split: (sources, nextLocalId, payload) => {
       if (!payload || payload.actionKey !== "ratio-split") return sources;
       if (sources.length === 0) return sources;
@@ -441,7 +442,7 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
       selected.length >= 1 &&
       sameAccount(selected) &&
       allHaveTxType(selected) &&
-      sumSignedAmounts(selected) !== 0,
+      amountToCents(sumSignedAmounts(selected)) !== 0,
     split: (sources, nextLocalId, payload) => {
       if (!payload || payload.actionKey !== "amount-split") return sources;
       if (sources.length === 0) return sources;

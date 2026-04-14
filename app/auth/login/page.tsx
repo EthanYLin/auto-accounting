@@ -61,9 +61,9 @@ function LoginPageContent() {
 
       if (result?.error) {
         setError(result.error);
+        setLoading(false);
       } else if (result?.success) {
         router.push("/transactions");
-        router.refresh();
       }
     } catch (err) {
       if (err instanceof Error) {
@@ -75,7 +75,6 @@ function LoginPageContent() {
       } else {
         setError("登录失败，请重试");
       }
-    } finally {
       setLoading(false);
     }
   };

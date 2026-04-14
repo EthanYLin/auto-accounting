@@ -4,6 +4,8 @@
 
 import type { Json, NewTransactionData } from "@/types";
 
+import { displayTxTime } from "../transaction/transaction-datetime";
+
 /**
  * 微信账单 Excel 列名枚举
  * 枚举值为微信导出文件中的原始中文列名，用于与 headers 匹配
@@ -40,7 +42,7 @@ export class ExcelRow {
 
     if (value === undefined || value === null || String(value).trim() === "") return null;
 
-    if (value instanceof Date) return value.toISOString();
+    if (value instanceof Date) return displayTxTime(value, "long");
 
     return String(value).trim();
   }

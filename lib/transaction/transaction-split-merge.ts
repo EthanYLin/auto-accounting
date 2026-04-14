@@ -12,7 +12,7 @@ import type {
   BudgetType,
 } from "@/types";
 
-import { calculateAmount } from "@/lib/transaction/transaction-display";
+import { amountToCents, calculateAmount } from "@/lib/transaction/transaction-display";
 
 // ==================== Split 合并逻辑 ====================
 
@@ -99,7 +99,7 @@ export function defaultMerge(
   Array.from(groups.values()).forEach((entries) => {
     // (1) 金额：带符号求和（分），为 0 则抵消该记录
     const sumCents = entries.reduce(
-      (acc: number, e: TransactionSplitWithRelations) => acc + Math.round(calculateAmount(e) * 100),
+      (acc: number, e: TransactionSplitWithRelations) => acc + amountToCents(calculateAmount(e)),
       0,
     );
     if (sumCents === 0) return;
@@ -189,7 +189,7 @@ export function getEntranceSummary(
 
   Array.from(groups.values()).forEach((entries) => {
     const sumCents = entries.reduce(
-      (acc: number, e: TransactionSplitWithRelations) => acc + Math.round(calculateAmount(e) * 100),
+      (acc: number, e: TransactionSplitWithRelations) => acc + amountToCents(calculateAmount(e)),
       0,
     );
     const mergedType: TransactionType = getMergedTransactionType(entries[0], entries, sumCents);

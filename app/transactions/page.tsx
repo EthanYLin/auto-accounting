@@ -118,6 +118,26 @@ function TransactionsRoutePage() {
     search.filteredTransactions,
   ]);
 
+  const hasAutoSelectedRef = useRef(false);
+
+  useEffect(() => {
+    if (!appData.hasLoaded || !store.hasLoaded) return;
+    if (hasAutoSelectedRef.current) return;
+    hasAutoSelectedRef.current = true;
+
+    if (routeTxId !== null) return;
+    if (editor.currentId !== null) return;
+
+    const TARGET_STATUSES = new Set(["待处理", "经自动处理填写", "经自动处理取消"]);
+    const firstTarget = search.filteredTransactions.find(
+      (tx) => tx.status !== null && TARGET_STATUSES.has(tx.status),
+    );
+    if (firstTarget) {
+      editor.selectTransaction(firstTarget.id);
+      transactionListRef.current?.scrollToTransaction(firstTarget.id);
+    }
+  }, [appData.hasLoaded, store.hasLoaded]);
+
   useTransactionEditorHotkeys();
 
   useCommandListener("focus-search", () => {

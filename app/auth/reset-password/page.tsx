@@ -73,6 +73,7 @@ function ResetPasswordContent() {
       const result = await updatePassword(password);
       if (result?.error) {
         setError(result.error);
+        setLoading(false);
       } else if (result?.success) {
         setSuccess(true);
         router.push("/auth/login?message=密码已重置，请使用新密码登录");
@@ -88,7 +89,6 @@ function ResetPasswordContent() {
       } else {
         setError("重置密码失败，请重试");
       }
-    } finally {
       setLoading(false);
     }
   };

@@ -26,7 +26,6 @@ export function UserMenu({ user }: UserMenuProps) {
     if (result?.success) {
       clearData();
       router.push("/auth/login");
-      router.refresh();
     }
   };
 

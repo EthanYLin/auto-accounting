@@ -76,6 +76,8 @@ export function SocialSplitModal({
   const [preset, setPreset] = useState<PresetKey>("2");
   const [customCountStr, setCustomCountStr] = useState("5");
   const [ratios, setRatios] = useState<number[]>([1, 1]);
+  /** 比例输入框草稿（允许空字符串等临时非法值，失焦后再规范化） */
+  const [ratioStrs, setRatioStrs] = useState<string[]>(["1", "1"]);
   const [chainStates, setChainStates] = useState<FourChainState[]>([{}, {}]);
   const [name, setName] = useState("");
 
@@ -86,6 +88,11 @@ export function SocialSplitModal({
         if (n === prev.length) return prev;
         if (n < prev.length) return prev.slice(0, n);
         return [...prev, ...new Array(n - prev.length).fill(1)];
+      });
+      setRatioStrs((prev) => {
+        if (n === prev.length) return prev;
+        if (n < prev.length) return prev.slice(0, n);
+        return [...prev, ...new Array(n - prev.length).fill("1")];
       });
       setChainStates((prev) => {
         if (n === prev.length) return prev;
@@ -110,6 +117,7 @@ export function SocialSplitModal({
     setPreset(String(initialCount) as PresetKey);
     setCustomCountStr("5");
     setRatios(new Array(initialCount).fill(1));
+    setRatioStrs(new Array(initialCount).fill("1"));
     setChainStates(
       Array.from({ length: initialCount }, (_, index) =>
         index === 0 ? { ...baseChain } : { ...defaultOtherExpenseChain },
@@ -129,11 +137,36 @@ export function SocialSplitModal({
     applyRowCount(Number.isFinite(n) && n > 1 ? n : 5);
   };
 
-  const setRatioAt = (index: number, value: number) => {
-    const v = Number.isFinite(value) && value > 0 ? Math.floor(value) : 1;
+  const setRatioDraftAt = (index: number, raw: string) => {
+    setRatioStrs((prev) => {
+      const next = [...prev];
+      next[index] = raw;
+      return next;
+    });
+    const parsed = parseInt(raw.trim(), 10);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      const v = Math.floor(parsed);
+      setRatios((prev) => {
+        const next = [...prev];
+        next[index] = v;
+        return next;
+      });
+    }
+  };
+
+  const normalizeRatioDraftAt = (index: number) => {
+    const raw = ratioStrs[index] ?? "";
+    const parsed = parseInt(String(raw).trim(), 10);
+    const fallback = ratios[index] ?? 1;
+    const v = Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
     setRatios((prev) => {
       const next = [...prev];
       next[index] = v;
+      return next;
+    });
+    setRatioStrs((prev) => {
+      const next = [...prev];
+      next[index] = String(v);
       return next;
     });
   };
@@ -146,8 +179,18 @@ export function SocialSplitModal({
     });
   };
 
+  const ratioDraftsValid =
+    ratioStrs.length === ratios.length &&
+    ratioStrs.every((s) => {
+      const n = parseInt(String(s).trim(), 10);
+      return Number.isFinite(n) && n > 0;
+    });
+
   const canSave =
-    ratios.length >= 2 && ratios.every((r) => Number.isFinite(r) && r > 0) && totalAbsCents > 0;
+    ratios.length >= 2 &&
+    ratios.every((r) => Number.isFinite(r) && r > 0) &&
+    ratioDraftsValid &&
+    totalAbsCents > 0;
 
   const handleSave = () => {
     if (!canSave) return;
@@ -206,7 +249,7 @@ export function SocialSplitModal({
           <span className="text-xs uppercase text-default-500">金额</span>
           <span className="text-xs uppercase text-default-500">类别</span>
         </div>
-        {ratios.map((ratio, index) => {
+        {ratios.map((_, index) => {
           const cents = splitCents[index] ?? 0;
           const txType = chainStates[index]?.txType;
           const symbol = getAmountSymbol(txType);
@@ -227,7 +270,7 @@ export function SocialSplitModal({
                     type="number"
                     min={1}
                     step={1}
-                    value={String(ratio)}
+                    value={ratioStrs[index] ?? "1"}
                     className="w-20"
                     classNames={{ input: "text-center tabular-nums" }}
                     onKeyDown={(e) => {
@@ -236,7 +279,10 @@ export function SocialSplitModal({
                       }
                     }}
                     onValueChange={(val) => {
-                      setRatioAt(index, parseInt(val, 10));
+                      setRatioDraftAt(index, val);
+                    }}
+                    onBlur={() => {
+                      normalizeRatioDraftAt(index);
                     }}
                   />
                 </div>

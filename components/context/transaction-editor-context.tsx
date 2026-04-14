@@ -17,6 +17,7 @@ import React, {
   useEffect,
   useRef,
 } from "react";
+import { flushSync } from "react-dom";
 
 import { useTransactionStore } from "./transaction-store-context";
 import { useAppData } from "./app-data-context";
@@ -69,6 +70,9 @@ interface TransactionEditorContextValue {
 
   // ====== 过滤列表引用（用于计算 currentIndex）======
   setFilteredTransactions: (txs: TransactionWithRelations[]) => void;
+
+  // ====== Debounce flush 注册 ======
+  registerPendingFlush: (callback: () => void) => () => void;
 
   // ====== 新建交易（含全局 loading）======
   isCreatingTransaction: boolean;
@@ -197,6 +201,17 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
     [currentId, currentTransaction, clearSaveButtonOverride],
   );
 
+  // ==================== Debounce flush 注册 ====================
+
+  const pendingFlushCallbacksRef = useRef<Set<() => void>>(new Set());
+
+  const registerPendingFlush = useCallback((callback: () => void) => {
+    pendingFlushCallbacksRef.current.add(callback);
+    return () => {
+      pendingFlushCallbacksRef.current.delete(callback);
+    };
+  }, []);
+
   // ==================== 保存 / 丢弃 ====================
 
   const currentTransactionRef = useRef(currentTransaction);
@@ -210,6 +225,12 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
 
   const saveCurrentTransaction = useCallback(
     async (status?: TransactionStatus): Promise<SaveResult> => {
+      // 先刷新所有 debounce 待提交值，并强制 React 同步处理所有排队的状态更新，
+      // 确保 currentTransactionRef 反映最新输入（包括未提交的 debounce 值和尚未渲染的选择变更）
+      flushSync(() => {
+        pendingFlushCallbacksRef.current.forEach((cb) => cb());
+      });
+
       const curTx = currentTransactionRef.current;
       const curChildren = currentChildTransactionsRef.current;
       const curAppData = appDataRef.current;
@@ -346,6 +367,7 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
       saveAllDirtyToServer,
       validationAlert,
       setFilteredTransactions,
+      registerPendingFlush,
       isCreatingTransaction,
       createEmptyTransaction,
       entranceSummary,
@@ -366,6 +388,7 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
       saveAllDirtyToServer,
       validationAlert,
       setFilteredTransactions,
+      registerPendingFlush,
       isCreatingTransaction,
       createEmptyTransaction,
       entranceSummary,

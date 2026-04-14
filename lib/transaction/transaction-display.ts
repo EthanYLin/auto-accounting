@@ -41,6 +41,11 @@ export function calculateAmount(input: {
   return input.amount * (txType?.sign || 1);
 }
 
+/** 元 → 整数分（四舍五入），用于比较与按分累加，避免浮点误差 */
+export function amountToCents(amount: number): number {
+  return Math.round(amount * 100);
+}
+
 /**
  * 拆分符号与绝对值数字串
  * @param amount 金额

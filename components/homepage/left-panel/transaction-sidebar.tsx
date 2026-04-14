@@ -29,6 +29,15 @@ export function TransactionSidebar({
 }: TransactionSidebarProps) {
   const [open, setOpen] = useState(false);
 
+  // 抽屉打开时自动定位到当前交易
+  useEffect(() => {
+    if (!open) return;
+    const raf = requestAnimationFrame(() => {
+      transactionListRef.current?.scrollToTransaction();
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [open, transactionListRef]);
+
   // 窗口拉宽到 md 以上时自动收起 overlay
   useEffect(() => {
     const mql = window.matchMedia("(min-width: 768px)");
