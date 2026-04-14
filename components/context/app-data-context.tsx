@@ -138,21 +138,32 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
+    let isActive = true;
     const supabase = createClient();
 
     // 订阅认证状态变化事件，仅在真正登录/登出/token 刷新时触发
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      syncUser(session?.user?.id ?? null);
+      if (isActive) syncUser(session?.user?.id ?? null);
     });
 
-    // 初始化：读取当前 session（本地同步，无需网络往返）
-    void supabase.auth.getSession().then(({ data: { session } }) => {
+    // 初始化：读取当前 session（读取本地缓存，无需网络往返）
+    void supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (!isActive) return;
+      if (error) {
+        addToast({
+          title: "用户状态同步失败",
+          description: error.message,
+          color: "danger",
+        });
+        return;
+      }
       syncUser(session?.user?.id ?? null);
     });
 
     return () => {
+      isActive = false;
       subscription.unsubscribe();
     };
   }, [syncUser]);
