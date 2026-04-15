@@ -209,8 +209,6 @@ export function TransactionStoreProvider({ children }: { children: React.ReactNo
 
   const saveToServer = useCallback(
     async (id: number, draftOverride?: TransactionContentDraft): Promise<SaveResult> => {
-      if (saveState === "children-selection") return { success: false, error: SAVE_BUSY_ERROR };
-
       // 1. 计算要保存的交易与子交易
       const snapshot = new Map(localEditsRef.current);
       if (draftOverride) snapshot.set(id, draftOverride);
@@ -264,15 +262,12 @@ export function TransactionStoreProvider({ children }: { children: React.ReactNo
       offerSingleSave,
       persistSingleTx,
       queryClient,
-      saveState,
       transactionQueryKey,
     ],
   );
 
   const saveChildrenSelection = useCallback(
     async (parentId: number, selectedIds: number[]): Promise<SaveResult> => {
-      if (saveState !== "idle") return { success: false, error: SAVE_BUSY_ERROR };
-
       const parentTx = getBaseline(parentId);
       if (!parentTx) return { success: false, error: "父交易不存在" };
 
@@ -408,7 +403,7 @@ export function TransactionStoreProvider({ children }: { children: React.ReactNo
         }
       });
     },
-    [getBaseline, offerExclusiveAction, queryClient, saveState, transactionQueryKey],
+    [getBaseline, offerExclusiveAction, queryClient, transactionQueryKey],
   );
 
   // ==================== 放弃修改 ====================

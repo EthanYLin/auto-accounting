@@ -2,7 +2,8 @@
 
 import type { TransactionWithRelations } from "@/types";
 
-import React, { forwardRef, useImperativeHandle, useRef } from "react";
+import React, { forwardRef, useImperativeHandle, useReducer, useRef } from "react";
+import { flushSync } from "react-dom";
 import { Spinner } from "@heroui/react";
 import { Button } from "@heroui/react";
 import { CloudArrowDownIcon, XMarkIcon } from "@heroicons/react/24/outline";
@@ -48,13 +49,21 @@ export const TransactionOverviewList = forwardRef<
   const { isLoading: appDataLoading, hasLoaded: hasLoadedAppData } = useAppData();
 
   const parentRef = useRef<HTMLDivElement>(null);
+  const [, forceRerender] = useReducer((c: number) => c + 1, 0);
 
   const virtualizer = useVirtualizer({
     count: filteredTransactions.length,
     getScrollElement: () => parentRef.current,
     getItemKey: (index) => filteredTransactions[index].id,
     estimateSize: () => 73,
-    overscan: 12,
+    overscan: 15,
+    onChange: (_instance, sync) => {
+      if (sync) {
+        queueMicrotask(() => flushSync(forceRerender));
+      } else {
+        forceRerender();
+      }
+    },
     measureElement:
       typeof window !== "undefined" && navigator.userAgent.indexOf("Firefox") === -1
         ? (element) => element?.getBoundingClientRect().height
