@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@heroui/react";
-import { Drawer, DrawerContent, DrawerHeader, DrawerBody } from "@heroui/react";
 import { useDisclosure } from "@heroui/react";
 import { Chip } from "@heroui/react";
 import { addToast } from "@heroui/react";
@@ -12,10 +11,14 @@ import {
   XMarkIcon,
   ArrowUpRightIcon,
   PencilSquareIcon,
+  PaperClipIcon,
 } from "@heroicons/react/24/outline";
 
 import { useCommandListener } from "@/lib/commands";
-import { TransactionListSelector } from "@/components/homepage/common/transaction-list-selector";
+import {
+  TxPickChildrenDrawer,
+  TxAttachToParentDrawer,
+} from "@/components/homepage/tx-parent-transaction-drawers";
 import { AmountInput } from "@/components/homepage/common/amount-input";
 import { useTransactionStore } from "@/components/context/transaction-store-context";
 import { useTransactionEditor } from "@/components/context/transaction-editor-context";
@@ -30,7 +33,8 @@ import {
 import { displayTxTime } from "@/lib/transaction/transaction-datetime";
 
 export function TxParentArea() {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const pickChildrenDrawer = useDisclosure();
+  const attachToParentDrawer = useDisclosure();
   const store = useTransactionStore();
   const editor = useTransactionEditor();
   const { accounts } = useAppData();
@@ -43,26 +47,14 @@ export function TxParentArea() {
 
   useCommandListener("open-attach-selection", () => {
     if (!currentTransaction || !isRootTransaction || isBusy) return;
-    onOpen();
+    pickChildrenDrawer.onOpen();
   });
 
   if (!currentTransaction) {
     return <div className="text-xs text-gray-500 dark:text-gray-500">请先选择一个交易</div>;
   }
 
-  // 获取已附加的账单ID列表
   const childrenIds = currentTransaction.children_ids;
-  const selectorKey = `${currentTransaction.id}:${childrenIds.join(",")}`;
-
-  // 处理添加附加账单
-  const handleConfirmSelection = async (selectedIds: number[]) => {
-    if (!currentTransaction) return;
-    onClose();
-    const result = await editor.updateChildrenIds(selectedIds);
-    if (!result.success) {
-      addToast({ title: "附加账单失败", description: result.error || "未知错误", color: "danger" });
-    }
-  };
 
   // 处理取消附加单个账单
   const handleRemoveChild = async (childId: number) => {
@@ -89,7 +81,7 @@ export function TxParentArea() {
                 <PlusIcon className="w-4 h-4" />
               )
             }
-            onPress={() => onOpen()}
+            onPress={pickChildrenDrawer.onOpen}
           >
             {childTransactions.length > 0 ? "选择附加账单" : "添加附加账单"}
             <Kbd
@@ -99,6 +91,17 @@ export function TxParentArea() {
               A
             </Kbd>
           </Button>
+          {childTransactions.length === 0 && (
+            <Button
+              size="sm"
+              variant="flat"
+              isDisabled={isBusy}
+              startContent={<PaperClipIcon className="w-4 h-4" />}
+              onPress={attachToParentDrawer.onOpen}
+            >
+              附加到
+            </Button>
+          )}
         </div>
       )}
 
@@ -414,31 +417,23 @@ export function TxParentArea() {
         </div>
       )}
 
-      {/* 账单选择器 */}
-      <Drawer
-        isOpen={isOpen}
-        placement="bottom"
-        size="full"
-        shouldBlockScroll={false}
-        onOpenChange={(open) => {
-          if (!open) onClose();
-        }}
-      >
-        <DrawerContent>
-          <DrawerHeader className="flex-shrink-0 border-b border-divider">
-            选择要附加的账单
-          </DrawerHeader>
-          <DrawerBody className="p-4 sm:p-6 flex-1 min-h-0">
-            <TransactionListSelector
-              key={selectorKey}
-              selectedIds={childrenIds}
-              currentTransactionId={currentTransaction.id}
-              isDisabled={isBusy}
-              onConfirm={handleConfirmSelection}
-            />
-          </DrawerBody>
-        </DrawerContent>
-      </Drawer>
+      {isRootTransaction && (
+        <TxPickChildrenDrawer
+          transactionId={currentTransaction.id}
+          childrenIds={childrenIds}
+          isBusy={isBusy}
+          isOpen={pickChildrenDrawer.isOpen}
+          onClose={pickChildrenDrawer.onClose}
+        />
+      )}
+      {isRootTransaction && childTransactions.length === 0 && (
+        <TxAttachToParentDrawer
+          transactionId={currentTransaction.id}
+          isBusy={isBusy}
+          isOpen={attachToParentDrawer.isOpen}
+          onClose={attachToParentDrawer.onClose}
+        />
+      )}
     </div>
   );
 }

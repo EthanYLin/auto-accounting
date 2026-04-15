@@ -86,7 +86,7 @@ export function QuickActionsDropdownButton({
         <Button
           className={fullWidth ? "flex-1" : undefined}
           startContent={<CurrentQuickActionIcon className="h-4 w-4" />}
-          disabled={isCurrentQuickActionDisabled}
+          isDisabled={isCurrentQuickActionDisabled}
           onPress={onCurrentQuickAction}
           aria-label={currentQuickActionLabel}
         >

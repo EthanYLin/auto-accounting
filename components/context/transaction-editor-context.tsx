@@ -62,6 +62,7 @@ interface TransactionEditorContextValue {
   updateFields: (fields: Partial<EditableFields>) => void;
   updateSplits: (splits: TransactionSplitWithRelations[]) => void;
   updateChildrenIds: (childrenIds: number[]) => Promise<{ success: boolean; error?: string }>;
+  attachToParent: (parentId: number) => Promise<{ success: boolean; error?: string }>;
 
   // ====== 保存 / 丢弃 ======
   saveCurrentTransaction: (status?: TransactionStatus) => Promise<SaveResult>;
@@ -199,6 +200,28 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
       return storeRef.current.saveChildrenSelection(currentId, selectedIds);
     },
     [currentId, currentTransaction, clearSaveButtonOverride],
+  );
+
+  const attachToParent = useCallback(
+    async (parentId: number) => {
+      if (currentId === null) return { success: false, error: "没有选中的交易" };
+      if (parentId === currentId) return { success: false, error: "不能附加到自身" };
+      clearSaveButtonOverride();
+      const { transactions, saveChildrenSelection } = storeRef.current;
+      const parent = transactions.find((t) => t.id === parentId);
+      if (!parent) return { success: false, error: "目标账单不存在" };
+      if (parent.parent_id !== null) return { success: false, error: "只能附加到主账单" };
+      const child = transactions.find((t) => t.id === currentId);
+      if (!child) return { success: false, error: "账单不存在" };
+      if (child.parent_id !== null) return { success: false, error: "该账单已附加到其他主账单" };
+      if (child.children_ids.length > 0)
+        return { success: false, error: "请先处理当前账单的附加账单" };
+      const newIds = parent.children_ids.includes(currentId)
+        ? [...parent.children_ids]
+        : [...parent.children_ids, currentId];
+      return saveChildrenSelection(parentId, newIds);
+    },
+    [currentId, clearSaveButtonOverride],
   );
 
   // ==================== Debounce flush 注册 ====================
@@ -362,6 +385,7 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
       updateFields,
       updateSplits,
       updateChildrenIds,
+      attachToParent,
       saveCurrentTransaction,
       discardCurrentChanges,
       saveAllDirtyToServer,
@@ -383,6 +407,7 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
       updateFields,
       updateSplits,
       updateChildrenIds,
+      attachToParent,
       saveCurrentTransaction,
       discardCurrentChanges,
       saveAllDirtyToServer,

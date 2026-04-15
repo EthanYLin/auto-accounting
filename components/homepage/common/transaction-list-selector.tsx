@@ -26,6 +26,12 @@ interface TransactionListSelectorProps {
   currentTransactionId?: number; // 当前交易ID（高亮显示且不可选）
   isDisabled?: boolean;
   onConfirm: (ids: number[]) => void | Promise<void>; // 点击完成时的回调
+  /** 多选（默认）或单选 */
+  selectionMode?: "multiple" | "single";
+  /** 为 true 时只可选择主账单 */
+  allowSelectRootRowsOnly?: boolean;
+  /** 允许不选择任何项而提交 */
+  allowEmptyConfirm?: boolean;
 }
 
 export function TransactionListSelector({
@@ -33,6 +39,9 @@ export function TransactionListSelector({
   currentTransactionId,
   isDisabled = false,
   onConfirm,
+  selectionMode = "multiple",
+  allowSelectRootRowsOnly = false,
+  allowEmptyConfirm = true,
 }: TransactionListSelectorProps) {
   const { transactions } = useTransactionStore();
   const [searchQuery, setSearchQuery] = useState("");
@@ -92,11 +101,22 @@ export function TransactionListSelector({
     (id: number) => {
       // 如果是当前交易，不允许选择
       if (isDisabled || id === currentTransactionId) return;
-      setTempSelectedIds((prev) =>
-        prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id],
-      );
+      // 如果只允许选择主账单，则不允许选择已有 parent_id 的行
+      if (allowSelectRootRowsOnly && orderedTransactions.find((t) => t.id === id)?.parent_id)
+        return;
+
+      if (selectionMode === "single") {
+        // 单选模式
+        setTempSelectedIds((prev) => (prev.includes(id) ? [] : [id]));
+        return;
+      } else {
+        // 多选模式
+        setTempSelectedIds((prev) =>
+          prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id],
+        );
+      }
     },
-    [isDisabled, currentTransactionId],
+    [isDisabled, currentTransactionId, allowSelectRootRowsOnly, orderedTransactions, selectionMode],
   );
 
   const handleConfirm = () => onConfirm(tempSelectedIds);
@@ -105,6 +125,7 @@ export function TransactionListSelector({
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isDisabled) return;
+    if (!allowEmptyConfirm && tempSelectedIds.length === 0) return;
     handleConfirm();
   };
 
@@ -113,6 +134,7 @@ export function TransactionListSelector({
     if (event.key !== "Enter") return;
     if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
     if (event.target instanceof HTMLElement && event.target.closest("button")) return;
+    if (!allowEmptyConfirm && tempSelectedIds.length === 0) return;
     event.preventDefault();
     event.currentTarget.requestSubmit();
   };
@@ -179,6 +201,10 @@ export function TransactionListSelector({
           >
             {virtualItems.map((virtualItem) => {
               const tx = filteredTransactions[virtualItem.index];
+              const isRowSelectable =
+                !isDisabled &&
+                tx.id !== currentTransactionId &&
+                !(allowSelectRootRowsOnly && !!tx.parent_id);
               return (
                 <SelectorRow
                   key={tx.id}
@@ -188,6 +214,7 @@ export function TransactionListSelector({
                   isSelected={tempSelectedIds.includes(tx.id)}
                   isCurrent={tx.id === currentTransactionId}
                   isDisabled={isDisabled}
+                  isRowSelectable={isRowSelectable}
                   onToggle={toggleSelection}
                 />
               );
@@ -206,7 +233,7 @@ export function TransactionListSelector({
           )}
         </div>
         <div className="flex gap-2">
-          {tempSelectedIds.length > 0 && (
+          {tempSelectedIds.length > 0 && allowEmptyConfirm && (
             <Button
               type="button"
               color="danger"
@@ -223,7 +250,7 @@ export function TransactionListSelector({
             type="submit"
             color="primary"
             size="sm"
-            isDisabled={isDisabled}
+            isDisabled={isDisabled || (!allowEmptyConfirm && tempSelectedIds.length === 0)}
             onPress={handleConfirm}
             startContent={<CheckCircleIcon className="w-5 h-5" />}
           >
@@ -244,6 +271,7 @@ interface SelectorRowProps {
   isSelected: boolean;
   isCurrent: boolean;
   isDisabled: boolean;
+  isRowSelectable: boolean;
   onToggle: (id: number) => void;
 }
 
@@ -254,6 +282,7 @@ const SelectorRow = React.memo(function SelectorRow({
   isSelected,
   isCurrent,
   isDisabled,
+  isRowSelectable,
   onToggle,
 }: SelectorRowProps) {
   const isChild = !!tx.parent_id;
@@ -262,7 +291,9 @@ const SelectorRow = React.memo(function SelectorRow({
     ? "bg-success-50 dark:bg-success-900/20"
     : isSelected
       ? "bg-primary-50 dark:bg-primary-900/20"
-      : "hover:bg-default-100";
+      : isRowSelectable
+        ? "hover:bg-default-100"
+        : "opacity-60";
 
   const textClass = isChild
     ? "text-xs text-gray-500 dark:text-gray-400"
@@ -276,13 +307,15 @@ const SelectorRow = React.memo(function SelectorRow({
       ref={measureElement}
       role="button"
       tabIndex={0}
-      className={`absolute top-0 left-0 w-full min-w-[774px] flex items-center px-3 text-sm cursor-pointer transition-colors ${bgClass} ${isCurrent ? "cursor-not-allowed" : ""} ${isChild ? "py-1.5" : "py-2"}`}
+      className={`absolute top-0 left-0 w-full min-w-[774px] flex items-center px-3 text-sm transition-colors ${bgClass} ${isCurrent || !isRowSelectable ? "cursor-not-allowed" : "cursor-pointer"} ${isChild ? "py-1.5" : "py-2"}`}
       style={{ transform: `translateY(${virtualItem.start}px)` }}
-      onClick={() => onToggle(tx.id)}
+      onClick={() => {
+        if (isRowSelectable) onToggle(tx.id);
+      }}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          onToggle(tx.id);
+          if (isRowSelectable) onToggle(tx.id);
         }
       }}
     >
@@ -293,7 +326,7 @@ const SelectorRow = React.memo(function SelectorRow({
           isSelected={isSelected}
           onValueChange={() => onToggle(tx.id)}
           size="sm"
-          isDisabled={isDisabled || isCurrent}
+          isDisabled={isDisabled || isCurrent || !isRowSelectable}
           className="flex-shrink-0"
         />
       </div>
