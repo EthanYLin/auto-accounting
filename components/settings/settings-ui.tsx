@@ -83,24 +83,26 @@ export function SettingsMobileItem({
   onDelete: () => void;
 }) {
   const activeFields = fields?.filter((f) => f.value) ?? [];
+  const hasSecondary = activeFields.length > 0;
 
   return (
     <div className="flex items-center justify-between gap-3 py-3">
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-foreground">{label}</p>
-        {fieldsInline ? (
-          <p className="mt-1 text-xs text-default-500">
-            {activeFields.map((f) => f.value).join(" ")}
-          </p>
-        ) : (
-          <div className="mt-1 space-y-0.5">
-            {activeFields.map((f) => (
-              <p key={f.key} className="text-xs text-default-500">
-                {f.key}: {f.value}
-              </p>
-            ))}
-          </div>
-        )}
+        <p className="text-sm font-medium leading-snug text-foreground">{label}</p>
+        {hasSecondary &&
+          (fieldsInline ? (
+            <p className="mt-1 text-xs leading-snug text-default-500">
+              {activeFields.map((f) => f.value).join(" ")}
+            </p>
+          ) : (
+            <div className="mt-1 space-y-0.5">
+              {activeFields.map((f) => (
+                <p key={f.key} className="text-xs leading-snug text-default-500">
+                  {f.key}: {f.value}
+                </p>
+              ))}
+            </div>
+          ))}
       </div>
       <div className="flex shrink-0 items-center gap-1">
         <Button size="sm" variant="light" onPress={onEdit}>

@@ -76,7 +76,6 @@ export function AccountSection({
                 {accounts.map((account) => (
                   <SettingsMobileItem
                     key={account.id}
-                    fields={[{ key: "ID", value: `#${account.id}` }]}
                     label={account.name}
                     onDelete={() => {
                       onRequestDelete({
@@ -100,14 +99,12 @@ export function AccountSection({
             <div className="hidden sm:block">
               <Table removeWrapper aria-label="账户列表">
                 <TableHeader>
-                  <TableColumn>ID</TableColumn>
                   <TableColumn>名称</TableColumn>
                   <TableColumn align="end">操作</TableColumn>
                 </TableHeader>
                 <TableBody items={accounts}>
                   {(account) => (
                     <TableRow key={account.id}>
-                      <TableCell>#{account.id}</TableCell>
                       <TableCell>{account.name}</TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-2">

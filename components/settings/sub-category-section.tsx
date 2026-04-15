@@ -140,14 +140,12 @@ export function SubCategorySection({
                           {
                             key: "主类别",
                             value:
-                              mainCategoryMap.get(item.main_category_id)?.label ??
-                              `#${item.main_category_id}`,
+                              mainCategoryMap.get(item.main_category_id)?.label ?? "未知主类别",
                           },
                           {
                             key: "预算",
                             value: item.budget_type_id
-                              ? (budgetTypeMap.get(item.budget_type_id)?.name ??
-                                `#${item.budget_type_id}`)
+                              ? (budgetTypeMap.get(item.budget_type_id)?.name ?? "未知预算计划")
                               : null,
                           },
                           { key: "图标", value: item.icon },
@@ -175,7 +173,6 @@ export function SubCategorySection({
                 <div className="hidden sm:block">
                   <Table removeWrapper aria-label="子类别列表">
                     <TableHeader>
-                      <TableColumn>ID</TableColumn>
                       <TableColumn>名称</TableColumn>
                       <TableColumn>所属主类别</TableColumn>
                       <TableColumn>预算计划</TableColumn>
@@ -185,16 +182,13 @@ export function SubCategorySection({
                     <TableBody items={filteredSubCategories}>
                       {(item) => (
                         <TableRow key={item.id}>
-                          <TableCell>#{item.id}</TableCell>
                           <TableCell>{item.label}</TableCell>
                           <TableCell>
-                            {mainCategoryMap.get(item.main_category_id)?.label ??
-                              `#${item.main_category_id}`}
+                            {mainCategoryMap.get(item.main_category_id)?.label ?? "未知主类别"}
                           </TableCell>
                           <TableCell>
                             {item.budget_type_id
-                              ? (budgetTypeMap.get(item.budget_type_id)?.name ??
-                                `#${item.budget_type_id}`)
+                              ? (budgetTypeMap.get(item.budget_type_id)?.name ?? "未知预算计划")
                               : "未绑定"}
                           </TableCell>
                           <TableCell>{item.icon}</TableCell>

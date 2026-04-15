@@ -77,7 +77,7 @@ export function BudgetSection({
                   <SettingsMobileItem
                     key={budget.id}
                     fields={[{ key: "图标", value: budget.icon || "—" }]}
-                    fieldsInline={false}
+                    fieldsInline={true}
                     label={budget.name}
                     onDelete={() => {
                       onRequestDelete({
@@ -101,7 +101,6 @@ export function BudgetSection({
             <div className="hidden sm:block">
               <Table removeWrapper aria-label="预算计划列表">
                 <TableHeader>
-                  <TableColumn>ID</TableColumn>
                   <TableColumn>名称</TableColumn>
                   <TableColumn>图标</TableColumn>
                   <TableColumn align="end">操作</TableColumn>
@@ -109,7 +108,6 @@ export function BudgetSection({
                 <TableBody items={budgetTypes}>
                   {(budget) => (
                     <TableRow key={budget.id}>
-                      <TableCell>#{budget.id}</TableCell>
                       <TableCell>{budget.name}</TableCell>
                       <TableCell>{budget.icon || "—"}</TableCell>
                       <TableCell>

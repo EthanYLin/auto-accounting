@@ -340,7 +340,7 @@ export function useMatchingRuleMutations() {
       createSuccess: "匹配规则已创建",
       deleteError: "删除匹配规则失败",
       deleteErrorTitle: "匹配规则删除失败",
-      deleteSuccess: (variables: { id: number }) => `匹配规则 #${variables.id} 已删除`,
+      deleteSuccess: () => "匹配规则已删除",
       saveErrorTitle: "匹配规则保存失败",
       updateError: "更新匹配规则失败",
       updateSuccess: "匹配规则已更新",

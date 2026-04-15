@@ -106,7 +106,6 @@ export function MainCategorySection({
             <div className="hidden sm:block">
               <Table removeWrapper aria-label="主类别列表">
                 <TableHeader>
-                  <TableColumn>ID</TableColumn>
                   <TableColumn>名称</TableColumn>
                   <TableColumn>交易类型</TableColumn>
                   <TableColumn>图标</TableColumn>
@@ -115,7 +114,6 @@ export function MainCategorySection({
                 <TableBody items={mainCategories}>
                   {(item) => (
                     <TableRow key={item.id}>
-                      <TableCell>#{item.id}</TableCell>
                       <TableCell>{item.label}</TableCell>
                       <TableCell>{item.transaction_type}</TableCell>
                       <TableCell>{item.icon}</TableCell>

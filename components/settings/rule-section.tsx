@@ -96,16 +96,13 @@ export function RuleSection({
                   const targetSummary = joinRuleTarget([
                     rule.t_tx_type,
                     rule.t_main_category_id
-                      ? (mainCategoryMap.get(rule.t_main_category_id)?.label ??
-                        `${rule.t_main_category_id}`)
+                      ? (mainCategoryMap.get(rule.t_main_category_id)?.label ?? "未知主类别")
                       : null,
                     rule.t_sub_category_id
-                      ? (subCategoryMap.get(rule.t_sub_category_id)?.label ??
-                        `${rule.t_sub_category_id}`)
+                      ? (subCategoryMap.get(rule.t_sub_category_id)?.label ?? "未知子类别")
                       : null,
                     rule.t_budget_type_id
-                      ? (budgetTypeMap.get(rule.t_budget_type_id)?.name ??
-                        `${rule.t_budget_type_id}`)
+                      ? (budgetTypeMap.get(rule.t_budget_type_id)?.name ?? "未知预算计划")
                       : null,
                   ]);
 
@@ -122,7 +119,7 @@ export function RuleSection({
                       onDelete={() => {
                         onRequestDelete({
                           title: "删除匹配规则",
-                          description: `确定删除匹配规则 #${rule.id} 吗？`,
+                          description: `确定删除匹配规则「${rule.f_title || "未命名"}」吗？`,
                           onConfirm: () => deleteMatchingRule({ id: rule.id }),
                         });
                       }}
@@ -138,7 +135,6 @@ export function RuleSection({
             <div className="hidden sm:block">
               <Table removeWrapper aria-label="匹配规则列表">
                 <TableHeader>
-                  <TableColumn>ID</TableColumn>
                   <TableColumn>规则</TableColumn>
                   <TableColumn>目标赋值</TableColumn>
                   <TableColumn align="end">操作</TableColumn>
@@ -149,23 +145,19 @@ export function RuleSection({
                     const targetSummary = joinRuleTarget([
                       rule.t_tx_type,
                       rule.t_main_category_id
-                        ? (mainCategoryMap.get(rule.t_main_category_id)?.label ??
-                          `${rule.t_main_category_id}`)
+                        ? (mainCategoryMap.get(rule.t_main_category_id)?.label ?? "未知主类别")
                         : null,
                       rule.t_sub_category_id
-                        ? (subCategoryMap.get(rule.t_sub_category_id)?.label ??
-                          `${rule.t_sub_category_id}`)
+                        ? (subCategoryMap.get(rule.t_sub_category_id)?.label ?? "未知子类别")
                         : null,
                       rule.t_budget_type_id
-                        ? (budgetTypeMap.get(rule.t_budget_type_id)?.name ??
-                          `${rule.t_budget_type_id}`)
+                        ? (budgetTypeMap.get(rule.t_budget_type_id)?.name ?? "未知预算计划")
                         : null,
                     ]);
                     const namingSummary = joinRuleTarget([rule.t_name, rule.t_merchant]);
 
                     return (
                       <TableRow key={rule.id}>
-                        <TableCell>#{rule.id}</TableCell>
                         <TableCell>
                           <div className="space-y-2">
                             <p className="font-mono text-xs text-foreground">{rule.f_title}</p>
@@ -204,7 +196,7 @@ export function RuleSection({
                               onPress={() => {
                                 onRequestDelete({
                                   title: "删除匹配规则",
-                                  description: `确定删除匹配规则 #${rule.id} 吗？`,
+                                  description: `确定删除匹配规则「${rule.f_title || "未命名"}」吗？`,
                                   onConfirm: () => deleteMatchingRule({ id: rule.id }),
                                 });
                               }}
