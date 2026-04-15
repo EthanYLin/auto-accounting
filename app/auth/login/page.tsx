@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/react";
 import { Input } from "@heroui/react";
 import { Button } from "@heroui/react";
@@ -36,7 +36,6 @@ function LoginPageFallback() {
 }
 
 function LoginPageContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -63,7 +62,7 @@ function LoginPageContent() {
         setError(result.error);
         setLoading(false);
       } else if (result?.success) {
-        router.push("/transactions");
+        window.location.href = "/transactions";
       }
     } catch (err) {
       if (err instanceof Error) {

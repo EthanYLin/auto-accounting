@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/react";
 import { Input } from "@heroui/react";
 import { Button } from "@heroui/react";
@@ -12,7 +11,6 @@ import { InputOtp } from "@heroui/react";
 import { sendSignupOtp, verifySignupOtp } from "@/app/actions/auth";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [nickname, setNickname] = useState("");
   const [error, setError] = useState("");
@@ -72,7 +70,7 @@ export default function RegisterPage() {
         setLoading(false);
       } else if (result?.success) {
         setSuccess(true);
-        router.push("/transactions");
+        window.location.href = "/transactions";
       }
     } catch (err) {
       console.error("注册错误:", err);

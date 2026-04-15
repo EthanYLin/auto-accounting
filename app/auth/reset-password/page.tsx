@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/react";
 import { Input } from "@heroui/react";
 import { Button } from "@heroui/react";
@@ -38,7 +38,6 @@ function ResetPasswordFallback() {
 }
 
 function ResetPasswordContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -76,7 +75,8 @@ function ResetPasswordContent() {
         setLoading(false);
       } else if (result?.success) {
         setSuccess(true);
-        router.push("/auth/login?message=密码已重置，请使用新密码登录");
+        const message = encodeURIComponent("密码已重置，请使用新密码登录");
+        window.location.href = `/auth/login?message=${message}`;
       }
     } catch (err) {
       console.error("重置密码错误:", err);
