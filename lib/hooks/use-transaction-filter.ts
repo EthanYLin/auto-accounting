@@ -2,6 +2,8 @@ import type { TransactionStatus, TransactionWithRelations } from "@/types";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 
+import { getAmountSymbol } from "../transaction/transaction-display";
+
 import { useSaveButtonOverride } from "@/components/context/save-button-override-context";
 import { parseTxTime } from "@/lib/transaction/transaction-datetime";
 
@@ -23,11 +25,34 @@ function matchesTransactionKeyword(tx: TransactionWithRelations, keyword: string
     }
   }
 
-  // 2. 金额搜索 - 只要绝对值的整数部分相等即可
-  if (/^\d+(\.\d+)?$/.test(lowerKeyword)) {
-    const searchInt = Math.floor(parseFloat(lowerKeyword));
-    const txInt = Math.floor(Math.abs(tx.amount));
-    if (txInt === searchInt) return true;
+  // 2. 金额搜索
+  // (a). 如果搜索整数，则只要整数部分相等即可
+  // (b). 如果搜索小数，则要求整数与小数部分均相等(cents相等)
+  // (c). 如果搜索 "-"，要求 getAmountSign 为 -1
+  // (d). 如果搜索 "+"，要求 getAmountSign 为 +1
+
+  const txSign = getAmountSymbol(tx.transaction_type);
+  // 纯符号搜索
+  if (lowerKeyword === "-" || lowerKeyword === "+") {
+    return txSign === lowerKeyword;
+  }
+  // 数值搜索
+  const match = lowerKeyword.match(/^([-+])?(\d+(?:\.\d+)?)$/);
+  if (match) {
+    const [_, searchSign, numStr] = match; // 提取符号和数字部分
+    // 符号校验
+    if (searchSign !== undefined && searchSign !== txSign) return false;
+    if (numStr.includes(".")) {
+      // 小数搜索
+      const txCents = Math.round(Math.abs(tx.amount) * 100);
+      const searchCents = Math.round(parseFloat(numStr) * 100);
+      return txCents === searchCents;
+    } else {
+      // 整数搜索
+      const txInt = Math.floor(Math.abs(tx.amount));
+      const searchInt = Math.floor(parseFloat(numStr));
+      return txInt === searchInt;
+    }
   }
 
   // 3. 日期时间搜索

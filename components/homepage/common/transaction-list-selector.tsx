@@ -160,6 +160,7 @@ export function TransactionListSelector({
           value={searchQuery}
           onValueChange={setSearchQuery}
           isDisabled={isDisabled}
+          isClearable
           startContent={<MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />}
           variant="bordered"
           size="sm"

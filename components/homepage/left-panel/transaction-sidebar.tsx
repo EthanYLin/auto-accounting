@@ -5,7 +5,7 @@ import type { useTransactionFilter } from "@/lib/hooks/use-transaction-filter";
 
 import { useCallback, useEffect, useState } from "react";
 import { Drawer, DrawerContent, Input, Kbd } from "@heroui/react";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 import { StatusFilterDropdown } from "./status-filter-dropdown";
 import { TransactionOverviewList } from "./transaction-overview-list";
@@ -74,9 +74,21 @@ export function TransactionSidebar({
             onValueChange={search.setSearchQuery}
             startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
             endContent={
-              <Kbd keys={["command"]} className="hidden lg:inline-flex text-[10px]">
-                K
-              </Kbd>
+              <div className="flex shrink-0 items-center gap-1">
+                <Kbd keys={["command"]} className="hidden lg:inline-flex text-[10px]">
+                  K
+                </Kbd>
+                {search.searchQuery.trim() ? (
+                  <button
+                    type="button"
+                    aria-label="清空搜索"
+                    className="rounded p-0.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/10 dark:hover:text-gray-300"
+                    onClick={() => search.setSearchQuery("")}
+                  >
+                    <XMarkIcon className="h-4 w-4" />
+                  </button>
+                ) : null}
+              </div>
             }
             variant="bordered"
             size="sm"

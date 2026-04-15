@@ -103,6 +103,7 @@ export default defineConfig([globalIgnores([
             args: "after-used",
             ignoreRestSiblings: true,
             argsIgnorePattern: "^_.*?$",
+            varsIgnorePattern: "^_.*?$",
         }],
 
         "import/order": ["warn", {

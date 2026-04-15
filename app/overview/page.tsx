@@ -191,6 +191,7 @@ export default function OverviewPage() {
                 className="min-w-0 flex-1"
                 classNames={{ input: "text-base sm:text-small" }}
                 size="sm"
+                isClearable
                 placeholder="快速搜索（用空格分隔多个关键词）"
                 value={quickFilterDraft}
                 onValueChange={setQuickFilterDraft}
