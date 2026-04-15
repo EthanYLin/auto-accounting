@@ -176,12 +176,14 @@ export class AiFillImporter implements Importer {
     if (tx.sub_category) result["sub_category"] = tx.sub_category.label;
     if (tx.name) result["name"] = tx.name;
     if (tx.merchant) result["merchant"] = tx.merchant;
+    const raw = tx.raw_info;
     if (
-      typeof tx.raw_info === "object" &&
-      !Array.isArray(tx.raw_info) &&
-      Object.keys(tx.raw_info as Record<string, Json>).length > 0
+      raw != null &&
+      typeof raw === "object" &&
+      !Array.isArray(raw) &&
+      Object.keys(raw as Record<string, Json>).length > 0
     ) {
-      result["more_info"] = tx.raw_info;
+      result["more_info"] = raw;
     }
 
     if (Object.keys(result).length === 0) return null;

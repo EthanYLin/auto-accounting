@@ -2,11 +2,12 @@
 
 import type { CustomImportTx } from "@/lib/custom-import/types";
 
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   Accordion,
   AccordionItem,
   Button,
+  Checkbox,
   Divider,
   Input,
   Modal,
@@ -37,7 +38,8 @@ import {
 
 import { useAppData } from "@/components/context/app-data-context";
 import { useTransactionImport } from "@/lib/hooks/use-transaction-import";
-import { parseFromString, toNewTransactionData } from "@/lib/custom-import/types";
+import { buildNewTxData, customImporterDescriptions } from "@/lib/custom-import";
+import { parseFromString } from "@/lib/custom-import/types";
 import { displayTxTime } from "@/lib/transaction/transaction-datetime";
 
 const PROMPT_TEMPLATE = `请将我提供的截图、文本或交易记录转换为 JSON 数组。
@@ -114,7 +116,8 @@ interface ParsedRow {
 }
 
 export function CustomImport() {
-  const { accounts } = useAppData();
+  const appData = useAppData();
+  const { accounts, mainCategories, subCategories, budgetTypes, matchingRules } = appData;
   const { createTransactions } = useTransactionImport();
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
   const [inputText, setInputText] = useState("");
@@ -122,12 +125,16 @@ export function CustomImport() {
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [customSource, setCustomSource] = useState("");
   const [isImporting, setIsImporting] = useState(false);
+  const [importProgressMessage, setImportProgressMessage] = useState<string | null>(null);
   const [isImportSuccess, setIsImportSuccess] = useState(false);
   const [lastParseCount, setLastParseCount] = useState(0);
   const [lastParseSuccess, setLastParseSuccess] = useState(0);
   const [lastParseMessage, setLastParseMessage] = useState<string | null>(null);
   const [lastBatchId, setLastBatchId] = useState<number | null>(null);
   const [didUndoLastBatch, setDidUndoLastBatch] = useState(false);
+  const [selectedImporterIndices, setSelectedImporterIndices] = useState<number[]>(() =>
+    customImporterDescriptions.map((_, i) => i),
+  );
   const hasParsed = lastParseCount > 0 || lastParseMessage != null;
   const hasErrors = !!lastParseMessage;
   const isParseFailed = hasParsed && lastParseSuccess === 0;
@@ -147,6 +154,13 @@ export function CustomImport() {
     setIsImportSuccess(false);
   };
 
+  const toggleImporter = useCallback((index: number, selected: boolean) => {
+    setSelectedImporterIndices((prev) => {
+      if (selected) return prev.includes(index) ? prev : [...prev, index];
+      return prev.filter((x) => x !== index);
+    });
+  }, []);
+
   const handleImport = async () => {
     if (!selectedAccountId) {
       addToast({ title: "请选择账户", color: "warning" });
@@ -165,17 +179,32 @@ export function CustomImport() {
     }
 
     setIsImporting(true);
+    setImportProgressMessage(null);
+    const onProgress = (message: string) => setImportProgressMessage(message);
     try {
-      const newTransactions = rows.map((row) =>
-        toNewTransactionData(row.data, account, customSource),
+      const appDataValue = {
+        accounts,
+        mainCategories,
+        subCategories,
+        budgetTypes,
+        matchingRules,
+      };
+      const transactions = await buildNewTxData(
+        rows,
+        account,
+        appDataValue,
+        customSource,
+        selectedImporterIndices,
+        onProgress,
       );
-      const result = await createTransactions(newTransactions);
-      if (!result.success) {
-        addToast({ title: "导入失败", description: result.error, color: "danger" });
+      onProgress("正在保存交易记录…");
+      const createResult = await createTransactions(transactions);
+      if (!createResult.success) {
+        addToast({ title: "导入失败", description: createResult.error, color: "danger" });
         return;
       }
 
-      addToast({ title: `成功导入 ${rows.length} 条记录`, color: "success" });
+      addToast({ title: `成功导入 ${transactions.length} 条记录`, color: "success" });
       setRows([]);
       setInputText("");
       setIsImportSuccess(true);
@@ -186,6 +215,7 @@ export function CustomImport() {
       setDidUndoLastBatch(false);
     } finally {
       setIsImporting(false);
+      setImportProgressMessage(null);
     }
   };
 
@@ -491,9 +521,35 @@ export function CustomImport() {
                 />
               </div>
 
-              <div className="flex justify-end">
+              <div className="rounded-medium">
+                <p className="mb-3 text-xs font-medium text-foreground">导入后处理步骤</p>
+                <ul className="flex flex-col gap-3">
+                  {customImporterDescriptions.map((description, index) => {
+                    const isSelected = selectedImporterIndices.includes(index);
+                    return (
+                      <li key={index} className="flex items-start gap-3">
+                        <Checkbox
+                          classNames={{ label: "text-small" }}
+                          isSelected={isSelected}
+                          onValueChange={(v) => toggleImporter(index, v)}
+                          size="sm"
+                        >
+                          {description}
+                        </Checkbox>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+
+              <div className="flex items-center justify-end gap-3">
+                <div className="min-w-0 flex-1 text-end">
+                  {isImporting && importProgressMessage ? (
+                    <p className="truncate text-xs text-default-600">{importProgressMessage}</p>
+                  ) : null}
+                </div>
                 {isImportSuccess ? (
-                  <div className="inline-flex min-w-32 items-center justify-center gap-2 rounded-large bg-success-50 px-4 py-2.5 text-sm font-semibold text-success">
+                  <div className="inline-flex min-w-32 shrink-0 items-center justify-center gap-2 rounded-large bg-success-50 px-4 py-2.5 text-sm font-semibold text-success">
                     <CheckIcon className="h-5 w-5" />
                     导入成功
                   </div>
@@ -501,7 +557,7 @@ export function CustomImport() {
                   <Button
                     color="primary"
                     size="sm"
-                    className="min-w-32 h-10 px-4"
+                    className="min-w-32 h-10 shrink-0 px-4"
                     startContent={!isImporting && <ArrowDownTrayIcon className="h-4 w-4" />}
                     isLoading={isImporting}
                     onPress={() => void handleImport()}

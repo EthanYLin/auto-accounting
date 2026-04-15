@@ -33,14 +33,15 @@ export class MatchingRuleImporter implements Importer {
   }
 
   /**
-   * 对单条交易依次尝试规则：已有名称或主分类则跳过；否则找到第一条同时满足条件且能解析目标 id 的规则并应用。
+   * 对单条交易依次尝试规则：
+   * 已有名称且有主分类则跳过；否则找到第一条同时满足条件且能解析目标 id 的规则并应用。
    */
   private applyMatchingRulesToOne(
     tx: NewTransactionData,
     rules: MatchingRule[],
     appData: AppDataValue,
   ): NewTransactionData {
-    if (String(tx.name ?? "").trim() !== "" || tx.main_category) return tx;
+    if (String(tx.name ?? "").trim() !== "" && tx.main_category) return tx;
     for (const rule of rules) {
       if (!this.satisfy(rule, tx)) continue;
       const applied = this.apply(tx, rule, appData);
@@ -109,39 +110,46 @@ export class MatchingRuleImporter implements Importer {
     const next: NewTransactionData = { ...tx };
     let changed = false;
 
-    if (rule.t_tx_type != null) {
-      next.transaction_type = rule.t_tx_type;
-      changed = true;
-    }
-
-    if (rule.t_main_category_id != null) {
-      const mc = appData.mainCategories.find((m) => m.id === rule.t_main_category_id);
-      if (!mc) return null;
-      next.main_category = mc;
-      changed = true;
-    }
-
-    if (rule.t_sub_category_id != null) {
-      const sc = appData.subCategories.find((s) => s.id === rule.t_sub_category_id);
-      if (!sc) return null;
-      if (rule.t_main_category_id != null && sc.main_category_id !== rule.t_main_category_id)
-        return null;
-      next.sub_category = sc;
-      if (rule.t_main_category_id == null) {
-        const mc = appData.mainCategories.find((m) => m.id === sc.main_category_id);
+    // 交易类型、主类别、子类别填写
+    // 仅当 tx 的主类别和子类别均为空时，填写规则中的交易类型(可能会覆盖)、主类别、子类别
+    if (tx.main_category == null && tx.sub_category == null) {
+      // 交易类型
+      if (rule.t_tx_type != null) {
+        next.transaction_type = rule.t_tx_type;
+        changed = true;
+      }
+      // 主类别
+      if (rule.t_main_category_id != null) {
+        const mc = appData.mainCategories.find((m) => m.id === rule.t_main_category_id);
         if (!mc) return null;
         next.main_category = mc;
+        changed = true;
       }
-      changed = true;
+      // 子类别
+      if (rule.t_sub_category_id != null) {
+        const sc = appData.subCategories.find((s) => s.id === rule.t_sub_category_id);
+        if (!sc) return null;
+        if (rule.t_main_category_id != null && sc.main_category_id !== rule.t_main_category_id)
+          return null;
+        next.sub_category = sc;
+        if (rule.t_main_category_id == null) {
+          const mc = appData.mainCategories.find((m) => m.id === sc.main_category_id);
+          if (!mc) return null;
+          next.main_category = mc;
+        }
+        changed = true;
+      }
     }
 
-    if (rule.t_budget_type_id != null) {
+    // 预算计划单独填写
+    if (rule.t_budget_type_id != null && tx.budget_type == null) {
       const bt = appData.budgetTypes.find((b) => b.id === rule.t_budget_type_id);
       if (!bt) return null;
       next.budget_type = bt;
       changed = true;
     }
 
+    // 名称和商家
     if (rule.t_name != null && rule.t_name.trim() !== "") {
       next.name = rule.t_name.trim();
       changed = true;
