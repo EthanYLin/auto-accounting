@@ -27,10 +27,23 @@ export class AlipayNeutralTxImporter implements Importer {
     return transactions.map((tx) => {
       if (!this.matchesScope(tx)) return tx;
 
+      // (0) 收入 + 交易关闭 → 该交易关闭
+      const dir = getAlipayRawField(tx, ColumnKey.Direction);
+      const status = getAlipayRawField(tx, ColumnKey.Status);
+      if (dir === "收入" && status === "交易关闭") {
+        return {
+          ...tx,
+          amount: 0,
+          original_amount: 0,
+          status: "经自动处理取消",
+          remark: appendRemark(tx.remark, "⚠️ 该交易关闭"),
+        };
+      }
+
       const product = getAlipayRawField(tx, ColumnKey.Product) ?? "";
       const payment = getAlipayRawField(tx, ColumnKey.PaymentMethod) ?? "";
 
-      // （1）余额宝与余额互转
+      // (1) 余额宝与余额互转
       if (YUEBAO_BALANCE_PRODUCTS.has(product)) {
         return {
           ...tx,
@@ -41,7 +54,7 @@ export class AlipayNeutralTxImporter implements Importer {
         };
       }
 
-      // （2）亲情卡 / 他人代付
+      // (2) 亲情卡 / 他人代付
       if (payment.includes("亲情卡") || payment.includes("他人代付")) {
         return {
           ...tx,
@@ -52,7 +65,7 @@ export class AlipayNeutralTxImporter implements Importer {
         };
       }
 
-      // （3）转出→支出，转入→收入；否则不填收支类型
+      // (3) 转出→支出，转入→收入；否则不填收支类型
       let transaction_type: TransactionType | null = null;
       if (product.includes("转出")) {
         transaction_type = "支出";
@@ -70,13 +83,17 @@ export class AlipayNeutralTxImporter implements Importer {
   }
 
   /**
-   * 仅处理：收/支为「不计收支」、交易状态「交易成功」、商品非“余额宝收益发放”的交易
+   * 仅处理满足以下条件的交易：
+   * 1. 商品非“余额宝收益发放”
+   * 2. (收/支为「不计收支」 && 交易状态「交易成功」) || (收/支为「收入」 && 交易状态「交易关闭」)
    */
   private matchesScope(tx: NewTransactionData): boolean {
-    if (getAlipayRawField(tx, ColumnKey.Direction) !== "不计收支") return false;
-    if (getAlipayRawField(tx, ColumnKey.Status) !== "交易成功") return false;
+    const dir = getAlipayRawField(tx, ColumnKey.Direction);
+    const status = getAlipayRawField(tx, ColumnKey.Status);
     const product = getAlipayRawField(tx, ColumnKey.Product) ?? "";
     if (product.includes("余额宝") && product.includes("收益发放")) return false;
-    return true;
+    if (dir === "不计收支" && status === "交易成功") return true;
+    if (dir === "收入" && status === "交易关闭") return true;
+    return false;
   }
 }
