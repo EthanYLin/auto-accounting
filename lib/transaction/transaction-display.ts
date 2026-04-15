@@ -1,6 +1,6 @@
 /**
  * 负责交易与拆账在展示层所需的格式化和显示辅助。
- * 包括金额符号与颜色、带符号金额计算，以及类别文本/图标展示数据的生成。
+ * 包括金额符号与颜色、带符号金额计算、列表主行标题，以及类别文本/图标展示数据的生成。
  */
 import type { TransactionWithRelations, TransactionType, MainCategory, SubCategory } from "@/types";
 import type { FourChainState } from "@/components/homepage/common/four-chain-selector";
@@ -62,7 +62,7 @@ export function formatAmountParts(
   return { sign, digits };
 }
 
-// ==================== 类别格式化 ====================
+// ==================== 格式化 ====================
 
 /**
  * 格式化类别为纯文本（含交易类型前缀）
@@ -75,6 +75,21 @@ export function formatCategoryText(tx: TransactionWithRelations): string {
   if (tx.main_category?.label) parts.push(tx.main_category.label);
   if (tx.sub_category?.label) parts.push(tx.sub_category.label);
   return parts.join("-") || "-";
+}
+
+/**
+ * 交易主文案
+ * 优先级：名称 → 标题 →「主类别-子类别」→ 主类别 → 交易类型 → "-"
+ */
+export function formatDisplayTitle(tx: TransactionWithRelations): string {
+  if (tx.name) return tx.name;
+  if (tx.title) return tx.title;
+  const mainLabel = tx.main_category?.label || "";
+  const subLabel = tx.sub_category?.label || "";
+  if (mainLabel && subLabel) return `${mainLabel}-${subLabel}`;
+  if (mainLabel) return mainLabel;
+  if (tx.transaction_type) return tx.transaction_type;
+  return "-";
 }
 
 /** 交易类型：Emoji + 文案 */

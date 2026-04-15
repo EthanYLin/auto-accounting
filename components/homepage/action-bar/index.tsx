@@ -17,6 +17,7 @@ import { ALL_TRANSACTION_STATUS } from "@/constants/transaction-status";
 import { useSaveButtonOverride } from "@/components/context/save-button-override-context";
 import { useTransactionEditor } from "@/components/context/transaction-editor-context";
 import { useTransactionStore } from "@/components/context/transaction-store-context";
+import { formatDisplayTitle } from "@/lib/transaction/transaction-display";
 
 const DEFAULT_QUICK_ACTION: QuickActionKey = "save-cancel";
 
@@ -80,13 +81,23 @@ export function ActionBar({ sidebarToggle }: ActionBarProps) {
     [dangerConfirmModal],
   );
 
+  const getTxDisplayTitle = useCallback(
+    (txId: number | null) => {
+      if (txId === null) return "(未知)";
+      const tx = store.transactions.find((tx) => tx.id === txId);
+      const title = tx ? formatDisplayTitle(tx) : `#${txId}`;
+      return title.length > 10 ? title.slice(0, 10) + "..." : title;
+    },
+    [store.transactions],
+  );
+
   const handleSave = useCallback(
     async (targetStatus?: TransactionStatus, shouldAutoSwitch = false) => {
       clearSaveButtonOverride();
       const result = await editor.saveCurrentTransaction(targetStatus);
       if (!result.success) {
         addToast({
-          title: `ID为#${currentId}的交易保存失败`,
+          title: `交易 ${getTxDisplayTitle(currentId)} 保存失败`,
           description: result.error || "未知错误",
           color: "danger",
         });
@@ -99,19 +110,19 @@ export function ActionBar({ sidebarToggle }: ActionBarProps) {
           .then((saveResult) => {
             if (!saveResult.success) {
               addToast({
-                title: `ID为#${txId}的交易保存失败`,
+                title: `交易 ${getTxDisplayTitle(txId)} 保存失败`,
                 description: saveResult.error || "未知错误",
                 color: "danger",
               });
               return;
             }
             if (!shouldAutoSwitch) {
-              addToast({ title: `ID为#${txId}的交易已保存`, color: "success" });
+              addToast({ title: `交易 ${getTxDisplayTitle(txId)} 已保存`, color: "success" });
             }
           })
           .catch((error) => {
             addToast({
-              title: `ID为#${txId}的交易保存失败`,
+              title: `交易 ${getTxDisplayTitle(txId)} 保存失败`,
               description: error instanceof Error ? error.message : "未知错误",
               color: "danger",
             });

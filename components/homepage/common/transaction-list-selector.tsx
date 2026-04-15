@@ -170,9 +170,8 @@ export function TransactionListSelector({
 
       {/* 表头：独立于纵向滚动，横向通过 JS 同步 */}
       <div ref={headerScrollRef} className="flex-shrink-0 min-w-0 w-full overflow-hidden">
-        <div className="min-w-[774px] flex items-center border-b border-divider bg-background px-3 py-1.5 text-[11px] font-medium text-default-400">
+        <div className="min-w-[694px] flex items-center border-b border-divider bg-background px-3 py-1.5 text-[11px] font-medium text-default-400">
           <span className="w-[64px] flex-shrink-0" />
-          <span className="w-[80px] flex-shrink-0">ID</span>
           <span className="min-w-0 flex-1 basis-0">名称</span>
           <span className="w-[105px] flex-shrink-0">金额</span>
           <span className="w-[100px] flex-shrink-0">账户</span>
@@ -198,7 +197,7 @@ export function TransactionListSelector({
               height: `${virtualizer.getTotalSize()}px`,
               position: "relative",
             }}
-            className="w-full min-w-[774px]"
+            className="w-full min-w-[694px]"
           >
             {virtualItems.map((virtualItem) => {
               const tx = filteredTransactions[virtualItem.index];
@@ -308,7 +307,7 @@ const SelectorRow = React.memo(function SelectorRow({
       ref={measureElement}
       role="button"
       tabIndex={0}
-      className={`absolute top-0 left-0 w-full min-w-[774px] flex items-center px-3 text-sm transition-colors ${bgClass} ${isCurrent || !isRowSelectable ? "cursor-not-allowed" : "cursor-pointer"} ${isChild ? "py-1.5" : "py-2"}`}
+      className={`absolute top-0 left-0 w-full min-w-[694px] flex items-center px-3 text-sm transition-colors ${bgClass} ${isCurrent || !isRowSelectable ? "cursor-not-allowed" : "cursor-pointer"} ${isChild ? "py-1.5" : "py-2"}`}
       style={{ transform: `translateY(${virtualItem.start}px)` }}
       onClick={() => {
         if (isRowSelectable) onToggle(tx.id);
@@ -331,9 +330,6 @@ const SelectorRow = React.memo(function SelectorRow({
           className="flex-shrink-0"
         />
       </div>
-
-      {/* ID */}
-      <div className={`w-[80px] flex-shrink-0 truncate ${textClass}`}>#{tx.id}</div>
 
       {/* 名称 */}
       <div className={`min-w-0 flex-1 basis-0 truncate ${textClass}`}>

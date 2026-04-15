@@ -7,18 +7,12 @@ import { Chip } from "@heroui/react";
 import { LinkIcon, RectangleStackIcon, ScissorsIcon } from "@heroicons/react/24/outline";
 
 import { TRANSACTION_TYPES, TRANSACTION_STATUS_COLORS } from "@/constants/transaction-type";
+import {
+  formatAmountParts,
+  formatDisplayTitle,
+  getAmountColorClass,
+} from "@/lib/transaction/transaction-display";
 import { displayTxTime } from "@/lib/transaction/transaction-datetime";
-
-// ========== 工具函数 ==========
-
-/**
- * 格式化金额显示
- */
-function formatAmount(amount: number, sign: number): string {
-  const value = amount * sign;
-  const formatted = Math.abs(value).toFixed(2);
-  return sign >= 0 ? `¥${formatted}` : `-¥${formatted}`;
-}
 
 // ========== 组件接口 ==========
 
@@ -69,35 +63,26 @@ export const TransactionListItem = memo(function TransactionListItem({
 
   const { icon, backColor, foreColor } = getIconAndColor();
 
-  // 获取第一行左侧显示的文本
-  const getDisplayName = () => {
-    if (transaction.name) return transaction.name;
-    if (transaction.title) return transaction.title;
-    const mainLabel = transaction.main_category?.label || "";
-    const subLabel = transaction.sub_category?.label || "";
-    if (mainLabel && subLabel) return `${mainLabel}-${subLabel}`;
-    if (mainLabel) return mainLabel;
-    return "-";
-  };
+  const { sign: amountSignStr, digits: amountDigits } = formatAmountParts(
+    transaction.amount,
+    transaction.transaction_type ?? null,
+  );
+  const amountText = amountSignStr === "-" ? `-¥${amountDigits}` : `¥${amountDigits}`;
 
-  // 获取金额符号
-  const getAmountSign = () => {
-    if (transaction.transaction_type) {
-      const txType = TRANSACTION_TYPES.find((t) => t.type === transaction.transaction_type);
-      return txType?.sign || 1;
-    }
-    return 1;
-  };
-
-  const sign = getAmountSign();
   const isCanceled = transaction.status === "取消";
-  const amountColor = transaction.transaction_type
-    ? TRANSACTION_TYPES.find((t) => t.type === transaction.transaction_type)?.amount_color ||
-      "text-gray-600 dark:text-zinc-400"
-    : "text-gray-600 dark:text-zinc-400";
   const splitsCount = transaction.splits?.length || 0;
   const childrenCount = transaction.children_ids.length;
   const isChild = !!transaction.parent_id;
+
+  const hasLeftMarkers = !!transaction.parent_id || childrenCount > 0 || splitsCount > 0;
+  const showStatusChip =
+    !isChild &&
+    !!transaction.status &&
+    transaction.status !== "已完成" &&
+    transaction.status !== "取消";
+  const hasThirdRow = hasLeftMarkers || showStatusChip;
+
+  const leftColJustify = hasThirdRow && !hasLeftMarkers ? "justify-center" : "justify-start";
 
   return (
     <div
@@ -119,10 +104,10 @@ export const TransactionListItem = memo(function TransactionListItem({
         }
       }}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-stretch gap-3">
         {/* 子记录的引导线 */}
         {isChild && (
-          <div className="flex items-center h-full flex-shrink-0">
+          <div className="flex items-center flex-shrink-0 self-center">
             <svg width="20" height="24" className="text-gray-300 dark:text-white/20">
               <path d="M 4 0 L 4 12 L 20 12" stroke="currentColor" strokeWidth="1" fill="none" />
             </svg>
@@ -130,7 +115,7 @@ export const TransactionListItem = memo(function TransactionListItem({
         )}
 
         {/* 左侧圆形图标 */}
-        <div className="relative">
+        <div className="relative self-center">
           <div
             className={`${isChild ? "w-8 h-8 text-base" : "w-8 h-8 text-base lg:w-10 lg:h-10 lg:text-lg"} rounded-full ${backColor} ${foreColor} flex items-center justify-center flex-shrink-0`}
           >
@@ -145,86 +130,67 @@ export const TransactionListItem = memo(function TransactionListItem({
           )}
         </div>
 
-        {/* 右侧内容 */}
-        <div className="flex-1 min-w-0">
-          {/* 第一行：名称和金额 */}
-          <div className="flex items-baseline justify-between mb-1">
+        {/* 主内容：左列标题+时间[+图标行]，右列金额+账户+状态 */}
+        <div className="flex flex-1 min-w-0 items-stretch gap-2">
+          <div
+            className={`flex min-h-0 min-w-0 flex-1 flex-col gap-1 ${leftColJustify} ${isChild ? "text-[10px]" : "text-xs"}`}
+          >
             <span
               className={`${isChild ? "text-xs" : "text-sm"} ${isChild ? "font-normal" : "font-medium"} text-gray-900 dark:text-zinc-100 truncate`}
             >
-              {getDisplayName()}
+              {formatDisplayTitle(transaction)}
             </span>
-            <span
-              className={`${isChild ? "text-xs" : "text-sm"} ${isChild ? "font-normal" : "font-bold"} ml-2 flex-shrink-0 ${isCanceled ? "text-gray-500 dark:text-gray-400" : amountColor}`}
-            >
-              <span className={isCanceled ? "line-through inline-block decoration-1" : ""}>
-                {formatAmount(transaction.amount, sign)}
-              </span>
-            </span>
-          </div>
-
-          {/* 第二行：日期时间和账户 */}
-          <div
-            className={`flex items-center justify-between ${isChild ? "text-[10px]" : "text-xs"} text-gray-500 dark:text-zinc-500 mb-1`}
-          >
-            <span className="truncate">
+            <span className="truncate text-gray-500 dark:text-zinc-500">
               {displayTxTime(transaction.datetime, "short")}
               {transaction.merchant && ` - ${transaction.merchant}`}
             </span>
-            <span className="ml-2 flex-shrink-0 truncate max-w-[60px] lg:max-w-[80px]">
-              {transaction.account?.name || "-"}
-            </span>
+            {hasLeftMarkers && (
+              <div className="flex items-center gap-1.5 text-gray-500">
+                {transaction.parent_id && (
+                  <LinkIcon className="w-3.5 h-3.5 shrink-0" title="附加到其他交易" />
+                )}
+                {childrenCount > 0 && (
+                  <span
+                    className="flex items-center gap-0.5"
+                    title={`${childrenCount} 个交易附加到该交易`}
+                  >
+                    <RectangleStackIcon className="h-3.5 w-3.5 shrink-0" />
+                    <span className="text-[10px]">{childrenCount}</span>
+                  </span>
+                )}
+                {splitsCount > 0 && (
+                  <span className="flex items-center gap-0.5" title={`包含 ${splitsCount} 个拆账`}>
+                    <ScissorsIcon className="h-3.5 w-3.5 shrink-0" />
+                    <span className="text-[10px]">{splitsCount}</span>
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* 第三行：ID、特殊标记和状态 */}
-          <div className="flex items-center justify-between">
-            <div className={`flex items-center gap-1.5 ${isChild ? "text-[10px]" : "text-xs"}`}>
-              <span
-                className={`${isChild ? "font-normal" : "font-semibold"} text-gray-600 dark:text-zinc-500`}
-              >
-                #{transaction.id}
+          <div
+            className={`flex min-w-0 shrink-0 flex-col items-end gap-1 ${isChild ? "text-[10px]" : "text-xs"}`}
+          >
+            <span
+              className={`${isChild ? "text-xs" : "text-sm"} ${isChild ? "font-normal" : "font-bold"} leading-tight ${isCanceled ? "text-gray-500 dark:text-gray-400" : getAmountColorClass(transaction.transaction_type ?? null)}`}
+            >
+              <span className={isCanceled ? "inline-block decoration-1 line-through" : ""}>
+                {amountText}
               </span>
-
-              {/* 特殊标记图标 */}
-              {transaction.parent_id && (
-                <LinkIcon className="w-3.5 h-3.5 text-gray-500" title="附加到其他交易" />
-              )}
-
-              {childrenCount > 0 && (
-                <span
-                  className="flex items-center gap-0.5 text-gray-500"
-                  title={`${childrenCount} 个交易附加到该交易`}
-                >
-                  <RectangleStackIcon className="w-3.5 h-3.5" />
-                  <span className="text-[10px]">{childrenCount}</span>
-                </span>
-              )}
-
-              {splitsCount > 0 && (
-                <span
-                  className="flex items-center gap-0.5 text-gray-500"
-                  title={`包含 ${splitsCount} 个拆账`}
-                >
-                  <ScissorsIcon className="w-3.5 h-3.5" />
-                  <span className="text-[10px]">{splitsCount}</span>
-                </span>
-              )}
-            </div>
-
-            {/* 状态 Chip - 子记录不显示, 已完成及取消状态不显示 */}
-            {!isChild &&
-              transaction.status &&
-              transaction.status !== "已完成" &&
-              transaction.status !== "取消" && (
-                <Chip
-                  size="sm"
-                  color={TRANSACTION_STATUS_COLORS[transaction.status]}
-                  variant="flat"
-                  className="h-5"
-                >
-                  {transaction.status}
-                </Chip>
-              )}
+            </span>
+            <span className="max-w-[60px] truncate text-gray-500 dark:text-zinc-500 lg:max-w-[80px]">
+              {transaction.account?.name || "-"}
+            </span>
+            {showStatusChip && transaction.status && (
+              <Chip
+                size="sm"
+                color={TRANSACTION_STATUS_COLORS[transaction.status]}
+                variant="flat"
+                className="h-5"
+              >
+                {transaction.status}
+              </Chip>
+            )}
           </div>
         </div>
       </div>
