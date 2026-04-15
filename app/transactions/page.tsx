@@ -157,7 +157,7 @@ function TransactionsRoutePage() {
 
   useCommandListener("create", () => void handleCreate());
 
-  const { currentTransaction, currentIndex } = editor;
+  const { currentTransaction } = editor;
 
   return (
     <motion.div
@@ -175,22 +175,20 @@ function TransactionsRoutePage() {
       />
 
       <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        {currentTransaction !== null && currentIndex > 0 && (
-          <ActionBar
-            sidebarToggle={
-              <Button
-                isIconOnly
-                variant="light"
-                size="sm"
-                onPress={() => dispatchCommand("toggle-sidebar")}
-                aria-label="切换侧栏"
-                className="md:hidden flex-shrink-0"
-              >
-                <Bars3Icon className="h-5 w-5" />
-              </Button>
-            }
-          />
-        )}
+        <ActionBar
+          sidebarToggle={
+            <Button
+              isIconOnly
+              variant="light"
+              size="sm"
+              onPress={() => dispatchCommand("toggle-sidebar")}
+              aria-label="切换侧栏"
+              className="md:hidden flex-shrink-0"
+            >
+              <Bars3Icon className="h-5 w-5" />
+            </Button>
+          }
+        />
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           {isEditorLoading ? (

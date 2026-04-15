@@ -52,7 +52,7 @@ export function ActionBar({ sidebarToggle }: ActionBarProps) {
   const { saveButtonOverride, showSaveButtonOverride, clearSaveButtonOverride } =
     useSaveButtonOverride();
 
-  const { currentTransaction, currentId } = editor;
+  const { currentTransaction, currentId, currentIndex } = editor;
   const dirtyCount = store.getDirtyIds().length;
 
   const [quickActionKey, setQuickActionKey] = useState<QuickActionKey>(DEFAULT_QUICK_ACTION);
@@ -305,6 +305,8 @@ export function ActionBar({ sidebarToggle }: ActionBarProps) {
   useCommandListener("save-and-complete", () => handlePrimaryAction());
   useCommandListener("delete-current", () => executeQuickAction("delete"));
   useCommandListener("discard-current", () => executeQuickAction("discard-current"));
+
+  if (!currentTransaction || currentIndex <= 0) return null;
 
   const primarySaveButton = (
     <PrimarySaveButton
