@@ -157,6 +157,11 @@ export function OverviewTransactionsGrid({
   const store = useTransactionStore();
   const { transactions, isFetching, error, setTransactionDraft } = store;
 
+  // Immer's produce() freezes objects in the React Query cache.
+  // ag-grid mutates row data in-place via valueSetter / default field setters,
+  // so we shallow-clone each row to make them writable.
+  const mutableRows = useMemo(() => transactions.map((tx) => ({ ...tx })), [transactions]);
+
   const merchantValues = useMemo(
     () =>
       Array.from(
@@ -589,7 +594,7 @@ export function OverviewTransactionsGrid({
       <AgGridReact<TransactionWithRelations>
         ref={gridRef}
         theme={gridTheme}
-        rowData={transactions}
+        rowData={mutableRows}
         columnDefs={columnDefs}
         defaultColDef={defaultColDef}
         treeData
