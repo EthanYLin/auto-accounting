@@ -9,6 +9,7 @@ import {
   type CellValueChangedEvent,
   type ColDef,
   type SelectionChangedEvent,
+  type StatusBar,
   type ValueFormatterParams,
   type ValueParserParams,
   type ValueSetterParams,
@@ -171,6 +172,21 @@ export function OverviewTransactionsGrid({
   );
 
   const txTypeValues = useMemo(() => TRANSACTION_TYPES.map((t) => t.type), []);
+  const statusBar = useMemo<StatusBar>(
+    () => ({
+      statusPanels: [
+        {
+          statusPanel: "agAggregationComponent",
+          key: "rangeAggregation",
+          align: "right",
+          statusPanelParams: {
+            aggFuncs: ["count", "sum", "avg"],
+          },
+        },
+      ],
+    }),
+    [],
+  );
   const rowSelection = useMemo(
     () =>
       ({
@@ -620,6 +636,7 @@ export function OverviewTransactionsGrid({
         cellSelection={{
           handle: { mode: "fill", direction: "y" },
         }}
+        statusBar={statusBar}
         onCellValueChanged={onCellValueChanged}
         onSelectionChanged={(e: SelectionChangedEvent<TransactionWithRelations>) => {
           onSelectionChange?.(e.api.getSelectedRows().map((tx) => tx.id));
