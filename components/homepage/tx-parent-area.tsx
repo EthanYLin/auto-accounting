@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import { Button } from "@heroui/react";
 import { useDisclosure } from "@heroui/react";
 import { Chip } from "@heroui/react";
@@ -12,9 +13,9 @@ import {
   ArrowUpRightIcon,
   PencilSquareIcon,
   PaperClipIcon,
+  BanknotesIcon,
 } from "@heroicons/react/24/outline";
 
-import { useCommandListener } from "@/lib/commands";
 import {
   TxPickChildrenDrawer,
   TxAttachToParentDrawer,
@@ -24,6 +25,7 @@ import { useTransactionStore } from "@/components/context/transaction-store-cont
 import { useTransactionEditor } from "@/components/context/transaction-editor-context";
 import { useAppData } from "@/components/context/app-data-context";
 import { TRANSACTION_STATUS_COLORS } from "@/constants/transaction-type";
+import { useCommandListener } from "@/lib/commands";
 import {
   calculateAmount,
   getAmountColorClass,
@@ -32,18 +34,47 @@ import {
 } from "@/lib/transaction/transaction-display";
 import { displayTxTime } from "@/lib/transaction/transaction-datetime";
 
+const SMALL_AMOUNT_SUMMARY_TX_NAME = "小额交易汇总(系统)";
+
 export function TxParentArea() {
   const pickChildrenDrawer = useDisclosure();
   const attachToParentDrawer = useDisclosure();
   const store = useTransactionStore();
   const editor = useTransactionEditor();
-  const { accounts } = useAppData();
+  const appData = useAppData();
+  const { accounts } = appData;
   const currentTransaction = editor.currentTransaction;
   const childTransactions = editor.currentChildTransactions;
   const parentTransaction = editor.currentParentTransaction;
   const isBusy = store.saveState !== "idle";
   const entranceSummary = editor.entranceSummary;
   const isRootTransaction = !!currentTransaction && !currentTransaction.parent_id;
+  const noChildren = childTransactions.length === 0;
+  const noSplits = (currentTransaction?.splits?.length ?? 0) === 0;
+
+  const createSmallAmountSumTx = useCallback(
+    async (
+      accountId: number,
+    ): Promise<{ success: true; parentId: number } | { success: false; error: string }> => {
+      const account = appData.accounts.find((a) => a.id === accountId);
+      if (!account) return { success: false, error: "目标账户不存在" };
+
+      const empty = await editor.createEmptyTransaction();
+      if (!empty.success || !empty.data) {
+        return { success: false, error: empty.error || "创建空交易失败" };
+      }
+
+      const id = empty.data.id;
+      const { parent_id, children_ids, ...baseDraft } = empty.data;
+      const draft = { ...baseDraft, account, name: SMALL_AMOUNT_SUMMARY_TX_NAME };
+      const saved = await store.saveToServer(id, draft);
+      if (!saved.success) {
+        return { success: false, error: saved.error || "保存小额汇总主账单失败" };
+      }
+      return { success: true, parentId: id };
+    },
+    [appData, store],
+  );
 
   useCommandListener("open-attach-selection", () => {
     if (!currentTransaction || !isRootTransaction || isBusy) return;
@@ -63,6 +94,47 @@ export function TxParentArea() {
     const result = await editor.updateChildrenIds(newIds);
     if (!result.success) {
       addToast({ title: "取消附加失败", description: result.error || "未知错误", color: "danger" });
+    }
+  };
+
+  const handleSmallAmountSummary = async () => {
+    if (!currentTransaction) return;
+    if (store.saveState !== "idle") {
+      addToast({ title: "小额汇总失败", description: "当前有保存操作进行中", color: "danger" });
+      return;
+    }
+    const matches = store.transactions.filter(
+      (tx) =>
+        tx.parent_id === null &&
+        tx.account.id === currentTransaction.account.id &&
+        tx.name === SMALL_AMOUNT_SUMMARY_TX_NAME &&
+        tx.id !== currentTransaction.id,
+    );
+
+    let parentId: number | undefined;
+    if (matches.length > 0) {
+      parentId = Math.min(...matches.map((tx) => tx.id));
+    } else {
+      const created = await createSmallAmountSumTx(currentTransaction.account.id);
+      if (!created.success) {
+        addToast({ title: "小额汇总失败", description: created.error, color: "danger" });
+        return;
+      }
+      parentId = created.parentId;
+    }
+
+    if (parentId === undefined) {
+      addToast({
+        title: "小额汇总失败",
+        description: "未找到汇总主账单",
+        color: "danger",
+      });
+      return;
+    }
+
+    const attach = await editor.attachToParent(parentId);
+    if (!attach.success) {
+      addToast({ title: "附加失败", description: attach.error || "未知错误", color: "danger" });
     }
   };
 
@@ -91,7 +163,7 @@ export function TxParentArea() {
               A
             </Kbd>
           </Button>
-          {childTransactions.length === 0 && (
+          {noChildren && noSplits && (
             <Button
               size="sm"
               variant="flat"
@@ -102,6 +174,20 @@ export function TxParentArea() {
               附加到
             </Button>
           )}
+          {noChildren &&
+            noSplits &&
+            currentTransaction.amount <= 10 &&
+            currentTransaction.name !== SMALL_AMOUNT_SUMMARY_TX_NAME && (
+              <Button
+                size="sm"
+                variant="flat"
+                isDisabled={isBusy}
+                startContent={<BanknotesIcon className="w-4 h-4" />}
+                onPress={handleSmallAmountSummary}
+              >
+                小额交易
+              </Button>
+            )}
         </div>
       )}
 
