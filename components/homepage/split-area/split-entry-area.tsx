@@ -138,6 +138,15 @@ export function SplitEntryArea({ isActive }: { isActive: boolean }) {
     [tx, appData, editor],
   );
 
+  const handleToggleShowName = useCallback(() => {
+    if (showName) {
+      handleEntriesChange(entries.map((e) => ({ ...e, name: "" })));
+      setShowName(false);
+    } else {
+      setShowName(true);
+    }
+  }, [showName, entries, handleEntriesChange]);
+
   const handleAdd = useCallback(() => {
     handleEntriesChange([
       ...entries,
@@ -244,7 +253,7 @@ export function SplitEntryArea({ isActive }: { isActive: boolean }) {
             isIconOnly
             size="sm"
             variant="light"
-            onPress={() => setShowName((v) => !v)}
+            onPress={handleToggleShowName}
             aria-label={showName ? "隐藏名称列" : "显示名称列"}
             title={showName ? "隐藏名称列" : "显示名称列"}
             className="flex-shrink-0"

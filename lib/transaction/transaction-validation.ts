@@ -98,50 +98,44 @@ export function isValidTransaction(
   const hint: string[] = [];
   const isChildTransaction = tx.parent_id !== null || tx.status === "附加到其他交易";
 
-  // ========== (0) 基本判定 ==========
+  // ========== (1) 基本属性判定(根交易) ==========
 
   // 1. 账户不为空且在枚举中
   hint.push(...validateAccount(tx.account, accounts, ""));
 
   // 2. 金额非负数
-  if (tx.amount < 0) {
-    hint.push("金额不能为负数");
-  }
+  if (tx.amount < 0) hint.push("金额不能为负数");
 
-  // 3. 日期时间不为空且合法
+  // 3. 交易类型不为空
+  if (!tx.transaction_type) hint.push("交易类型不能为空");
+
+  // 4. 预算计划为空或枚举值
+  hint.push(...validateBudgetType(tx.budget_type, budgetTypes, ""));
+
+  // 5. 日期时间不为空且合法
   if (!tx.datetime) {
     hint.push("日期时间不能为空");
   } else if (!parseTxTime(tx.datetime)) {
     hint.push("日期时间格式不合法");
   }
 
-  // 4. 名称不为空
-  if (!isChildTransaction && !tx.name?.trim()) {
-    hint.push("名称不能为空");
+  // ========== (1) 基本属性判定(分账) ==========
+
+  if (tx.splits) {
+    tx.splits.forEach((split, i) => {
+      const p = `分账[${i + 1}]: `;
+      // 1. 账户不为空且在枚举中
+      hint.push(...validateAccount(split.account, accounts, p));
+      // 2. 金额非负数
+      if (split.amount < 0) hint.push(`${p}金额不能为负数`);
+      // 3. 交易类型不为空
+      if (!split.transaction_type) hint.push(`${p}交易类型不能为空`);
+      // 4. 预算计划为空或枚举值
+      hint.push(...validateBudgetType(split.budget_type, budgetTypes, p));
+    });
   }
 
-  // 5. 收支类型不为空
-  if (!tx.transaction_type) {
-    hint.push("收支类型不能为空");
-  }
-
-  // 6. 主类别、子类别不为空且联合校验通过
-  if (!isChildTransaction) {
-    hint.push(
-      ...validateCategoryChain(
-        tx.transaction_type,
-        tx.main_category,
-        tx.sub_category,
-        mainCategories,
-        subCategories,
-      ),
-    );
-  }
-
-  // 7. 预算计划为空或枚举值
-  hint.push(...validateBudgetType(tx.budget_type, budgetTypes, ""));
-
-  // ========== (1) 附加判定 ==========
+  // ========== (2) 附加判定 ==========
 
   if (tx.status === "附加到其他交易") {
     if (!tx.parent_id) hint.push("该附加交易必须有父交易");
@@ -155,26 +149,73 @@ export function isValidTransaction(
       if (child.parent_id !== tx.id) {
         hint.push(`子交易[${i + 1}]的parent_id不正确`);
       }
-      if (child.children_ids.length > 0) {
-        hint.push(`子交易[${i + 1}]不允许再有子交易`);
-      }
+      // 递归校验子交易
       const childResult = isValidTransaction(child, [], appData);
-      if (!childResult.valid) {
-        hint.push(`子交易[${i + 1}]: ${childResult.hint.join("; ")}`);
-      }
+      childResult.hint.forEach((h) => hint.push(`子交易[${i + 1}]: ${h}`));
     });
   }
 
-  // ========== (2) 分账判定 ==========
+  // 如果是子交易，跳过 (3)转账判定 和 (4)出口判定，直接返回校验结果
+  if (isChildTransaction) return { valid: hint.length === 0, hint };
 
-  if (tx.splits) {
-    tx.splits.forEach((split, i) => {
-      const p = `分账[${i + 1}]: `;
-
-      if (split.amount < 0) {
-        hint.push(`${p}金额不能为负数`);
+  // ========== (3) 转账判定 ==========
+  const exitSplits = getExitSplits(tx, childrenTx);
+  const inList = exitSplits.filter((s) => s.transaction_type === "转入");
+  const outList = exitSplits.filter((s) => s.transaction_type === "转出");
+  if (inList.length > 0 || outList.length > 0) {
+    if (inList.length !== 1 || outList.length !== 1) {
+      hint.push("转账必须恰好包含一条转入和一条转出记录");
+    } else {
+      if (amountToCents(inList[0].amount) !== amountToCents(outList[0].amount)) {
+        hint.push("转入与转出金额必须相同");
       }
+      if (inList[0].account?.id === outList[0].account?.id) {
+        hint.push("转入与转出账户不能相同");
+      }
+    }
+  }
 
+  // ========== (4) 出口处类别判定 ==========
+  const hasChildren = childrenTx.length > 0;
+  const hasSplits = tx.splits?.length ?? 0 > 0;
+
+  if (!hasChildren && !hasSplits) {
+    // 无附加、无分账的情况
+    // 名称不为空
+    if (!tx.name?.trim()) hint.push("名称不能为空");
+    // 主类别、子类别不为空且联合校验通过
+    hint.push(
+      ...validateCategoryChain(
+        tx.transaction_type,
+        tx.main_category,
+        tx.sub_category,
+        mainCategories,
+        subCategories,
+      ),
+    );
+  } else if (hasChildren && !hasSplits) {
+    // 有附加、无分账的情况(出口=默认合并策略)
+    exitSplits.forEach((split) => {
+      // 出口名称不为空
+      if (!tx.name?.trim()) hint.push(`账户为${split.account.name}的交易: 名称不能为空`);
+      // 主类别、子类别不为空且联合校验通过
+      hint.push(
+        ...validateCategoryChain(
+          split.transaction_type,
+          split.main_category,
+          split.sub_category,
+          mainCategories,
+          subCategories,
+        ).map((h) => `账户"${split.account.name}"的交易: ${h}`),
+      );
+    });
+  } else {
+    // 有分账的情况(出口以分账为准)
+    tx.splits?.forEach((split, i) => {
+      const p = `分账[${i + 1}]: `;
+      // 根交易名称不为空 或 分账名称不为空
+      if (!tx.name?.trim() && !split.name?.trim()) hint.push(`${p}名称不能为空`);
+      // 主类别、子类别不为空且联合校验通过
       hint.push(
         ...validateCategoryChain(
           split.transaction_type,
@@ -184,50 +225,7 @@ export function isValidTransaction(
           subCategories,
         ).map((h) => `${p}${h}`),
       );
-
-      hint.push(...validateBudgetType(split.budget_type, budgetTypes, p));
-
-      if (!split.transaction_type) {
-        hint.push(`${p}收支类型不能为空`);
-      }
-
-      hint.push(...validateAccount(split.account, accounts, p));
     });
-  }
-
-  if (!isChildTransaction) {
-    const exitSplits = getExitSplits(tx, childrenTx);
-
-    // ========== (3) 转账判定 ==========
-    const inList = exitSplits.filter((s) => s.transaction_type === "转入");
-    const outList = exitSplits.filter((s) => s.transaction_type === "转出");
-    if (inList.length > 0 || outList.length > 0) {
-      if (inList.length !== 1 || outList.length !== 1) {
-        hint.push("转账必须恰好包含一条转入和一条转出记录");
-      } else {
-        if (amountToCents(inList[0].amount) !== amountToCents(outList[0].amount)) {
-          hint.push("转入与转出金额必须相同");
-        }
-        if (inList[0].account?.id === outList[0].account?.id) {
-          hint.push("转入与转出账户不能相同");
-        }
-      }
-    }
-
-    // ========== (4) 出口处类别判定 ==========
-    if ((tx.splits?.length ?? 0) !== 0) {
-      exitSplits.forEach((split) => {
-        hint.push(
-          ...validateCategoryChain(
-            split.transaction_type,
-            split.main_category,
-            split.sub_category,
-            mainCategories,
-            subCategories,
-          ).map((h) => `账户"${split.account.name}"的交易: ${h}`),
-        );
-      });
-    }
   }
 
   return { valid: hint.length === 0, hint };
@@ -243,10 +241,10 @@ export function isWarningTransaction(
 ): ValidationResult {
   const hints: string[] = [];
 
-  // 1. 提示入口记录数>1或者出口数>1
+  // 1. 提示入口记录数=1时，分账=1
   const entranceCount = 1 + childrenTx.length;
-  const exitCount = tx.splits?.length ?? 0;
-  if (entranceCount == 1 && exitCount == 1) {
+  const splitCount = tx.splits?.length ?? 0;
+  if (entranceCount == 1 && splitCount == 1) {
     hints.push("该账单经过分账修改");
   }
 
@@ -293,7 +291,14 @@ export function isWarningTransaction(
     }
   });
 
-  // 4. 合法判定
+  // 4. 有附加 无分账的情况（出口=默认合并策略）
+  exitSplits.forEach((split) => {
+    // 出口名称与根交易名称不一致
+    if (tx.name?.trim() && split.name?.trim() && tx.name.trim() !== split.name.trim())
+      hints.push(`账户为${split.account.name}的交易: 将会导出为名称"${split.name.trim()}"`);
+  });
+
+  // 5. 合法判定
   hints.push(...isValidTransaction(tx, childrenTx, appData).hint);
 
   return { valid: hints.length === 0, hint: hints };
