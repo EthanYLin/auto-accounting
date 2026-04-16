@@ -68,6 +68,14 @@ export function TxImportInfo() {
               <p className="text-sm">{tx.status || "无"}</p>
             </div>
 
+            {/* 交易ID */}
+            <div>
+              <h3 className="text-sm font-semibold text-foreground-600 dark:text-zinc-400 mb-1">
+                交易ID
+              </h3>
+              <p className="text-sm font-mono tabular-nums">#{tx.id}</p>
+            </div>
+
             {/* 来源 */}
             <div>
               <h3 className="text-sm font-semibold text-foreground-600 mb-1">来源</h3>

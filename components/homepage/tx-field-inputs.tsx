@@ -2,7 +2,7 @@
 
 import type { TransactionType } from "@/types";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Input } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/react";
 import { DatePicker } from "@heroui/react";
@@ -19,24 +19,25 @@ import { TextPaintSelector } from "@/components/text-paint-selector";
 import { amountToCents, getAmountColorClass } from "@/lib/transaction/transaction-display";
 
 /**
- * 带 debounce 的文本输入 hook。
- * 本地 state 保证输入流畅，延迟后才同步到 store。
- * 外部值变化时（如切换交易、涂抹选择器回填）自动同步。
+ * 本地编辑、失焦或 Enter 时再同步到 store 的文本字段。
+ * 外部值变化时（如切换交易、涂抹选择器回填）自动同步到本地。
  *
- * @param registerFlush 可选的 flush 注册函数（来自 editor context），
- *   保存前会调用已注册的 flush 回调，确保未提交的 debounce 值被同步写入 store。
+ * @param registerPendingFlush 保存前会调用已注册回调，确保未失焦的输入写入 store。
  */
-function useDebouncedField(
+function useCommitOnBlurField(
   externalValue: string,
   onChange: (value: string) => void,
-  delay = 300,
-  registerFlush?: (callback: () => void) => () => void,
+  registerPendingFlush?: (callback: () => void) => () => void,
 ) {
   const [localValue, setLocalValue] = useState(externalValue);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const localValueRef = useRef(localValue);
+  const externalValueRef = useRef(externalValue);
+
+  useEffect(() => {
+    externalValueRef.current = externalValue;
+  }, [externalValue]);
 
   // 外部值变化时同步到本地（切换交易、涂抹选择等）
   useEffect(() => {
@@ -44,40 +45,43 @@ function useDebouncedField(
     localValueRef.current = externalValue;
   }, [externalValue]);
 
-  const handleChange = useCallback(
-    (value: string) => {
-      setLocalValue(value);
-      localValueRef.current = value;
-      clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => onChangeRef.current(value), delay);
-    },
-    [delay],
-  );
+  const commit = useCallback(() => {
+    const v = localValueRef.current;
+    if (v !== externalValueRef.current) {
+      onChangeRef.current(v);
+    }
+  }, []);
 
-  // 注册 flush 回调，保存前会被调用以立即提交待处理的 debounce 值
   useEffect(() => {
-    if (!registerFlush) return;
-    const flush = () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = undefined;
-        onChangeRef.current(localValueRef.current);
-      }
-    };
-    return registerFlush(flush);
-  }, [registerFlush]);
+    if (!registerPendingFlush) return;
+    return registerPendingFlush(commit);
+  }, [registerPendingFlush, commit]);
 
-  // 卸载时 flush 尚未提交的值，防止切换交易时丢失输入
   useEffect(() => {
     return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        onChangeRef.current(localValueRef.current);
+      const v = localValueRef.current;
+      if (v !== externalValueRef.current) {
+        onChangeRef.current(v);
       }
     };
   }, []);
 
-  return [localValue, handleChange] as const;
+  const onValueChange = useCallback((value: string) => {
+    setLocalValue(value);
+    localValueRef.current = value;
+  }, []);
+
+  const onKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+      e.preventDefault();
+      commit();
+      e.currentTarget.blur();
+    },
+    [commit],
+  );
+
+  return { value: localValue, onValueChange, onBlur: commit, onKeyDown };
 }
 
 interface TxFieldInputsProps {
@@ -97,22 +101,19 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
   const [isNamePaintSelectorOpen, setIsNamePaintSelectorOpen] = useState(false);
   const [isMerchantPaintSelectorOpen, setIsMerchantPaintSelectorOpen] = useState(false);
 
-  const [localName, setLocalName] = useDebouncedField(
+  const nameField = useCommitOnBlurField(
     tx?.name || "",
     (v) => editor.updateFields({ name: v }),
-    300,
     editor.registerPendingFlush,
   );
-  const [localMerchant, setLocalMerchant] = useDebouncedField(
+  const merchantField = useCommitOnBlurField(
     tx?.merchant || "",
     (v) => editor.updateFields({ merchant: v }),
-    300,
     editor.registerPendingFlush,
   );
-  const [localRemark, setLocalRemark] = useDebouncedField(
+  const remarkField = useCommitOnBlurField(
     tx?.remark || "",
     (v) => editor.updateFields({ remark: v }),
-    300,
     editor.registerPendingFlush,
   );
 
@@ -178,8 +179,10 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
       label="名称"
       labelPlacement={labelPlacement}
       placeholder="请输入名称"
-      value={localName}
-      onValueChange={setLocalName}
+      value={nameField.value}
+      onValueChange={nameField.onValueChange}
+      onBlur={nameField.onBlur}
+      onKeyDown={nameField.onKeyDown}
       size={isDark ? "md" : "sm"}
       variant={inputVariant}
       classNames={{ input: "font-bold text-base sm:text-small" }}
@@ -208,8 +211,10 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
       label="商户"
       labelPlacement={labelPlacement}
       placeholder="请输入商户名称"
-      value={localMerchant}
-      onValueChange={setLocalMerchant}
+      value={merchantField.value}
+      onValueChange={merchantField.onValueChange}
+      onBlur={merchantField.onBlur}
+      onKeyDown={merchantField.onKeyDown}
       size={isDark ? "md" : "sm"}
       variant={inputVariant}
       classNames={{ input: "font-bold text-base sm:text-small" }}
@@ -285,8 +290,10 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
       label="备注"
       placeholder="无备注"
       labelPlacement={labelPlacement}
-      value={localRemark}
-      onValueChange={setLocalRemark}
+      value={remarkField.value}
+      onValueChange={remarkField.onValueChange}
+      onBlur={remarkField.onBlur}
+      onKeyDown={remarkField.onKeyDown}
       size={isDark ? "md" : "sm"}
       variant={inputVariant}
       classNames={{ input: "font-normal text-base sm:text-small" }}

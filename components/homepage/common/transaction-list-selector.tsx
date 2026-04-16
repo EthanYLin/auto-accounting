@@ -44,18 +44,24 @@ export function TransactionListSelector({
   allowEmptyConfirm = true,
 }: TransactionListSelectorProps) {
   const { transactions } = useTransactionStore();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [searchQuery, setSearchQueryState] = useState("");
+  const [appliedSearchQuery, setAppliedSearchQuery] = useState("");
+  const searchDraftRef = useRef("");
   const [tempSelectedIds, setTempSelectedIds] = useState<number[]>(() => [...selectedIds]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const headerScrollRef = useRef<HTMLDivElement>(null);
   const hasScrolledRef = useRef(false);
+  const listSearchFieldRef = useRef<HTMLDivElement>(null);
 
-  // 300ms debounce
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  const onSearchValueChange = useCallback((value: string) => {
+    setSearchQueryState(value);
+    searchDraftRef.current = value;
+    if (value === "") setAppliedSearchQuery("");
+  }, []);
+
+  const commitListSearch = useCallback(() => {
+    setAppliedSearchQuery(searchDraftRef.current);
+  }, []);
 
   // 当外部 selectedIds 变化时，同步到内部状态
   useEffect(() => {
@@ -69,9 +75,9 @@ export function TransactionListSelector({
 
   // 使用搜索过滤
   const filteredTransactions = useMemo(() => {
-    const ids = filterTransactionsBySearch(orderedTransactions, debouncedSearchQuery);
+    const ids = filterTransactionsBySearch(orderedTransactions, appliedSearchQuery);
     return orderedTransactions.filter((tx) => ids.has(tx.id));
-  }, [orderedTransactions, debouncedSearchQuery]);
+  }, [orderedTransactions, appliedSearchQuery]);
 
   const virtualizer = useVirtualizer({
     count: filteredTransactions.length,
@@ -134,6 +140,9 @@ export function TransactionListSelector({
     if (event.key !== "Enter") return;
     if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
     if (event.target instanceof HTMLElement && event.target.closest("button")) return;
+    if (event.target instanceof Node && listSearchFieldRef.current?.contains(event.target)) {
+      return;
+    }
     if (!allowEmptyConfirm && tempSelectedIds.length === 0) return;
     event.preventDefault();
     event.currentTarget.requestSubmit();
@@ -154,11 +163,18 @@ export function TransactionListSelector({
       onKeyDownCapture={handleKeyDownCapture}
     >
       {/* Search */}
-      <div className="w-full mb-3 flex-shrink-0">
+      <div ref={listSearchFieldRef} className="w-full mb-3 flex-shrink-0">
         <Input
           placeholder="搜索交易记录..."
           value={searchQuery}
-          onValueChange={setSearchQuery}
+          onValueChange={onSearchValueChange}
+          onBlur={commitListSearch}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+            e.preventDefault();
+            commitListSearch();
+            e.currentTarget.blur();
+          }}
           isDisabled={isDisabled}
           isClearable
           startContent={<MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />}

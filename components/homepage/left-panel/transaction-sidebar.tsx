@@ -72,6 +72,13 @@ export function TransactionSidebar({
             placeholder="搜索名称, 金额..."
             value={search.searchQuery}
             onValueChange={search.setSearchQuery}
+            onBlur={search.commitSearchQuery}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+              e.preventDefault();
+              search.commitSearchQuery();
+              e.currentTarget.blur();
+            }}
             startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
             endContent={
               <div className="flex shrink-0 items-center gap-1">

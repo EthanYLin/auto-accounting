@@ -1,6 +1,6 @@
 import type { TransactionStatus, TransactionWithRelations } from "@/types";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 
 import { getAmountSymbol } from "../transaction/transaction-display";
 
@@ -188,7 +188,7 @@ export function filterTransactionsByStatus(
 
 /**
  * 管理交易搜索/过滤状态，返回过滤后的交易列表。
- * 内部维护 searchQuery 和 statusFilter 状态。
+ * 内部维护 searchQuery（输入框草稿）与 appliedSearchQuery（参与过滤，失焦或 Enter 提交）及 statusFilter。
  * @param selectedTransactionId 当前选中的交易 id；过滤后会始终保留该条（及同组父/子），避免侧栏列表与编辑区脱节。
  */
 export function useTransactionFilter(
@@ -197,22 +197,27 @@ export function useTransactionFilter(
 ) {
   const { clearSaveButtonOverride } = useSaveButtonOverride();
   const [searchQuery, setSearchQueryState] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [appliedSearchQuery, setAppliedSearchQuery] = useState("");
+  const searchQueryRef = useRef(searchQuery);
+  searchQueryRef.current = searchQuery;
   const [statusFilter, setStatusFilterState] = useState<TransactionStatus | "all">("all");
   const [sortOrder, setSortOrderState] = useState<SortOrder>("newest");
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
 
   const setSearchQuery = useCallback(
     (value: string) => {
       clearSaveButtonOverride();
       setSearchQueryState(value);
+      if (value === "") {
+        setAppliedSearchQuery("");
+      }
     },
     [clearSaveButtonOverride],
   );
+
+  /** 将输入框草稿提交为实际过滤条件（失焦或 Enter 时调用） */
+  const commitSearchQuery = useCallback(() => {
+    setAppliedSearchQuery(searchQueryRef.current);
+  }, []);
 
   const setStatusFilter = useCallback(
     (value: TransactionStatus | "all") => {
@@ -259,8 +264,8 @@ export function useTransactionFilter(
   // 先应用搜索过滤，再应用状态过滤
   const filteredTransactions = useMemo(() => {
     // 1. 搜索过滤（当父记录匹配时，将子记录也加入结果；当子记录匹配时，将父记录也加入结果）
-    let resultIds = debouncedSearchQuery.trim()
-      ? filterTransactionsBySearch(flatTransactions, debouncedSearchQuery, true, true)
+    let resultIds = appliedSearchQuery.trim()
+      ? filterTransactionsBySearch(flatTransactions, appliedSearchQuery, true, true)
       : new Set(flatTransactions.map((tx) => tx.id));
 
     // 2. 状态过滤：与搜索结果取交集（AND 语义）
@@ -280,15 +285,15 @@ export function useTransactionFilter(
     }
 
     return flatTransactions.filter((tx) => resultIds.has(tx.id));
-  }, [flatTransactions, debouncedSearchQuery, statusFilter, selectedTransactionId]);
+  }, [flatTransactions, appliedSearchQuery, statusFilter, selectedTransactionId]);
 
   const isFiltered =
-    debouncedSearchQuery.trim() !== "" || statusFilter !== "all" || sortOrder !== "newest";
+    appliedSearchQuery.trim() !== "" || statusFilter !== "all" || sortOrder !== "newest";
 
   const clearFilters = useCallback(() => {
     clearSaveButtonOverride();
     setSearchQueryState("");
-    setDebouncedSearchQuery("");
+    setAppliedSearchQuery("");
     setStatusFilterState("all");
     setSortOrderState("newest");
   }, [clearSaveButtonOverride]);
@@ -296,6 +301,7 @@ export function useTransactionFilter(
   return {
     searchQuery,
     setSearchQuery,
+    commitSearchQuery,
     statusFilter,
     setStatusFilter,
     sortOrder,
