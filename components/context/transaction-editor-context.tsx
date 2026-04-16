@@ -44,6 +44,8 @@ export type ValidationAlert = {
   hints: string[];
 } | null;
 
+type BatchSaveTargetStatus = Extract<TransactionStatus, "取消" | "稍后处理" | "已完成">;
+
 interface TransactionEditorContextValue {
   // ====== 当前选中 ======
   currentId: number | null;
@@ -67,7 +69,10 @@ interface TransactionEditorContextValue {
   // ====== 保存 / 丢弃 ======
   saveCurrentTransaction: (status?: TransactionStatus) => Promise<SaveResult>;
   discardCurrentChanges: () => Promise<void>;
-  saveAllDirtyToServer: () => Promise<{ success: boolean; error?: string }>;
+  saveAllDirtyToServer: (
+    targetStatus?: BatchSaveTargetStatus,
+    targetIds?: number[],
+  ) => Promise<{ success: boolean; error?: string }>;
 
   // ====== 过滤列表引用（用于计算 currentIndex）======
   setFilteredTransactions: (txs: TransactionWithRelations[]) => void;
@@ -280,14 +285,9 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
           finalStatus = status;
         }
 
-        // 3. 更新本地 Overlay 并异步保存（非阻塞）
+        // 3. 异步保存（非阻塞）；saveToServer 内部会把 updatedDraft 写入 localEdits
         const { parent_id, children_ids, ...baseDraft } = curTx;
-
-        void parent_id;
-        void children_ids;
-
         const updatedDraft = { ...baseDraft, status: finalStatus };
-        curStore.setTransactionDraft(currentId, () => updatedDraft);
         const saveTask = curStore.saveToServer(currentId, updatedDraft);
 
         // 4. 构建校验提示
@@ -320,34 +320,57 @@ export function TransactionEditorProvider({ children }: { children: React.ReactN
     storeRef.current.discardChanges(currentId);
   }, [currentId]);
 
-  const saveAllDirtyToServer = useCallback(async (): Promise<{
-    success: boolean;
-    error?: string;
-  }> => {
-    const curStore = storeRef.current;
-    const curAppData = appDataRef.current;
-    const curTxById = transactionsByIdRef.current;
-    const curGetChildren = getChildTransactionsRef.current;
-    if (curStore.saveState !== "idle") {
-      return { success: false, error: "当前有保存操作进行中" };
-    }
-    const dirtyIds = curStore.getDirtyIds();
-    for (const id of dirtyIds) {
-      const tx = curTxById.get(id);
-      if (!tx) continue;
-      if (tx.parent_id && dirtyIds.includes(tx.parent_id)) continue;
-      const childTransactions = curGetChildren(tx);
-      const validResult = isValidTransaction(tx, childTransactions, curAppData);
-      let draftOverride: TransactionContentDraft | undefined;
-      if (!validResult.valid && tx.status === "已完成") {
-        const { parent_id, children_ids, ...baseDraft } = tx;
-        draftOverride = { ...baseDraft, status: "稍后处理" };
+  const saveAllDirtyToServer = useCallback(
+    async (
+      targetStatus?: BatchSaveTargetStatus,
+      targetIds?: number[],
+    ): Promise<{ success: boolean; error?: string }> => {
+      const curStore = storeRef.current;
+      const curAppData = appDataRef.current;
+      const curTxById = transactionsByIdRef.current;
+      const curGetChildren = getChildTransactionsRef.current;
+      if (curStore.saveState !== "idle") {
+        return { success: false, error: "当前有保存操作进行中" };
       }
-      const result = await curStore.saveToServer(id, draftOverride);
-      if (!result.success) return { success: false, error: result.error };
-    }
-    return { success: true };
-  }, []);
+      // 默认遍历所有脏交易；若调用方指定了 targetIds，就以 targetIds 为准。
+      const dirtyIds = curStore.getDirtyIds();
+      const idsToProcess = targetIds ?? dirtyIds;
+      for (const id of idsToProcess) {
+        const tx = curTxById.get(id);
+        if (!tx) continue;
+        // 仅在默认的"保存脏修改"路径下，跳过那些父也脏的子交易（由父的 saveToServer 一并带上）。
+        if (
+          targetStatus === undefined &&
+          targetIds === undefined &&
+          tx.parent_id &&
+          dirtyIds.includes(tx.parent_id)
+        ) {
+          continue;
+        }
+
+        const childTransactions = curGetChildren(tx);
+        const validResult = isValidTransaction(tx, childTransactions, curAppData);
+        let draftOverride: TransactionContentDraft | undefined;
+
+        if (targetStatus === undefined) {
+          if (!validResult.valid && tx.status === "已完成") {
+            const { parent_id, children_ids, ...baseDraft } = tx;
+            draftOverride = { ...baseDraft, status: "稍后处理" };
+          }
+        } else {
+          const finalStatus =
+            targetStatus === "已完成" && !validResult.valid ? "稍后处理" : targetStatus;
+          const { parent_id, children_ids, ...baseDraft } = tx;
+          draftOverride = { ...baseDraft, status: finalStatus };
+        }
+
+        const result = await curStore.saveToServer(id, draftOverride);
+        if (!result.success) return { success: false, error: result.error };
+      }
+      return { success: true };
+    },
+    [],
+  );
 
   // ==================== 设置过滤列表 ====================
 

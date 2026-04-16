@@ -95,6 +95,7 @@ export class WechatRefundImporter implements Importer {
     );
     expense.status = "待处理";
     expense.amount = 0;
+    expense.original_amount = 0;
   }
 
   /** 部分退款/一对多退款 */
@@ -144,6 +145,7 @@ export class WechatRefundImporter implements Importer {
       expense.remark = appendRemark(expense.remark, remark);
       expense.status = "待处理";
       expense.amount = Math.max(0, expense.amount - targetAmount);
+      expense.original_amount = expense.amount;
     }
   }
 

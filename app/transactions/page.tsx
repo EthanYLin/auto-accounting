@@ -1,6 +1,7 @@
 "use client";
 
 import type { TransactionOverviewListHandle } from "@/components/homepage/left-panel/transaction-overview-list";
+import type { TransactionType } from "@/types";
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
@@ -9,6 +10,7 @@ import { Alert, Button, Spinner } from "@heroui/react";
 import { ArrowDownTrayIcon, Bars3Icon, DocumentPlusIcon } from "@heroicons/react/24/outline";
 
 import { dispatchCommand, useCommandListener } from "@/lib/commands";
+import { TRANSACTION_TYPES } from "@/constants/transaction-type";
 import { useTransactionEditorHotkeys } from "@/lib/hooks/use-transaction-editor-hotkeys";
 import { ActionBar } from "@/components/homepage/action-bar";
 import { TxFieldInputs } from "@/components/homepage/tx-field-inputs";
@@ -158,6 +160,21 @@ function TransactionsRoutePage() {
   useCommandListener("create", () => void handleCreate());
 
   const { currentTransaction } = editor;
+  const hasAttachmentWithoutSplit =
+    !!currentTransaction &&
+    currentTransaction.children_ids.length > 0 &&
+    (currentTransaction.splits?.length ?? 0) === 0;
+  const currentTxType = currentTransaction?.transaction_type as TransactionType | null | undefined;
+  const restrictedAllowedTxTypes: TransactionType[] | undefined =
+    hasAttachmentWithoutSplit && currentTxType
+      ? (() => {
+          const allowedSign = TRANSACTION_TYPES.find((item) => item.type === currentTxType)?.sign;
+          if (!allowedSign) return undefined;
+          return TRANSACTION_TYPES.filter((item) => item.sign === allowedSign).map(
+            (item) => item.type,
+          );
+        })()
+      : undefined;
 
   return (
     <motion.div
@@ -306,11 +323,26 @@ function TransactionsRoutePage() {
                   >
                     交易分类
                   </h2>
+                  {restrictedAllowedTxTypes && (
+                    <Alert
+                      color="primary"
+                      variant="flat"
+                      className="mb-3"
+                      title="提示"
+                      description="当前只能在以下范围中选择交易类型，若要更改为范围外的类型，请取消附加账单或打开分账。"
+                    />
+                  )}
                   <div className="lg:block hidden">
-                    <TransactionEditorFourChainSelector mode="listbox" />
+                    <TransactionEditorFourChainSelector
+                      mode="listbox"
+                      allowedTxTypes={restrictedAllowedTxTypes}
+                    />
                   </div>
                   <div className="lg:hidden block">
-                    <TransactionEditorFourChainSelector mode="select" />
+                    <TransactionEditorFourChainSelector
+                      mode="select"
+                      allowedTxTypes={restrictedAllowedTxTypes}
+                    />
                   </div>
                 </section>
               </div>

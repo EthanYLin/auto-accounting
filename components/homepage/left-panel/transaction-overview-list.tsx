@@ -2,14 +2,13 @@
 
 import type { TransactionWithRelations } from "@/types";
 
-import React, { forwardRef, useImperativeHandle, useReducer, useRef } from "react";
-import { flushSync } from "react-dom";
+import React, { forwardRef, useImperativeHandle, useRef } from "react";
 import { Spinner } from "@heroui/react";
 import { Button } from "@heroui/react";
 import { CloudArrowDownIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
-import { TransactionListItem } from "./transaction-list-item";
+import { TransactionListItem, TRANSACTION_LIST_ROW_HEIGHT_PX } from "./transaction-list-item";
 
 import { useTransactionStore } from "@/components/context/transaction-store-context";
 import { useAppData } from "@/components/context/app-data-context";
@@ -49,25 +48,13 @@ export const TransactionOverviewList = forwardRef<
   const { isLoading: appDataLoading, hasLoaded: hasLoadedAppData } = useAppData();
 
   const parentRef = useRef<HTMLDivElement>(null);
-  const [, forceRerender] = useReducer((c: number) => c + 1, 0);
 
   const virtualizer = useVirtualizer({
     count: filteredTransactions.length,
     getScrollElement: () => parentRef.current,
     getItemKey: (index) => filteredTransactions[index].id,
-    estimateSize: () => 73,
+    estimateSize: () => TRANSACTION_LIST_ROW_HEIGHT_PX,
     overscan: 15,
-    onChange: (_instance, sync) => {
-      if (sync) {
-        queueMicrotask(() => flushSync(forceRerender));
-      } else {
-        forceRerender();
-      }
-    },
-    measureElement:
-      typeof window !== "undefined" && navigator.userAgent.indexOf("Firefox") === -1
-        ? (element) => element?.getBoundingClientRect().height
-        : undefined,
   });
 
   useImperativeHandle(ref, () => ({
@@ -135,7 +122,6 @@ export const TransactionOverviewList = forwardRef<
     );
   }
 
-  // 渲染虚拟化交易列表
   const virtualItems = virtualizer.getVirtualItems();
 
   return (
@@ -154,7 +140,6 @@ export const TransactionOverviewList = forwardRef<
             <div
               key={transaction.id}
               data-index={virtualItem.index}
-              ref={virtualizer.measureElement}
               style={{
                 position: "absolute",
                 top: 0,

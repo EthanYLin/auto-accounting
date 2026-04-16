@@ -197,7 +197,10 @@ export function isValidTransaction(
     // 有附加、无分账的情况(出口=默认合并策略)
     exitSplits.forEach((split) => {
       // 出口名称不为空
-      if (!tx.name?.trim()) hint.push(`账户为${split.account.name}的交易: 名称不能为空`);
+      if (!tx.name?.trim())
+        hint.push(
+          `默认合并后，账户为"${split.account.name}"的交易: 名称不能为空。请填写根交易的名称或打开分账。`,
+        );
       // 主类别、子类别不为空且联合校验通过
       hint.push(
         ...validateCategoryChain(
@@ -206,7 +209,11 @@ export function isValidTransaction(
           split.sub_category,
           mainCategories,
           subCategories,
-        ).map((h) => `账户"${split.account.name}"的交易: ${h}`),
+        ).map((h) =>
+          !tx.main_category
+            ? `默认合并后，账户为"${split.account.name}"的交易: ${h}。`
+            : `默认合并后，账户为"${split.account.name}"的交易: ${h}。你可能需要打开分账来调整。`,
+        ),
       );
     });
   } else {
@@ -249,11 +256,10 @@ export function isWarningTransaction(
   }
 
   // 2. original_amount非null且与amount不一致
-  if (
-    tx.original_amount != null &&
-    amountToCents(tx.amount) !== amountToCents(tx.original_amount)
-  ) {
-    hints.push(`金额已修改，原金额为￥${tx.original_amount}`);
+  for (const t of [tx, ...childrenTx]) {
+    if (t.original_amount != null && amountToCents(t.amount) !== amountToCents(t.original_amount)) {
+      hints.push(`${t.name ?? t.account.name}的金额已修改，原金额为￥${t.original_amount}`);
+    }
   }
 
   // 3. 入口账户金额与出口账户金额不一致
@@ -295,7 +301,19 @@ export function isWarningTransaction(
   exitSplits.forEach((split) => {
     // 出口名称与根交易名称不一致
     if (tx.name?.trim() && split.name?.trim() && tx.name.trim() !== split.name.trim())
-      hints.push(`账户为${split.account.name}的交易: 将会导出为名称"${split.name.trim()}"`);
+      hints.push(
+        `合并后，账户为"${split.account.name}"的交易: 将会导出为名称"${split.name.trim()}"`,
+      );
+
+    // 出口类别与根交易类别不一致
+    if (
+      (tx.main_category && split.main_category && tx.main_category.id !== split.main_category.id) ||
+      (tx.sub_category && split.sub_category && tx.sub_category.id !== split.sub_category.id)
+    ) {
+      hints.push(
+        `合并后，账户为"${split.account.name}"的交易: 将会导出为类别"${split.main_category?.label} - ${split.sub_category?.label}"`,
+      );
+    }
   });
 
   // 5. 合法判定

@@ -209,7 +209,10 @@ export function TransactionStoreProvider({ children }: { children: React.ReactNo
 
   const saveToServer = useCallback(
     async (id: number, draftOverride?: TransactionContentDraft): Promise<SaveResult> => {
-      // 1. 计算要保存的交易与子交易
+      // 1. 计算要保存的交易与子交易，保存前先写入本地修改
+      if (draftOverride) {
+        setLocalEdits((prev) => new Map(prev).set(id, draftOverride));
+      }
       const snapshot = new Map(localEditsRef.current);
       if (draftOverride) snapshot.set(id, draftOverride);
       const baseTx = getBaseline(id);

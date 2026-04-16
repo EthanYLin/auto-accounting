@@ -2,15 +2,18 @@
 
 import type { TransactionWithRelations } from "@/types";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { AgGridReact } from "ag-grid-react";
 import {
   BackspaceIcon,
+  CheckCircleIcon,
   ChevronDownIcon,
+  ClockIcon,
   CloudArrowUpIcon,
   MagnifyingGlassIcon,
   TrashIcon,
+  XCircleIcon,
 } from "@heroicons/react/24/outline";
 import {
   addToast,
@@ -45,8 +48,67 @@ export default function OverviewPage() {
   const editor = useTransactionEditor();
   const store = useTransactionStore();
   const { transactions } = store;
-  const dirtyCount = store.getDirtyIds().length;
+  const dirtyIds = store.getDirtyIds();
+  const dirtyCount = dirtyIds.length;
   const isBusy = store.saveState !== "idle" || busyAction !== null;
+
+  // 勾选中的、且仍为脏的交易 id（主按钮「保存修改」只保存这些）
+  const selectedDirtyIds = useMemo(() => {
+    const set = new Set(dirtyIds);
+    return selectedIds.filter((id) => set.has(id));
+  }, [dirtyIds, selectedIds]);
+
+  // 主按钮括号与下拉项共用：有勾选 → 勾选行数；否则 → 全局脏行数
+  const saveCount = selectedIds.length > 0 ? selectedIds.length : dirtyCount;
+
+  const handleSaveDirty = useCallback(
+    async (targetStatus?: "已完成" | "稍后处理" | "取消") => {
+      if (isBusy) return;
+      // 主按钮：有勾选则只保存勾选中的脏行；否则保存全部脏行
+      if (targetStatus === undefined) {
+        setBusyAction("save");
+        try {
+          const result = await editor.saveAllDirtyToServer(
+            undefined,
+            selectedIds.length > 0 ? selectedDirtyIds : undefined,
+          );
+          if (result.success) {
+            addToast({ title: `已保存 ${saveCount} 条修改`, color: "success" });
+          } else {
+            addToast({
+              title: "保存失败",
+              description: result.error || "未知错误",
+              color: "danger",
+            });
+          }
+        } finally {
+          setBusyAction(null);
+        }
+        return;
+      }
+      // 下拉：有勾选则只处理勾选行，否则处理全部脏行
+      if (selectedIds.length === 0 && dirtyCount === 0) return;
+      setBusyAction("save");
+      try {
+        const result = await editor.saveAllDirtyToServer(
+          targetStatus,
+          selectedIds.length > 0 ? selectedIds : undefined,
+        );
+        if (result.success) {
+          addToast({ title: `已保存 ${saveCount} 条修改`, color: "success" });
+        } else {
+          addToast({
+            title: "保存失败",
+            description: result.error || "未知错误",
+            color: "danger",
+          });
+        }
+      } finally {
+        setBusyAction(null);
+      }
+    },
+    [dirtyCount, editor, isBusy, saveCount, selectedDirtyIds, selectedIds],
+  );
 
   const handleDeleteConfirm = useCallback(async () => {
     if (selectedIds.length === 0 || isBusy) return;
@@ -103,39 +165,65 @@ export default function OverviewPage() {
         <div className="px-1 py-1">
           <div className="flex flex-col gap-3">
             <div className="flex flex-row flex-wrap items-center gap-2">
-              <Button
-                color="primary"
-                variant={dirtyCount === 0 || isBusy ? "light" : "solid"}
-                size="sm"
-                className="justify-start"
-                startContent={
-                  busyAction !== "save" ? (
-                    <CloudArrowUpIcon className="h-4 w-4" aria-hidden />
-                  ) : undefined
-                }
-                isLoading={busyAction === "save"}
-                isDisabled={dirtyCount === 0 || isBusy}
-                onPress={async () => {
-                  if (dirtyCount === 0 || isBusy) return;
-                  setBusyAction("save");
-                  try {
-                    const result = await editor.saveAllDirtyToServer();
-                    if (result.success) {
-                      addToast({ title: `已保存 ${dirtyCount} 条修改`, color: "success" });
-                    } else {
-                      addToast({
-                        title: "保存失败",
-                        description: result.error || "未知错误",
-                        color: "danger",
-                      });
-                    }
-                  } finally {
-                    setBusyAction(null);
+              <ButtonGroup size="sm" variant="flat">
+                <Button
+                  color="primary"
+                  variant={saveCount === 0 || isBusy ? "light" : "solid"}
+                  className="justify-start"
+                  startContent={
+                    busyAction !== "save" ? (
+                      <CloudArrowUpIcon className="h-4 w-4" aria-hidden />
+                    ) : undefined
                   }
-                }}
-              >
-                保存修改({dirtyCount})
-              </Button>
+                  isLoading={busyAction === "save"}
+                  isDisabled={saveCount === 0 || isBusy}
+                  onPress={() => void handleSaveDirty()}
+                >
+                  保存修改({saveCount})
+                </Button>
+                <Dropdown placement="bottom-end">
+                  <DropdownTrigger>
+                    <Button
+                      isIconOnly
+                      color="primary"
+                      variant={saveCount === 0 || isBusy ? "light" : "solid"}
+                      aria-label="更多保存操作"
+                      isDisabled={saveCount === 0 || isBusy}
+                    >
+                      <ChevronDownIcon className="h-4 w-4" aria-hidden />
+                    </Button>
+                  </DropdownTrigger>
+                  <DropdownMenu
+                    aria-label="更多保存操作"
+                    disabledKeys={saveCount === 0 || isBusy ? ["done", "later", "cancel"] : []}
+                    onAction={(key) => {
+                      if (isBusy || saveCount === 0) return;
+                      if (key === "done") void handleSaveDirty("已完成");
+                      if (key === "later") void handleSaveDirty("稍后处理");
+                      if (key === "cancel") void handleSaveDirty("取消");
+                    }}
+                  >
+                    <DropdownItem
+                      key="done"
+                      startContent={<CheckCircleIcon className="h-4 w-4" aria-hidden />}
+                    >
+                      保存为完成({saveCount})
+                    </DropdownItem>
+                    <DropdownItem
+                      key="later"
+                      startContent={<ClockIcon className="h-4 w-4" aria-hidden />}
+                    >
+                      保存为稍后处理({saveCount})
+                    </DropdownItem>
+                    <DropdownItem
+                      key="cancel"
+                      startContent={<XCircleIcon className="h-4 w-4" aria-hidden />}
+                    >
+                      保存为取消({saveCount})
+                    </DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
+              </ButtonGroup>
               <ButtonGroup size="sm" variant="light">
                 <Button
                   color="danger"
@@ -176,8 +264,7 @@ export default function OverviewPage() {
                   >
                     <DropdownItem
                       key="clear-all"
-                      color="danger"
-                      startContent={<TrashIcon className="h-4 w-4" aria-hidden />}
+                      startContent={<TrashIcon className="h-4 w-4 text-danger" aria-hidden />}
                     >
                       清空所有交易({transactions.length})
                     </DropdownItem>

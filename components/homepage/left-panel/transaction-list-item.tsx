@@ -14,6 +14,8 @@ import {
 } from "@/lib/transaction/transaction-display";
 import { displayTxTime } from "@/lib/transaction/transaction-datetime";
 
+export const TRANSACTION_LIST_ROW_HEIGHT_PX = 75;
+
 // ========== 组件接口 ==========
 
 export const TransactionListItem = memo(function TransactionListItem({
@@ -123,8 +125,9 @@ export const TransactionListItem = memo(function TransactionListItem({
     <div
       role="button"
       tabIndex={0}
+      style={{ height: TRANSACTION_LIST_ROW_HEIGHT_PX }}
       className={`
-        ${isChild ? "pl-8 pr-3 lg:pr-4 py-1.5" : "px-3 lg:px-4 py-2.5 lg:py-2.5"} cursor-pointer transition-colors border-b border-gray-100 dark:border-white/[0.05]
+        box-border w-full min-w-0 ${isChild ? "pl-8 pr-3 lg:pr-4" : "px-3 lg:px-4"} flex items-center cursor-pointer transition-colors border-b border-gray-100 dark:border-white/[0.05]
         ${
           isSelected
             ? "bg-primary-50 dark:bg-primary-500/10 dark:border-l-2 dark:border-l-primary-400/70"
@@ -139,7 +142,7 @@ export const TransactionListItem = memo(function TransactionListItem({
         }
       }}
     >
-      <div className="flex items-stretch gap-3">
+      <div className="flex min-w-0 w-full flex-1 items-stretch gap-3">
         {/* 子记录的引导线 */}
         {isChild && (
           <div className="flex flex-shrink-0 items-center self-center">

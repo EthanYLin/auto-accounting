@@ -36,6 +36,7 @@ export class WechatNeutralTxImporter implements Importer {
         return {
           ...tx,
           amount: 0,
+          original_amount: 0,
           status: "经自动处理取消",
           remark: appendRemark(tx.remark, "零钱/零钱通互转不计收支"),
           name: txType,

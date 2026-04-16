@@ -8,7 +8,7 @@ import { Select, SelectItem } from "@heroui/react";
 import { DatePicker } from "@heroui/react";
 import { Button } from "@heroui/react";
 import { EllipsisHorizontalIcon } from "@heroicons/react/24/outline";
-import { parseDateTime } from "@internationalized/date";
+import { parseDateTime, type DateValue } from "@internationalized/date";
 import { useTheme } from "next-themes";
 
 import { AmountInput } from "./common/amount-input";
@@ -269,7 +269,7 @@ export function TxFieldInputs({ selectedTxType }: TxFieldInputsProps) {
       value={(() => {
         if (!tx.datetime) return null;
         try {
-          return parseDateTime(tx.datetime);
+          return parseDateTime(tx.datetime) as DateValue;
         } catch {
           return null;
         }
