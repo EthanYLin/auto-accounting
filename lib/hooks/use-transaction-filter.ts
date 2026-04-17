@@ -105,6 +105,9 @@ function matchesTransactionKeyword(tx: TransactionWithRelations, keyword: string
   // 10. 状态 - 精确匹配
   if (tx.status && tx.status === keyword) return true;
 
+  // 11. 备注 - 模糊搜索
+  if (tx.remark && tx.remark.toLowerCase().includes(lowerKeyword)) return true;
+
   return false;
 }
 
