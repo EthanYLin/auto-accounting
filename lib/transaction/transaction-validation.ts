@@ -298,23 +298,26 @@ export function isWarningTransaction(
   });
 
   // 4. 有附加 无分账的情况（出口=默认合并策略）
-  exitSplits.forEach((split) => {
-    // 出口名称与根交易名称不一致
-    if (tx.name?.trim() && split.name?.trim() && tx.name.trim() !== split.name.trim())
-      hints.push(
-        `合并后，账户为"${split.account.name}"的交易: 将会导出为名称"${split.name.trim()}"`,
-      );
-
-    // 出口类别与根交易类别不一致
-    if (
-      (tx.main_category && split.main_category && tx.main_category.id !== split.main_category.id) ||
-      (tx.sub_category && split.sub_category && tx.sub_category.id !== split.sub_category.id)
-    ) {
-      hints.push(
-        `合并后，账户为"${split.account.name}"的交易: 将会导出为类别"${split.main_category?.label} - ${split.sub_category?.label}"`,
-      );
-    }
-  });
+  if (entranceCount > 1 && splitCount == 0) {
+    exitSplits.forEach((split) => {
+      // 出口名称与根交易名称不一致
+      if (tx.name?.trim() && split.name?.trim() && tx.name.trim() !== split.name.trim())
+        hints.push(
+          `合并后，账户为"${split.account.name}"的交易: 将会导出为名称"${split.name.trim()}"`,
+        );
+  
+      // 出口类别与根交易类别不一致
+      if (
+        (tx.main_category && split.main_category && tx.main_category.id !== split.main_category.id) ||
+        (tx.sub_category && split.sub_category && tx.sub_category.id !== split.sub_category.id)
+      ) {
+        hints.push(
+          `合并后，账户为"${split.account.name}"的交易: 将会导出为类别"${split.main_category?.label} - ${split.sub_category?.label}"`,
+        );
+      }
+    });
+  }
+  
 
   // 5. 合法判定
   hints.push(...isValidTransaction(tx, childrenTx, appData).hint);
