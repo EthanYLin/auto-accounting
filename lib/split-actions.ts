@@ -159,7 +159,7 @@ function buildTransferLikeEntry(
     localId,
     accountId,
     amount,
-    name: txType,
+    name: "",
     chainState: {
       txType,
       main_id: matchedMain ? String(matchedMain.id) : undefined,

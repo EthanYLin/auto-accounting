@@ -8,7 +8,7 @@ create table public.main_category (
   transaction_type public.transaction_type not null,
   constraint main_category_pkey primary key (id),
   constraint main_category_user_id_id_key unique (user_id, id),
-  constraint main_category_user_id_label_key unique (user_id, label),
+  constraint main_category_user_id_transaction_type_label_key unique (user_id, transaction_type, label),
   constraint main_category_user_id_fkey foreign KEY (user_id) references auth.users (id) on update CASCADE on delete CASCADE
 ) TABLESPACE pg_default;
 

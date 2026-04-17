@@ -53,10 +53,10 @@ export class WechatNeutralTxImporter implements Importer {
 
       if (product?.includes("转出")) {
         resolvedType = "转出";
-        ({ main_category, sub_category } = resolveCategories(appData, "转出", "转出", "转出"));
+        ({ main_category, sub_category } = resolveCategories(appData, "转出", "转账", "转账"));
       } else if (product?.includes("转入")) {
         resolvedType = "转入";
-        ({ main_category, sub_category } = resolveCategories(appData, "转入", "转入", "转入"));
+        ({ main_category, sub_category } = resolveCategories(appData, "转入", "转账", "转账"));
       }
 
       return {

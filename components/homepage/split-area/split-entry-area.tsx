@@ -44,6 +44,19 @@ function getNextLocalId(entries: SplitEntryData[]): number {
   return entries.reduce((maxId, entry) => Math.max(maxId, entry.localId), 0) + 1;
 }
 
+/** 是否存在某条分账名称非空且与交易名称不一致（用于自动展开名称列） */
+function shouldAutoShowNameColumn(
+  entries: SplitEntryData[],
+  txName: string | null | undefined,
+): boolean {
+  const txNorm = (txName ?? "").trim();
+  return entries.some((e) => {
+    const n = (e.name ?? "").trim();
+    if (n === "") return false;
+    return n !== txNorm;
+  });
+}
+
 /** 热键动作名 → 可能对应的 SplitActionKey（按优先级排列） */
 const HOTKEY_ACTION_KEYS: Record<string, SplitActionKey[]> = {
   merge: ["merge"],
@@ -74,7 +87,7 @@ export function SplitEntryArea({ isActive }: { isActive: boolean }) {
     lastLocalSignatureRef.current = txEntriesSignature;
     setEntries(txEntries);
     setSelectedIds(new Set());
-    setShowName(tx?.splits?.some((s) => s.name && s.name.trim() !== "") ?? false);
+    setShowName(shouldAutoShowNameColumn(txEntries, tx?.name));
     setActiveDialog(null);
     setIsCategoryModalOpen(false);
   }, [editor.currentId, selectedTransactionId]);
@@ -86,7 +99,7 @@ export function SplitEntryArea({ isActive }: { isActive: boolean }) {
     lastLocalSignatureRef.current = txEntriesSignature;
     setEntries(txEntries);
     setSelectedIds(new Set());
-    setShowName(txEntries.some((entry) => entry.name.trim() !== ""));
+    setShowName(shouldAutoShowNameColumn(txEntries, tx.name));
     setActiveDialog(null);
     setIsCategoryModalOpen(false);
   }, [tx, txEntries, txEntriesSignature]);
@@ -134,6 +147,9 @@ export function SplitEntryArea({ isActive }: { isActive: boolean }) {
       if (!tx) return;
       const splits = entriesToTxSplits(newEntries, appData, tx.user_id);
       editor.updateSplits(splits);
+      if (shouldAutoShowNameColumn(newEntries, tx.name)) {
+        setShowName(true);
+      }
     },
     [tx, appData, editor],
   );
