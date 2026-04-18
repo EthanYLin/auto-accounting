@@ -344,7 +344,8 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
         return sources;
       }
 
-      const totalAbsCents = Math.round(Math.abs(sumSignedAmounts(sources)) * 100);
+      const c = amountToCents(Math.abs(sumSignedAmounts(sources)));
+      const totalAbsCents = Number.isFinite(c) ? c : 0;
       const centsPerRow = computeSplitCentsPerRow(totalAbsCents, ratios);
 
       return centsPerRow.map((cents, index) => ({
@@ -382,7 +383,8 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
         return sources;
       }
 
-      const totalAbsCents = Math.round(Math.abs(sumSignedAmounts(sources)) * 100);
+      const c = amountToCents(Math.abs(sumSignedAmounts(sources)));
+      const totalAbsCents = Number.isFinite(c) ? c : 0;
       const centsPerRow = computeSplitCentsPerRow(totalAbsCents, ratios);
 
       return centsPerRow.map((cents, index) => ({
@@ -422,7 +424,8 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
         return sources;
       }
 
-      const totalAbsCents = Math.round(Math.abs(sumSignedAmounts(sources)) * 100);
+      const rc = amountToCents(Math.abs(sumSignedAmounts(sources)));
+      const totalAbsCents = Number.isFinite(rc) ? rc : 0;
       const centsPerRow = computeSplitCentsPerRow(totalAbsCents, ratios);
       return centsPerRow.map((cents, index) => ({
         localId: nextLocalId + index,
@@ -458,7 +461,8 @@ export const SPLIT_ACTION_RULES: SplitActionRule[] = [
         return sources;
       }
 
-      const totalAbsCents = Math.round(Math.abs(sumSignedAmounts(sources)) * 100);
+      const ac = amountToCents(Math.abs(sumSignedAmounts(sources)));
+      const totalAbsCents = Number.isFinite(ac) ? ac : 0;
       const assigned = amountPayload.partialAbsCents.reduce((s, v) => s + v, 0);
       const lastAbsCents = totalAbsCents - assigned;
       if (lastAbsCents < 0) return sources;

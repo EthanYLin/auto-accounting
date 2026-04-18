@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AmountInput } from "@/components/homepage/common/amount-input";
 import { FourChainSelector } from "@/components/homepage/common/four-chain-selector";
 import { computeSplitCentsPerRow } from "@/lib/split-actions";
+import { amountToCents } from "@/lib/transaction/transaction-display";
 import { SplitDrawerShell } from "@/components/homepage/split-area/drawers/split-drawer-shell";
 import { SplitNamePanel } from "@/components/homepage/split-area/drawers/split-name-panel";
 import { SplitRowCountPresets } from "@/components/homepage/split-area/drawers/split-row-count-presets";
@@ -196,7 +197,8 @@ export function AmountSplitModal({
                     onChange={(v) => {
                       if (isLast) return;
                       const parsed = parseFloat(v);
-                      const next = Number.isFinite(parsed) ? Math.round(parsed * 100) : 0;
+                      const cents = amountToCents(parsed);
+                      const next = Number.isFinite(parsed) && Number.isFinite(cents) ? cents : 0;
                       setPartialCentsAt(index, next);
                     }}
                     transactionType={txType}

@@ -3,7 +3,7 @@ import type { Importer } from "./types";
 
 import { ColumnKey } from "../alipay-import/types";
 import { compareTxTime } from "../transaction/transaction-datetime";
-import { calculateAmount } from "../transaction/transaction-display";
+import { amountToCents, calculateAmount } from "../transaction/transaction-display";
 
 import { appendRemark, getAlipayRawField, resolveCategories } from "./shared";
 
@@ -175,8 +175,8 @@ export class AlipayRefundImporter implements Importer {
     const sumCents = items.reduce(
       (s, tx) =>
         s +
-        Math.round(
-          calculateAmount({ amount: tx.amount, transaction_type: tx.transaction_type }) * 100,
+        amountToCents(
+          calculateAmount({ amount: tx.amount, transaction_type: tx.transaction_type }),
         ),
       0,
     );

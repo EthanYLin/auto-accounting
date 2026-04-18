@@ -2,6 +2,8 @@ import type { Account, Json, NewTransactionData } from "@/types";
 
 import { z } from "zod";
 
+import { amountToCents } from "@/lib/transaction/transaction-display";
+
 export interface CustomImportTx {
   /** 交易日期时间 格式为 "2024-01-01T12:00:00" */
   datetime: string;
@@ -91,7 +93,8 @@ export function toNewTransactionData(
   customSource?: string,
 ): NewTransactionData {
   const source = customSource?.trim() ? `${customSource.trim()}(自定义导入)` : "自定义导入";
-  const amount = Math.round(tx.amount * 100) / 100;
+  const cents = amountToCents(tx.amount);
+  const amount = Number.isFinite(cents) ? cents / 100 : 0;
   const transactionType = amount === 0 ? null : amount < 0 ? "支出" : "收入";
   return {
     account: account,

@@ -70,8 +70,3 @@ export function parseRefundAmount(status: string): number | null {
   const num = parseFloat(match[1]);
   return isNaN(num) ? null : num;
 }
-
-/** 判断两个金额是否相等（浮点容差 0.001） */
-export function amountEquals(a: number, b: number): boolean {
-  return Math.abs(a - b) < 0.001;
-}

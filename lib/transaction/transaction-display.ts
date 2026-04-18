@@ -41,9 +41,22 @@ export function calculateAmount(input: {
   return input.amount * (txType?.sign || 1);
 }
 
-/** 元 → 整数分（四舍五入），用于比较与按分累加，避免浮点误差 */
+/**
+ * 将金额（元）换算为整数分：四舍五入到最近分。
+ * 非有限数（NaN / ±Infinity）返回 NaN。
+ */
 export function amountToCents(amount: number): number {
+  if (!Number.isFinite(amount)) return NaN;
   return Math.round(amount * 100);
+}
+
+/**
+ * 两个金额在四舍五入到分之后是否相等。
+ * 任一参数非有限数则为 false。
+ */
+export function amountEquals(a: number, b: number): boolean {
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
+  return amountToCents(a) === amountToCents(b);
 }
 
 /**

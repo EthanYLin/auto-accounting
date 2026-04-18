@@ -5,7 +5,11 @@ import type { TransactionType } from "@/types";
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@heroui/react";
 
-import { getAmountColorClass, getAmountSymbol } from "@/lib/transaction/transaction-display";
+import {
+  amountToCents,
+  getAmountColorClass,
+  getAmountSymbol,
+} from "@/lib/transaction/transaction-display";
 
 const SIZE_PRESETS = {
   lg: { textSize: "text-2xl", minHeight: "min-h-[106px]" },
@@ -67,7 +71,7 @@ export function AmountInput({
       if (isNaN(result)) return 0;
       // 保留两位小数后取绝对值
       if (typeof result === "number" && !isNaN(result)) {
-        return Math.abs(Math.round(result * 100) / 100);
+        return Math.abs(amountToCents(result) / 100);
       }
       return 0;
     } catch {

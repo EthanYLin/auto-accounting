@@ -2,8 +2,9 @@ import type { AppDataValue, NewTransactionData } from "@/types";
 import type { Importer } from "./types";
 
 import { compareTxTime } from "../transaction/transaction-datetime";
+import { amountEquals } from "../transaction/transaction-display";
 
-import { amountEquals, resolveCategories } from "./shared";
+import { resolveCategories } from "./shared";
 
 /**
  * 自定义导入：对单笔支出，在时间顺序上向后寻找第一笔尚未使用的等额收入，

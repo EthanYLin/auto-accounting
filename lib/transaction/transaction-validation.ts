@@ -12,7 +12,12 @@ import type {
   BudgetType,
 } from "@/types";
 
-import { amountToCents, calculateAmount } from "@/lib/transaction/transaction-display";
+import {
+  amountEquals,
+  amountToCents,
+  calculateAmount,
+  formatAmountParts,
+} from "@/lib/transaction/transaction-display";
 import { parseTxTime } from "@/lib/transaction/transaction-datetime";
 import { getExitSplits } from "@/lib/transaction/transaction-split-merge";
 
@@ -160,18 +165,43 @@ export function isValidTransaction(
 
   // ========== (3) 转账判定 ==========
   const exitSplits = getExitSplits(tx, childrenTx);
-  const inList = exitSplits.filter((s) => s.transaction_type === "转入");
-  const outList = exitSplits.filter((s) => s.transaction_type === "转出");
-  if (inList.length > 0 || outList.length > 0) {
-    if (inList.length !== 1 || outList.length !== 1) {
-      hint.push("转账必须恰好包含一条转入和一条转出记录");
-    } else {
-      if (amountToCents(inList[0].amount) !== amountToCents(outList[0].amount)) {
-        hint.push("转入与转出金额必须相同");
+  if (exitSplits.some((s) => s.transaction_type === "转入" || s.transaction_type === "转出")) {
+    let i = 0;
+    const n = exitSplits.length;
+    while (i < n) {
+      const type1 = exitSplits[i].transaction_type;
+      if (type1 !== "转入" && type1 !== "转出") {
+        i += 1;
+        continue;
       }
-      if (inList[0].account?.id === outList[0].account?.id) {
-        hint.push("转入与转出账户不能相同");
+      if (i + 1 >= n) {
+        hint.push(
+          `分账中最后一条${type1}分账记录缺少相邻的${type1 === "转入" ? "转出" : "转入"}分账记录`,
+        );
+        i += 1;
+        continue;
       }
+      const type2 = exitSplits[i + 1].transaction_type;
+      if ((type2 !== "转入" && type2 !== "转出") || type1 === type2) {
+        hint.push(
+          `转入与转出分账必须相邻。第${i + 1}条分账为${type1}，但第${i + 2}条分账为${type2}，不是${type1 === "转入" ? "转出" : "转入"}。`,
+        );
+        i += 1;
+        continue;
+      }
+      const cur = exitSplits[i];
+      const next = exitSplits[i + 1];
+      if (!amountEquals(cur.amount, next.amount)) {
+        hint.push(
+          `转入与转出金额必须相同。第${i + 1}条分账金额为￥${formatAmountParts(cur.amount).digits}，第${i + 2}条分账金额为￥${formatAmountParts(next.amount).digits}。`,
+        );
+      }
+      if (cur.account?.id === next.account?.id) {
+        hint.push(
+          `转入与转出账户不能相同。第${i + 1}条和第${i + 2}条分账的账户均为${cur.account.name}。`,
+        );
+      }
+      i += 2;
     }
   }
 
@@ -257,7 +287,7 @@ export function isWarningTransaction(
 
   // 2. original_amount非null且与amount不一致
   for (const t of [tx, ...childrenTx]) {
-    if (t.original_amount != null && amountToCents(t.amount) !== amountToCents(t.original_amount)) {
+    if (t.original_amount != null && !amountEquals(t.amount, t.original_amount)) {
       hints.push(`${t.name ?? t.account.name}的金额已修改，原金额为￥${t.original_amount}`);
     }
   }

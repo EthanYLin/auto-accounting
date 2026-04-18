@@ -3,14 +3,9 @@ import type { Importer } from "./types";
 
 import { ColumnKey } from "../wechat-import/types";
 import { compareTxTime } from "../transaction/transaction-datetime";
+import { amountEquals, amountToCents } from "../transaction/transaction-display";
 
-import {
-  amountEquals,
-  appendRemark,
-  getWxRawField,
-  parseRefundAmount,
-  resolveCategories,
-} from "./shared";
+import { appendRemark, getWxRawField, parseRefundAmount, resolveCategories } from "./shared";
 
 // ─── 退款处理 ────────────────────────────────────────────────────
 
@@ -158,7 +153,8 @@ export class WechatRefundImporter implements Importer {
     candidates: NewTransactionData[],
     target: number,
   ): NewTransactionData[] | null {
-    const targetCents = Math.round(target * 100);
+    const targetCents = amountToCents(target);
+    if (!Number.isFinite(targetCents)) return null;
 
     const result: NewTransactionData[] = [];
 
@@ -166,9 +162,12 @@ export class WechatRefundImporter implements Importer {
       if (remaining === 0) return true;
       if (index >= candidates.length || remaining < 0) return false;
 
-      result.push(candidates[index]);
-      if (backtrack(index + 1, remaining - Math.round(candidates[index].amount * 100))) return true;
-      result.pop();
+      const w = amountToCents(candidates[index].amount);
+      if (Number.isFinite(w)) {
+        result.push(candidates[index]);
+        if (backtrack(index + 1, remaining - w)) return true;
+        result.pop();
+      }
 
       if (backtrack(index + 1, remaining)) return true;
 

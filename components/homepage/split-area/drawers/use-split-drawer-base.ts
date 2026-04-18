@@ -8,6 +8,7 @@ import { useMemo } from "react";
 
 import { TRANSACTION_TYPES } from "@/constants/transaction-type";
 import { sumSignedAmounts } from "@/lib/split-actions";
+import { amountToCents } from "@/lib/transaction/transaction-display";
 
 export function useSplitDrawerBase({
   rootTransaction,
@@ -24,7 +25,10 @@ export function useSplitDrawerBase({
   nameSuggestions: string[];
 } {
   const totalSigned = useMemo(() => sumSignedAmounts(selectedEntries), [selectedEntries]);
-  const totalAbsCents = useMemo(() => Math.round(Math.abs(totalSigned) * 100), [totalSigned]);
+  const totalAbsCents = useMemo(() => {
+    const c = amountToCents(Math.abs(totalSigned));
+    return Number.isFinite(c) ? c : 0;
+  }, [totalSigned]);
 
   const allowedTxTypes = useMemo((): TransactionType[] | undefined => {
     const sign = Math.sign(totalSigned);

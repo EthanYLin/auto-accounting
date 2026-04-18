@@ -26,6 +26,7 @@ import { TRANSACTION_STATUS_COLORS, TRANSACTION_TYPES } from "@/constants/transa
 import { useAppData } from "@/components/context/app-data-context";
 import { useTransactionStore } from "@/components/context/transaction-store-context";
 import {
+  amountToCents,
   formatAmountParts,
   formatTransactionTypeWithEmoji,
   getAmountColorClass,
@@ -328,12 +329,16 @@ export function OverviewTransactionsGrid({
           const cleaned = String(p.newValue ?? "").replace(/[¥$,，\s]/g, "");
           const n = parseFloat(cleaned);
           if (Number.isNaN(n)) return undefined;
-          return Math.round(Math.abs(n) * 100) / 100;
+          const c = amountToCents(Math.abs(n));
+          if (!Number.isFinite(c)) return undefined;
+          return c / 100;
         },
         valueSetter: (p: ValueSetterParams<TransactionWithRelations, number>) => {
           const n = Number(p.newValue);
           if (Number.isNaN(n)) return false;
-          p.data.amount = Math.round(Math.abs(n) * 100) / 100;
+          const c = amountToCents(Math.abs(n));
+          if (!Number.isFinite(c)) return false;
+          p.data.amount = c / 100;
           return true;
         },
       },
