@@ -159,7 +159,7 @@ function buildTransferLikeEntry(
     localId,
     accountId,
     amount,
-    name: "",
+    name: "转账",
     chainState: {
       txType,
       main_id: matchedMain ? String(matchedMain.id) : undefined,

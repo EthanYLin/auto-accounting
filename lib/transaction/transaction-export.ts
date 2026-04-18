@@ -9,16 +9,7 @@ export function buildExportTransactions(
   tx: TransactionWithRelations,
   children: TransactionWithRelations[],
 ): ReadonlyArray<TransactionWithRelations> {
-  const splits = getExitSplits(tx, children);
-
-  // 保证转出交易和转入交易上下相邻
-  splits.sort((a, b) => {
-    const x = a.transaction_type === "转出" ? 0 : a.transaction_type === "转入" ? 1 : 2;
-    const y = b.transaction_type === "转出" ? 0 : b.transaction_type === "转入" ? 1 : 2;
-    return x - y;
-  });
-
-  return splits.map((split) => ({
+  return getExitSplits(tx, children).map((split) => ({
     ...tx,
     account: split.account,
     amount: split.amount,
