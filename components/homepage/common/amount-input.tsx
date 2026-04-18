@@ -67,7 +67,7 @@ export function AmountInput({
       if (isNaN(result)) return 0;
       // 保留两位小数后取绝对值
       if (typeof result === "number" && !isNaN(result)) {
-        return Math.abs(Math.floor(result * 100) / 100);
+        return Math.abs(Math.round(result * 100) / 100);
       }
       return 0;
     } catch {
