@@ -1,5 +1,5 @@
 import type { TransactionWithRelations } from "@/types";
-import type { ExportArtifact, TransactionExporter } from "@/lib/exporters/types";
+import type { ExportResult, TransactionExporter } from "@/lib/exporters/types";
 
 import { calculateAmount } from "@/lib/transaction/transaction-display";
 import { parseTxTime } from "@/lib/transaction/transaction-datetime";
@@ -72,23 +72,33 @@ export const mozeExporter: TransactionExporter = {
     return "导出为 MOZE 可导入 CSV";
   },
 
-  async generate(groups): Promise<ExportArtifact> {
-    const now = new Date();
-    const filename = `MOZE账单导出-${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}.csv`;
-    const transactions = groups.flatMap((group) => group);
-    const lines = [
-      toCsvLine(MOZE_HEADERS),
-      ...transactions.map((tx) => toCsvLine(buildMozeRow(tx))),
-    ];
-    const content = new Blob([`\uFEFF${lines.join("\r\n")}`], {
-      type: "text/csv;charset=utf-8",
-    });
+  async generate(groups): Promise<ExportResult> {
+    try {
+      const now = new Date();
+      const filename = `MOZE账单导出-${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}.csv`;
+      const transactions = groups.flatMap((group) => group);
+      const lines = [
+        toCsvLine(MOZE_HEADERS),
+        ...transactions.map((tx) => toCsvLine(buildMozeRow(tx))),
+      ];
+      const content = new Blob([`\uFEFF${lines.join("\r\n")}`], {
+        type: "text/csv;charset=utf-8",
+      });
 
-    return {
-      filename,
-      mimeType: "text/csv;charset=utf-8",
-      extension: "csv",
-      content,
-    };
+      return {
+        ok: true,
+        artifact: {
+          filename,
+          mimeType: "text/csv;charset=utf-8",
+          extension: "csv",
+          content,
+        },
+      };
+    } catch (err) {
+      return {
+        ok: false,
+        message: err instanceof Error ? err.message : "导出失败",
+      };
+    }
   },
 };

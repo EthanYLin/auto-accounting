@@ -5,6 +5,7 @@ import {
   ArrowDownTrayIcon,
   CheckCircleIcon,
   ClockIcon,
+  ExclamationTriangleIcon,
   NoSymbolIcon,
 } from "@heroicons/react/24/outline";
 import { Button, Select, SelectItem, Spinner } from "@heroui/react";
@@ -108,7 +109,12 @@ export default function ExportPage() {
     setError(null);
 
     try {
-      const artifact = await selectedExporter.exporter.generate(exportedTxGroups);
+      const result = await selectedExporter.exporter.generate(exportedTxGroups);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      const { artifact } = result;
       const url = URL.createObjectURL(artifact.content);
       const anchor = document.createElement("a");
 
@@ -210,7 +216,6 @@ export default function ExportPage() {
                     </span>
                     条已完成的交易
                   </p>
-                  {error ? <p className="text-sm leading-6 text-danger">{error}</p> : null}
                   <Button
                     className="min-w-32"
                     fullWidth
@@ -229,6 +234,32 @@ export default function ExportPage() {
             </div>
           )}
         </section>
+
+        {error ? (
+          <motion.section
+            className="rounded-2xl border border-danger-200/80 bg-danger-50/80 px-4 py-3 dark:border-danger-400/25 dark:bg-danger-950/35"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={revealTransition}
+            role="alert"
+          >
+            <div className="flex gap-3">
+              <div className="mt-0.5 shrink-0 text-danger">
+                <ExclamationTriangleIcon aria-hidden className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1 space-y-1">
+                <p className="text-sm font-semibold text-danger-700 dark:text-danger-400">
+                  导出未成功
+                </p>
+                <div className="max-h-64 overflow-y-auto rounded-lg bg-danger-100/50 px-3 py-2 dark:bg-danger-950/50">
+                  <p className="whitespace-pre-wrap break-words text-sm leading-6 text-danger-600 dark:text-danger-300">
+                    {error}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.section>
+        ) : null}
       </motion.div>
     </div>
   );
