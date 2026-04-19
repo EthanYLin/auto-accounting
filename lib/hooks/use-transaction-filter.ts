@@ -34,24 +34,25 @@ function matchesTransactionKeyword(tx: TransactionWithRelations, keyword: string
   const txSign = getAmountSymbol(tx.transaction_type);
   // 纯符号搜索
   if (lowerKeyword === "-" || lowerKeyword === "+") {
-    return txSign === lowerKeyword;
+    if (txSign === lowerKeyword) return true;
   }
   // 数值搜索
   const match = lowerKeyword.match(/^([-+])?(\d+(?:\.\d+)?)$/);
   if (match) {
     const [_, searchSign, numStr] = match; // 提取符号和数字部分
-    // 符号校验
-    if (searchSign !== undefined && searchSign !== txSign) return false;
-    if (numStr.includes(".")) {
-      // 小数搜索
-      const txCents = Math.round(Math.abs(tx.amount) * 100);
-      const searchCents = Math.round(parseFloat(numStr) * 100);
-      return txCents === searchCents;
-    } else {
-      // 整数搜索
-      const txInt = Math.floor(Math.abs(tx.amount));
-      const searchInt = Math.floor(parseFloat(numStr));
-      return txInt === searchInt;
+    const signOk = searchSign === undefined || searchSign === txSign;
+    if (signOk) {
+      if (numStr.includes(".")) {
+        // 小数搜索
+        const txCents = Math.round(Math.abs(tx.amount) * 100);
+        const searchCents = Math.round(parseFloat(numStr) * 100);
+        if (txCents === searchCents) return true;
+      } else {
+        // 整数搜索
+        const txInt = Math.floor(Math.abs(tx.amount));
+        const searchInt = Math.floor(parseFloat(numStr));
+        if (txInt === searchInt) return true;
+      }
     }
   }
 
