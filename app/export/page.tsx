@@ -1,5 +1,8 @@
 "use client";
 
+import type { RangeValue } from "@react-types/shared";
+import type { DateValue } from "@internationalized/date";
+
 import { useMemo, useState } from "react";
 import {
   ArrowDownTrayIcon,
@@ -8,7 +11,16 @@ import {
   ExclamationTriangleIcon,
   NoSymbolIcon,
 } from "@heroicons/react/24/outline";
-import { Button, Select, SelectItem, Spinner } from "@heroui/react";
+import {
+  Button,
+  DateRangePicker,
+  Radio,
+  RadioGroup,
+  Select,
+  SelectItem,
+  Spinner,
+} from "@heroui/react";
+import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date";
 import { motion } from "framer-motion";
 
 import { useAppData } from "@/components/context/app-data-context";
@@ -70,15 +82,43 @@ function StatItem({ label, value, description, accentClassName, icon: Icon }: St
   );
 }
 
+type DateRangeMode = "all" | "custom";
+
+function parseDatetimeToCalendarDate(datetime: string | null): CalendarDate | null {
+  if (!datetime) return null;
+  try {
+    const d = new Date(datetime);
+    if (isNaN(d.getTime())) return null;
+    return new CalendarDate(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  } catch {
+    return null;
+  }
+}
+
 export default function ExportPage() {
   const { isLoading: isAppLoading } = useAppData();
   const { transactions, isFetching, hasLoaded } = useTransactionStore();
   const [selectedFormat, setSelectedFormat] = useState<ExporterKey>(DEFAULT_EXPORTER_KEY);
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dateRangeMode, setDateRangeMode] = useState<DateRangeMode>("all");
+  const [dateRange, setDateRange] = useState<RangeValue<DateValue> | null>(() => {
+    const t = today(getLocalTimeZone());
+    return { start: t.subtract({ months: 1 }), end: t };
+  });
+
+  const filteredTransactions = useMemo(() => {
+    if (dateRangeMode === "all" || !dateRange) return transactions;
+    const { start, end } = dateRange;
+    return transactions.filter((tx) => {
+      const txDate = parseDatetimeToCalendarDate(tx.datetime);
+      if (!txDate) return false;
+      return txDate.compare(start) >= 0 && txDate.compare(end) <= 0;
+    });
+  }, [transactions, dateRangeMode, dateRange]);
 
   const stats = useMemo(() => {
-    return transactions.reduce(
+    return filteredTransactions.reduce(
       (acc, transaction) => {
         if (transaction.status && COMPLETED_STATUSES.has(transaction.status)) {
           acc.completed += 1;
@@ -93,8 +133,11 @@ export default function ExportPage() {
       },
       { completed: 0, pending: 0, cancelled: 0 },
     );
-  }, [transactions]);
-  const exportedTxGroups = useMemo(() => exportTransactions(transactions), [transactions]);
+  }, [filteredTransactions]);
+  const exportedTxGroups = useMemo(
+    () => exportTransactions(filteredTransactions),
+    [filteredTransactions],
+  );
   const selectedExporter = useMemo(
     () => EXPORTERS.find((format) => format.key === selectedFormat) ?? EXPORTERS[0],
     [selectedFormat],
@@ -190,23 +233,55 @@ export default function ExportPage() {
               >
                 <h2 className="text-sm font-semibold text-foreground mb-5">导出选项</h2>
 
-                <Select
-                  aria-label="请选择导出格式"
-                  label="请选择导出格式"
-                  labelPlacement="outside"
-                  placeholder="请选择导出格式"
-                  selectedKeys={[selectedFormat]}
-                  size="sm"
-                  variant="underlined"
-                  onSelectionChange={(keys) => {
-                    const value = Array.from(keys)[0];
-                    if (value) setSelectedFormat(value as ExporterKey);
-                  }}
-                >
-                  {EXPORTERS.map((format) => (
-                    <SelectItem key={format.key}>{format.key}</SelectItem>
-                  ))}
-                </Select>
+                <div className="flex flex-col gap-5">
+                  <Select
+                    aria-label="请选择导出格式"
+                    label="请选择导出格式"
+                    labelPlacement="outside"
+                    placeholder="请选择导出格式"
+                    selectedKeys={[selectedFormat]}
+                    size="sm"
+                    variant="underlined"
+                    onSelectionChange={(keys) => {
+                      const value = Array.from(keys)[0];
+                      if (value) setSelectedFormat(value as ExporterKey);
+                    }}
+                  >
+                    {EXPORTERS.map((format) => (
+                      <SelectItem key={format.key}>{format.key}</SelectItem>
+                    ))}
+                  </Select>
+
+                  <div className="flex flex-col gap-3 mb-2">
+                    <p className="text-sm text-default-500">导出范围</p>
+                    <RadioGroup
+                      value={dateRangeMode}
+                      orientation="horizontal"
+                      size="sm"
+                      onValueChange={(v) => setDateRangeMode(v as DateRangeMode)}
+                    >
+                      <Radio value="all">全部记录</Radio>
+                      <Radio value="custom">指定日期</Radio>
+                    </RadioGroup>
+
+                    {dateRangeMode === "custom" && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <DateRangePicker
+                          aria-label="选择导出日期范围"
+                          granularity="day"
+                          size="sm"
+                          variant="bordered"
+                          value={dateRange}
+                          onChange={setDateRange}
+                        />
+                      </motion.div>
+                    )}
+                  </div>
+                </div>
 
                 <div className="mt-auto space-y-3 border-t border-default-200/80 pt-4">
                   <p className="text-sm leading-6 text-default-500">
