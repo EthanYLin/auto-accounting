@@ -5,6 +5,7 @@ import { DateTime } from "luxon";
 
 import {
   compareTxTime,
+  parseTxTime,
   TRANSACTION_DATETIME_FORMAT,
   TRANSACTION_TIME_ZONE,
 } from "../transaction/transaction-datetime";
@@ -15,6 +16,7 @@ import { getAlipayRawField, resolveCategories } from "./shared";
 /**
  * 余额宝每日收益：商品说明同时包含「余额宝」「收益发放」。
  * 按月合并为一条父交易，明细作为附加子交易。
+ * 月份优先从商品说明中的 `YYYY.MM.DD` 解析；若无则按交易时间归属月份。
  */
 export class YuebaoEarningsImporter implements Importer {
   description(): string {
@@ -42,7 +44,7 @@ export class YuebaoEarningsImporter implements Importer {
     const byMonth = new Map<string, NewTransactionData[]>();
 
     for (const tx of candidates) {
-      const key = this.monthKeyFromDatetime(getAlipayRawField(tx, ColumnKey.Product));
+      const key = this.monthKeyForTx(tx);
       if (!key) {
         rest.push(tx);
         continue;
@@ -115,14 +117,27 @@ export class YuebaoEarningsImporter implements Importer {
       .toFormat(TRANSACTION_DATETIME_FORMAT);
   }
 
+  /** 优先商品说明中的日期，否则用交易时间；返回 `YYYY.MM` */
+  private monthKeyForTx(tx: NewTransactionData): string | null {
+    const fromProduct = this.monthKeyFromProduct(getAlipayRawField(tx, ColumnKey.Product));
+    if (fromProduct) return fromProduct;
+    return this.monthKeyFromTxDatetime(tx.datetime);
+  }
+
   /**
    * 仅识别日期 `YYYY.MM.DD`（点分隔），如 `2025.12.30`。
    * 返回 `YYYY.MM`
    */
-  private monthKeyFromDatetime(datetime: string | null): string | null {
-    if (!datetime) return null;
-    const m = datetime.trim().match(/(\d{4})\.(\d{2})\.(\d{2})/);
+  private monthKeyFromProduct(product: string | null): string | null {
+    if (!product) return null;
+    const m = product.trim().match(/(\d{4})\.(\d{2})\.(\d{2})/);
     if (!m) return null;
     return `${m[1]}.${m[2]}`;
+  }
+
+  private monthKeyFromTxDatetime(datetime: string | null): string | null {
+    const dt = parseTxTime(datetime);
+    if (!dt) return null;
+    return dt.toFormat("yyyy.MM");
   }
 }
