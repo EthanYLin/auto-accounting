@@ -566,17 +566,30 @@ export async function deleteAllTransactions(): Promise<ActionResult<null>> {
  */
 export async function getAllTransactionSplits(): Promise<ActionResult<TransactionSplit[]>> {
   return withSupabaseUser("获取拆账记录", async ({ supabase, userId }) => {
-    const { data, error } = await supabase
-      .from("transaction_split")
-      .select("*")
-      .eq("user_id", userId)
-      .order("id", { ascending: true });
+    const rows: TransactionSplit[] = [];
+    let from = 0;
 
-    if (error) {
-      return fail(error.message);
+    for (;;) {
+      const { data, error } = await supabase
+        .from("transaction_split")
+        .select("*")
+        .eq("user_id", userId)
+        .order("id", { ascending: true })
+        .range(from, from + TRANSACTION_PAGE_SIZE - 1);
+
+      if (error) {
+        return fail(error.message);
+      }
+
+      const batch = (data ?? []) as TransactionSplit[];
+      rows.push(...batch);
+      if (batch.length < TRANSACTION_PAGE_SIZE) {
+        break;
+      }
+      from += TRANSACTION_PAGE_SIZE;
     }
 
-    return ok(data as TransactionSplit[]);
+    return ok(rows);
   });
 }
 

@@ -1,7 +1,6 @@
 "use client";
 
 import type { RangeValue } from "@react-types/shared";
-import type { DateValue } from "@internationalized/date";
 
 import { useMemo, useState } from "react";
 import {
@@ -102,7 +101,7 @@ export default function ExportPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dateRangeMode, setDateRangeMode] = useState<DateRangeMode>("all");
-  const [dateRange, setDateRange] = useState<RangeValue<DateValue> | null>(() => {
+  const [dateRange, setDateRange] = useState<RangeValue<CalendarDate> | null>(() => {
     const t = today(getLocalTimeZone());
     return { start: t.subtract({ months: 1 }), end: t };
   });
