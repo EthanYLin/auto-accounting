@@ -4,7 +4,12 @@ import type { TransactionWithRelations } from "@/types";
 
 import React, { memo, useCallback } from "react";
 import { Chip } from "@heroui/react";
-import { LinkIcon, RectangleStackIcon, ScissorsIcon } from "@heroicons/react/24/outline";
+import {
+  ChevronRightIcon,
+  LinkIcon,
+  RectangleStackIcon,
+  ScissorsIcon,
+} from "@heroicons/react/24/outline";
 
 import { TRANSACTION_TYPES, TRANSACTION_STATUS_COLORS } from "@/constants/transaction-type";
 import {
@@ -22,14 +27,25 @@ export const TransactionListItem = memo(function TransactionListItem({
   transaction,
   isSelected = false,
   isDirty = false,
+  isCollapsed = false,
   onSelect,
+  onToggleCollapse,
 }: {
   transaction: TransactionWithRelations;
   isSelected?: boolean;
   isDirty?: boolean;
+  isCollapsed?: boolean;
   onSelect?: (id: number) => void;
+  onToggleCollapse?: (id: number) => void;
 }) {
   const onClick = useCallback(() => onSelect?.(transaction.id), [onSelect, transaction.id]);
+  const handleToggleCollapse = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onToggleCollapse?.(transaction.id);
+    },
+    [onToggleCollapse, transaction.id],
+  );
   // 获取图标和颜色（优先级：子类别 > 主类别 > 交易类型 > 默认）
   const getIconAndColor = () => {
     if (transaction.sub_category) {
@@ -75,6 +91,7 @@ export const TransactionListItem = memo(function TransactionListItem({
   const splitsCount = transaction.splits?.length || 0;
   const childrenCount = transaction.children_ids.length;
   const isChild = !!transaction.parent_id;
+  const canToggleCollapse = childrenCount > 0 && !!onToggleCollapse;
 
   const statusSlot = (() => {
     if (isChild) {
@@ -127,7 +144,7 @@ export const TransactionListItem = memo(function TransactionListItem({
       tabIndex={0}
       style={{ height: TRANSACTION_LIST_ROW_HEIGHT_PX }}
       className={`
-        box-border w-full min-w-0 ${isChild ? "pl-8 pr-3 lg:pr-4" : "px-3 lg:px-4"} flex items-center cursor-pointer transition-colors border-b border-gray-100 dark:border-white/[0.05]
+        box-border w-full min-w-0 ${isChild ? "pl-8 pr-3 lg:pr-4" : canToggleCollapse ? "pl-1 pr-3 lg:pr-4" : "px-3 lg:px-4"} flex items-center cursor-pointer transition-colors border-b border-gray-100 dark:border-white/[0.05]
         ${
           isSelected
             ? "bg-primary-50 dark:bg-primary-500/10 dark:border-l-2 dark:border-l-primary-400/70"
@@ -143,6 +160,22 @@ export const TransactionListItem = memo(function TransactionListItem({
       }}
     >
       <div className="flex min-w-0 w-full flex-1 items-stretch gap-3">
+        {canToggleCollapse && (
+          <button
+            type="button"
+            aria-expanded={!isCollapsed}
+            aria-label={isCollapsed ? "展开子交易" : "折叠子交易"}
+            title={isCollapsed ? "展开子交易" : "折叠子交易"}
+            className="flex h-6 w-5 shrink-0 items-center justify-center self-center rounded text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-600 dark:text-zinc-500 dark:hover:bg-white/10 dark:hover:text-zinc-300"
+            onClick={handleToggleCollapse}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <ChevronRightIcon
+              className={`h-3.5 w-3.5 transition-transform duration-150 ${isCollapsed ? "" : "rotate-90"}`}
+            />
+          </button>
+        )}
+
         {/* 子记录的引导线 */}
         {isChild && (
           <div className="flex flex-shrink-0 items-center self-center">
